@@ -14,7 +14,7 @@ x-flink-props: &flink-props |
   jobmanager.rpc.address: jobmanager
   rest.address: jobmanager
   parallelism.default: 1
-  taskmanager.numberOfTaskSlots: 2
+  taskmanager.numberOfTaskSlots: 4
   state.backend.type: hashmap
   execution.checkpointing.dir: file:///opt/flink/checkpoints
   execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
@@ -50,6 +50,35 @@ services:
         aws --endpoint-url http://minio:9000 s3api head-bucket --bucket warehouse 2>/dev/null \
           || aws --endpoint-url http://minio:9000 s3 mb s3://warehouse
 
+  # ---- Order database (CDC source, ADR 0004) --------------------------------------
+  postgres:
+    image: postgres:16.15
+    profiles: ["cdc"]
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=4
+      - -c
+      - max_wal_senders=4
+      - -c
+      - max_slot_wal_keep_size=1GB # an abandoned slot cannot fill the disk
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-control_tower}
+      POSTGRES_USER: ${POSTGRES_USER:-ct}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ct-local}
+    ports: ["${POSTGRES_HOST_PORT:-15432}:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+
   # ---- Kafka API ------------------------------------------------------------------
   redpanda:
     image: redpandadata/redpanda:v26.1.20
@@ -82,9 +111,49 @@ services:
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
-        rpk topic describe ${GPS_TOPIC:-gps.pings.v1} -X brokers=redpanda:9092 >/dev/null 2>&1 \
-          || rpk topic create ${GPS_TOPIC:-gps.pings.v1} -p 3 -r 1 \
-               -c retention.ms=604800000 -X brokers=redpanda:9092
+        for t in ${GPS_TOPIC:-gps.pings.v1} cdc.public.depots cdc.public.vans cdc.public.orders; do
+          rpk topic describe $$t -X brokers=redpanda:9092 >/dev/null 2>&1 \
+            || rpk topic create $$t -p 3 -r 1 -c retention.ms=604800000 -X brokers=redpanda:9092
+        done
+
+  # ---- CDC: Kafka Connect + Debezium (ADR 0004) -----------------------------------
+  connect:
+    image: quay.io/debezium/connect:3.6.3.Final
+    profiles: ["cdc"]
+    depends_on:
+      redpanda-init: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+    environment:
+      BOOTSTRAP_SERVERS: redpanda:9092
+      GROUP_ID: ct-connect
+      CONFIG_STORAGE_TOPIC: _connect_configs
+      OFFSET_STORAGE_TOPIC: _connect_offsets
+      STATUS_STORAGE_TOPIC: _connect_status
+      CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      HEAP_OPTS: -Xms256m -Xmx512m
+      # connector configs use $${env:...}, so no credentials live in the JSON file
+      CONNECT_CONFIG_PROVIDERS: env
+      CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
+      POSTGRES_USER: ${POSTGRES_USER:-ct}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ct-local}
+      POSTGRES_DB: ${POSTGRES_DB:-control_tower}
+    ports: ["8083:8083"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/connectors"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    mem_limit: 1g
+
+  connect-init: # idempotent: PUT creates or updates the connector, then waits for RUNNING
+    image: quay.io/debezium/connect:3.6.3.Final
+    profiles: ["cdc"]
+    depends_on:
+      connect: { condition: service_healthy }
+    volumes: ["./connect:/config:ro"]
+    entrypoint: ["/bin/bash", "/config/register.sh"]
 
   # ---- Iceberg catalog ------------------------------------------------------------
   iceberg-rest:
@@ -175,9 +244,14 @@ services:
       GPS_TOPIC: ${GPS_TOPIC:-gps.pings.v1}
       CHECKPOINT_INTERVAL: ${CHECKPOINT_INTERVAL:-30 s}
     volumes: ["../../flink/jobs:/opt/flink/jobs:ro"]
-    entrypoint: ["/opt/flink/bin/submit.sh", "/opt/flink/jobs/bronze_gps.sql", "bronze_gps"]
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - >-
+        /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_gps.sql bronze_gps &&
+        /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_cdc.sql bronze_cdc
 
 volumes:
+  postgres-data:
   s3-data:
   redpanda-data:
   iceberg-catalog:

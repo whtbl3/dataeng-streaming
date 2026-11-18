@@ -1,8 +1,9 @@
 # Rule: `make check` must run exactly what CI runs.
-COMPOSE := docker compose -f infra/local/docker-compose.yml
+PROFILES ?= cdc
+COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -36,14 +37,22 @@ down:
 clean:            # also deletes local data volumes
 	$(COMPOSE) --profile jobs down -v
 
-demo:             # live simulator at dev size (20 vans, 1 ping / 5 s); Ctrl-C to stop
-	uv run python -m simulator --realtime --vans 20 --interval 5
+demo:             # live delivery day at dev size (20 vans, 500 orders/day); Ctrl-C to stop
+	uv run python -m simulator day --realtime --vans 20
 
 e2e:              # needs `make up`
 	uv run pytest -q tests/integration -m "e2e and not restart"
 
 e2e-restart:      # restarts the stack (slow)
 	uv run pytest -q tests/integration -m restart
+
+cdc-status:       # connector + task state, and how far the replication slot lags behind
+	@curl -fsS http://localhost:8083/connectors/ct-orders/status; echo
+	@$(COMPOSE) exec -T postgres psql -U ct -d control_tower -c \
+	  "SELECT slot_name, active, pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn)) AS lag FROM pg_replication_slots"
+
+psql:
+	$(COMPOSE) exec postgres psql -U ct -d control_tower
 
 stack-mem:
 	@docker stats --no-stream --format '{{.Name}}\t{{.MemUsage}}' $$($(COMPOSE) ps -q)

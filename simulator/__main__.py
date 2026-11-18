@@ -1,74 +1,143 @@
-"""CLI: `python -m simulator --vans 20 --interval 5 --minutes 2 [--realtime]`.
+"""Simulator CLI.
 
-Fast mode (default) emits `minutes` worth of history ending now, as fast as possible.
-Realtime mode starts now and sends each ping at its event time (Ctrl-C to stop).
+  python -m simulator day [--vans 20 --orders-per-day 500] [--history-hours 2 | --realtime]
+  python -m simulator seed-sql > infra/local/postgres/init/002_seed.sql
+
+`day` runs the coupled delivery-day simulation: order events go to Postgres (CDC source),
+GPS pings go to Kafka. History mode emits [now - H, now] as fast as possible (order events
+before the window are applied first, without pings, so the database is consistent).
+Realtime mode catches up the orders to now, then sends each event at its time (Ctrl-C stops).
 """
 
 from __future__ import annotations
 
 import argparse
-import math
 import os
 import sys
+import time
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 
-from simulator.fleet import generate_pings
-from simulator.producer import ProducerLike, make_producer, produce_all
+from simulator.day import local_dates, merged_stream, simulate_day
+from simulator.orders_db import ConnectionLike, OrdersWriter, connect
+from simulator.producer import ProducerLike, make_producer, send
+from simulator.world import seed_sql
 
-REALTIME_FOREVER_STEPS = 10**9
-
-
-def steps_for(*, minutes: float, interval_s: int) -> int:
-    return max(1, math.floor(minutes * 60 / interval_s))
+DEFAULT_DSN = "postgresql://ct:ct-local@localhost:15432/control_tower"
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="simulator", description=__doc__)
-    p.add_argument("--vans", type=int, default=int(os.environ.get("SIM_VANS", 20)))
-    p.add_argument("--interval", type=int, default=int(os.environ.get("SIM_PING_SECONDS", 5)))
-    p.add_argument("--minutes", type=float, default=None, help="history/run length")
-    p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--prefix", default="VAN", help="vehicle id prefix (tests use a unique one)")
-    p.add_argument("--realtime", action="store_true")
-    p.add_argument("--topic", default=os.environ.get("GPS_TOPIC", "gps.pings.v1"))
-    p.add_argument("--bootstrap", default=os.environ.get("KAFKA_BOOTSTRAP", "localhost:19092"))
+    p = argparse.ArgumentParser(
+        prog="simulator", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    sub = p.add_subparsers(dest="command", required=True)
+    sub.add_parser("seed-sql", help="print idempotent seed SQL for depots and vans")
+
+    d = sub.add_parser("day", help="run the coupled order + GPS simulation")
+    d.add_argument("--vans", type=int, default=int(os.environ.get("SIM_VANS", 20)))
+    d.add_argument("--orders-per-day", type=int, default=None, help="default: 25 per van")
+    d.add_argument("--interval", type=int, default=int(os.environ.get("SIM_PING_SECONDS", 5)))
+    d.add_argument("--seed", type=int, default=42)
+    d.add_argument("--late-rate", type=float, default=0.10)
+    d.add_argument("--fail-rate", type=float, default=0.02)
+    d.add_argument("--prefix", default="ORD", help="order id prefix (tests use a unique one)")
+    d.add_argument("--vehicle-prefix", default=None, help="rename GPS vehicle ids (tests only)")
+    mode = d.add_mutually_exclusive_group()
+    mode.add_argument("--history-hours", type=float, default=2.0)
+    mode.add_argument("--realtime", action="store_true")
+    d.add_argument("--no-db", action="store_true", help="do not write orders")
+    d.add_argument("--no-gps", action="store_true", help="do not send GPS pings")
+    d.add_argument("--topic", default=os.environ.get("GPS_TOPIC", "gps.pings.v1"))
+    d.add_argument("--bootstrap", default=os.environ.get("KAFKA_BOOTSTRAP", "localhost:19092"))
+    d.add_argument("--dsn", default=os.environ.get("ORDERS_DSN", DEFAULT_DSN))
     return p
+
+
+def _floor(ts: datetime, interval_s: int) -> datetime:
+    epoch = int(ts.timestamp())
+    return datetime.fromtimestamp(epoch - epoch % interval_s, UTC)
+
+
+def run_day(
+    args: argparse.Namespace,
+    producer_factory: Callable[[str], ProducerLike],
+    db_factory: Callable[[str], ConnectionLike],
+    now: datetime | None = None,
+) -> tuple[int, int]:
+    now = _floor(now or datetime.now(UTC), args.interval)
+    if args.realtime:
+        start, end = now, now + timedelta(days=7)
+    else:
+        start, end = now - timedelta(hours=args.history_hours), now
+
+    orders_per_day = args.orders_per_day if args.orders_per_day is not None else 25 * args.vans
+    plans = [
+        simulate_day(
+            seed=args.seed,
+            local_date=d,
+            vans=args.vans,
+            orders_per_day=orders_per_day,
+            late_rate=args.late_rate,
+            fail_rate=args.fail_rate,
+            prefix=args.prefix,
+            interval_s=args.interval,
+        )
+        for d in local_dates(start, end)
+    ]
+    writer = None if args.no_db else OrdersWriter(db_factory(args.dsn))
+    producer = None if args.no_gps else producer_factory(args.bootstrap)
+
+    if writer:  # catch-up: order history before the window, without pings
+        for plan in plans:
+            for event in plan.events:
+                if event.ts < start:
+                    writer.apply(event)
+
+    pings = 0
+    stream = merged_stream(plans, start, end, gps=producer is not None, orders=writer is not None)
+    try:
+        for ts, kind, item in stream:
+            if args.realtime:
+                delay = (ts - datetime.now(UTC)).total_seconds()
+                if delay > 0:
+                    if producer:
+                        producer.flush()
+                    time.sleep(delay)
+            if kind == "order":
+                writer.apply(item)
+            else:
+                if args.vehicle_prefix:
+                    item = type(item)(
+                        f"{args.vehicle_prefix}-{item.vehicle_id.split('-')[-1]}",
+                        *(
+                            getattr(item, f)
+                            for f in ("event_ts", "lat", "lon", "speed_kmh", "heading_deg")
+                        ),
+                    )
+                send(producer, args.topic, item)
+                pings += 1
+    except KeyboardInterrupt:
+        print("stopped", file=sys.stderr)
+    finally:
+        if producer:
+            remaining = producer.flush(30)
+            if remaining:
+                raise RuntimeError(f"{remaining} pings were not delivered")
+    return (writer.changes if writer else 0), pings
 
 
 def main(
     argv: Sequence[str] | None = None,
     producer_factory: Callable[[str], ProducerLike] = make_producer,
+    db_factory: Callable[[str], ConnectionLike] = connect,
+    now: datetime | None = None,
 ) -> int:
     args = build_parser().parse_args(argv)
-    now = datetime.now(UTC).replace(microsecond=0)
-    if args.realtime:
-        steps = (
-            steps_for(minutes=args.minutes, interval_s=args.interval)
-            if args.minutes
-            else REALTIME_FOREVER_STEPS
-        )
-        end_ts = now + timedelta(seconds=args.interval * (steps - 1))
-    else:
-        steps = steps_for(minutes=args.minutes or 2, interval_s=args.interval)
-        end_ts = now
-
-    pings = generate_pings(
-        seed=args.seed,
-        vans=args.vans,
-        interval_s=args.interval,
-        steps=steps,
-        end_ts=end_ts,
-        prefix=args.prefix,
-    )
-    producer = producer_factory(args.bootstrap)
-    try:
-        sent = produce_all(producer, args.topic, pings, realtime=args.realtime)
-    except KeyboardInterrupt:
-        producer.flush(10)
-        print("stopped", file=sys.stderr)
+    if args.command == "seed-sql":
+        print(seed_sql(), end="")
         return 0
-    print(f"produced={sent} topic={args.topic} vans={args.vans} prefix={args.prefix}")
+    changes, pings = run_day(args, producer_factory, db_factory, now)
+    print(f"order_changes={changes} pings={pings} vans={args.vans} prefix={args.prefix}")
     return 0
 
 
