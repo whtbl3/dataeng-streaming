@@ -96,71 +96,82 @@ pre { margin: 0; font: 13px/1.6 var(--f-m); background: var(--sunk); border-radi
 
 /* overview flow */
 .flow { overflow-x: auto; padding-bottom: 4px; }
-.lanes { display: grid; gap: 10px; min-width: 720px; }
-.lane { display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); gap: 8px; align-items: center; }
-.lane > i { font: 600 12px var(--f-b); font-style: normal; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; }
+.lanes { display: grid; gap: 10px; min-width: 760px; }
+.lane { display: grid; grid-template-columns: 120px repeat(4, minmax(0, 1fr)); gap: 8px; align-items: center; }
+.lane > i { font: 600 12px/1.4 var(--f-b); font-style: normal; color: var(--faint); letter-spacing: .04em; text-transform: uppercase; }
+.lane > i small { display: block; text-transform: none; letter-spacing: 0; font-weight: 500; }
 .box { position: relative; border: 1.5px solid var(--accent); background: var(--paper); border-radius: 9px; padding: 6px 10px; font-size: 13.5px; line-height: 1.35; }
 .box small { display: block; font: 12px var(--f-m); color: var(--soft); overflow-wrap: anywhere; }
 .box.plan { border-style: dashed; border-color: var(--plan); color: var(--soft); }
 .box + .box::before { content: "→"; position: absolute; left: -9px; top: 50%; transform: translate(-50%, -50%); color: var(--faint); font-size: 14px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; color: var(--soft); }
 
-.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
-.calc label { display: grid; gap: 4px; font-size: 14px; }
-.calc output { font: 600 14px var(--f-m); }
-input[type="range"] { width: 100%; accent-color: var(--accent); }
-.res { border-radius: 10px; padding: 12px 14px; font-size: 15px; }
-.res.ok { background: var(--ok-bg); } .res.bad { background: var(--bad-bg); }
-.res b.big { font: 700 22px var(--f-d); display: block; }
+/* parts and patterns */
+.part { display: grid; gap: 6px; padding-top: 18px; }
+.part .k { font: 600 12.5px var(--f-b); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
+.part h2 { font-size: 26px; }
+.part p { color: var(--soft); max-width: 68ch; }
+.pn { font: 600 13px var(--f-m); color: var(--accent-ink); background: var(--sunk); border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.hmeta { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+dl.pat { margin: 0; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 10px 16px; max-width: 76ch; }
+dl.pat dt { font: 600 12px/1.9 var(--f-b); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+dl.pat dd { margin: 0; min-width: 0; }
+dl.pat dd ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+@media (max-width: 560px) { dl.pat { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.pat dd { margin-bottom: 8px; } }
 details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--paper); }
 details summary { cursor: pointer; font-weight: 600; }
-details ol { margin: 10px 0 0; padding-left: 1.4em; display: grid; gap: 4px; font-size: 14.5px; }
-details code { font-size: 12.5px; }
+details > * + * { margin-top: 10px; }
+table.wide { min-width: 620px; }
+.ok-t { color: var(--ok); font-weight: 600; } .bad-t { color: var(--bad); font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 </style>
 </head>
 <body>
 
-<header class="top"><div class="in"><b>Control Tower · hiểu thiết kế</b><button class="btn" id="theme" type="button"></button></div></header>
+<header class="top"><div class="in"><b>Delivery Control Tower</b><button class="btn" id="theme" type="button"></button></div></header>
 
 <main class="wrap">
   <div class="intro">
-    <h1>Một đơn hàng đi qua hệ thống như thế nào?</h1>
-    <p>Trang này theo một đơn có thật trong simulator, <code>ORD_001</code>, giao bởi xe <code>VAN-0001</code> sáng 18/11. Mỗi phần trả lời một câu hỏi, có ví dụ nhỏ và một câu cần nhớ.</p>
-    <ol class="toc" id="toc"></ol>
+    <h1>Thiết kế, thực hiện và kiểm chứng một pipeline streaming</h1>
+    <p>Trang này dành cho người học và người xem project (ví dụ người phỏng vấn). Nó đi theo đúng thứ tự project được làm: hiểu nghiệp vụ, rút ra yêu cầu đo được, thiết kế dữ liệu và kiến trúc, giải từng vấn đề bằng một pattern, rồi chứng minh bằng test.</p>
+    <p>Mỗi pattern được trình bày theo khung của sách <i>Data Engineering Design Patterns</i> (Bartosz Konieczny, O'Reilly 2025): <b>Vấn đề → Cách làm → Đánh đổi</b>, thêm phần <b>Kiểm chứng</b> của project này.</p>
+    <div class="legend"><span><span class="st ok">Đã chạy</span> có code trong repo và có test</span><span><span class="st plan">Dự kiến</span> đã thiết kế, sẽ làm ở feature ghi kèm</span></div>
+    <ol class="toc">
+      <li><a href="#a1"><span>A1</span>Bài toán và người dùng</a></li>
+      <li><a href="#a2"><span>A2</span>Yêu cầu đo được</a></li>
+      <li><a href="#a3"><span>A3</span>Dữ liệu nguồn</a></li>
+      <li><a href="#a4"><span>A4</span>Kiến trúc: ba đường đi của dữ liệu</a></li>
+      <li><a href="#b0"><span>B</span>Bản đồ vấn đề → pattern</a></li>
+      <li><a href="#b1"><span>B1</span>Lấy thay đổi của đơn hàng (CDC)</a></li>
+      <li><a href="#b2"><span>B2</span>Giữ hợp đồng dữ liệu (schema)</a></li>
+      <li><a href="#b3"><span>B3</span>Message hỏng không làm dừng job</a></li>
+      <li><a href="#b4"><span>B4</span>Không mất, không ghi trùng khi job chết</a></li>
+      <li><a href="#b5"><span>B5</span>Chia partition cho 100 triệu dòng</a></li>
+      <li><a href="#b6"><span>B6</span>Khử trùng</a></li>
+      <li><a href="#b7"><span>B7</span>Event đến trễ</a></li>
+      <li><a href="#b8"><span>B8</span>Nối vị trí xe với đơn đang giao</a></li>
+      <li><a href="#b9"><span>B9</span>Ghi kết quả ra serving không trùng</a></li>
+      <li><a href="#b10"><span>B10</span>Phát hiện xe dừng bất thường</a></li>
+      <li><a href="#b11"><span>B11</span>KPI sai không được công bố</a></li>
+      <li><a href="#b12"><span>B12</span>Che địa chỉ khách</a></li>
+      <li><a href="#b13"><span>B13</span>Biết khi pipeline có vấn đề</a></li>
+      <li><a href="#c1"><span>C1</span>Kiểm chứng ở những mức nào</a></li>
+      <li><a href="#c2"><span>C2</span>Yêu cầu nào được chứng minh bằng gì</a></li>
+      <li><a href="#d1"><span>D</span>Chạy ở đâu, đang ở bước nào</a></li>
+    </ol>
   </div>
 
-  <section id="q0">
-    <h2><span class="n">0</span>Bức tranh chung</h2>
-    <p class="ans">Có hai luồng dữ liệu: <b>GPS của xe</b> và <b>thay đổi của đơn hàng</b>. Cả hai đi qua Kafka, Flink ghi chúng vào lakehouse. Phần tính ETA, cảnh báo và dashboard đang ở dạng thiết kế.</p>
-    <div class="flow"><div class="lanes">
-      <div class="lane"><i>GPS</i>
-        <div class="box">Simulator<small>200 xe, 5 giây/lần</small></div>
-        <div class="box">Redpanda<small>gps.pings.v1</small></div>
-        <div class="box">Flink<small>job bronze_gps</small></div>
-        <div class="box">Iceberg<small>bronze.gps_pings</small></div></div>
-      <div class="lane"><i>Đơn hàng</i>
-        <div class="box">Postgres<small>bảng orders</small></div>
-        <div class="box">Debezium → Redpanda<small>cdc.public.orders</small></div>
-        <div class="box">Flink<small>job bronze_cdc</small></div>
-        <div class="box">Iceberg<small>bronze.orders_cdc</small></div></div>
-      <div class="lane"><i>Dùng dữ liệu</i>
-        <div class="box">Trino<small>truy vấn SQL bronze</small></div>
-        <div class="box plan">dbt<small>silver → gold (KPI)</small></div>
-        <div class="box plan">Flink ETA + cảnh báo<small>vehicle_latest, order_eta, alerts</small></div>
-        <div class="box plan">Grafana<small>bản đồ, cảnh báo, KPI</small></div></div>
-    </div></div>
-    <div class="legend"><span><span class="st ok">Đã chạy</span> code có trong repo, có test</span><span><span class="st plan">Dự kiến</span> đã thiết kế, chưa code</span></div>
-  </section>
+  <!-- ================= A ================= -->
+  <div class="part"><span class="k">Phần A</span><h2>Thiết kế từ nghiệp vụ</h2><p>Chưa nói tới công cụ. Bắt đầu từ việc người dùng cần quyết định gì, rồi suy ra dữ liệu và độ tươi cần có.</p></div>
 
-  <section id="q1">
-    <h2><span class="n">1</span>Bài toán là gì?</h2>
+  <section id="a1">
+    <h2><span class="n">A1</span>Bài toán và người dùng</h2>
     <p class="ans">GPS của xe và trạng thái đơn nằm ở hai hệ thống riêng, nên không ai biết đơn nào <b>sắp trễ</b>. Theo dõi một đơn qua một buổi sáng để thấy mỗi người dùng cần gì:</p>
     <ol class="story">
       <li class="ev"><span class="t">08:10</span><div class="b">
         <span class="who">VAN-0001 kẹt xe</span>
         <p>Đơn <code>ORD_002</code> đã hứa với khách giao trước <b>08:33</b>.</p>
-        <p class="need">GPS cho biết xe còn cách nhà khách 7 km và đang chỉ chạy 12 km/h. Thời gian còn lại ≈ 7 ÷ 12 giờ = 35 phút, nên <b>ETA</b> (giờ dự kiến tới nơi) là 08:10 + 35 phút = <b>08:45</b>.</p>
+        <p class="need">GPS cho biết xe còn cách nhà khách 7 km, 5 phút gần đây chỉ chạy trung bình 12 km/h. Thời gian còn lại ≈ 7 ÷ 12 giờ = 35 phút, nên <b>ETA</b> (giờ dự kiến tới nơi) là 08:10 + 35 phút = <b>08:45</b>.</p>
         <p class="need">08:45 muộn hơn 08:33 tới 12 phút: đơn này <b>sẽ trễ</b>, dù lúc này chưa trễ.</p>
       </div></li>
       <li><span class="t">08:10</span><div class="b">
@@ -170,189 +181,389 @@ details code { font-size: 12.5px; }
       </div></li>
       <li><span class="t">09:00</span><div class="b">
         <span class="who">Quản lý vận hành</span>
-        <p class="need">Cần: <b>tỉ lệ đúng giờ</b> hôm nay theo kho và tài xế, cập nhật mỗi 5 phút. Nếu <code>ORD_002</code> vẫn trễ, nó kéo số xuống, ví dụ còn 92%.</p>
+        <p class="need">Cần: <b>tỉ lệ đúng giờ</b> hôm nay theo kho và tài xế, cập nhật mỗi 5 phút. Khách đồng ý chờ, xe tới 08:47, nên <code>ORD_002</code> tính là trễ và kéo số xuống.</p>
         <p class="need">Làm: thấy kho nào hay trễ thì điều thêm xe.</p>
       </div></li>
       <li><span class="t">Tuần sau</span><div class="b">
         <span class="who">Data analyst</span>
-        <p class="need">Câu hỏi: <b>ETA có đáng tin không?</b> Lúc 08:10 hệ thống đoán 08:45, thực tế xe tới 08:47: sai 2 phút. Gộp cả tháng thì thấy kho Quận 7 giờ cao điểm sai trung bình 15 phút.</p>
+        <p class="need">Câu hỏi: <b>ETA có đáng tin không?</b> Lúc 08:10 hệ thống đoán 08:45, thực tế 08:47: sai 2 phút. Gộp cả tháng thì thấy kho Quận 7 giờ cao điểm sai trung bình 15 phút.</p>
         <p class="need">Cần: lịch sử GPS và lịch sử đơn của nhiều tuần, sạch, không bị đếm trùng.</p>
-        <p class="need">Làm: đề xuất chỉnh cách tính ETA cho khung giờ đó, để cảnh báo bớt báo sai.</p>
+        <p class="need">Làm: đề xuất chỉnh cách tính ETA cho khung giờ đó, để bớt cảnh báo sai.</p>
       </div></li>
     </ol>
     <p>Hôm nay cả ba đều không có: dispatcher biết trễ khi hạn đã qua, còn KPI có vào sáng hôm sau.</p>
-    <p class="key"><b>Điểm cần nhớ:</b> mỗi người cần một độ tươi khác nhau: vài giây (cảnh báo), vài phút (KPI), lịch sử (SQL). Ba độ tươi này quyết định kiến trúc.</p>
+    <p class="key"><b>Điểm cần nhớ:</b> ba người cần ba độ tươi khác nhau: vài giây (cảnh báo), vài phút (KPI), nhiều tuần lịch sử (phân tích). Ba độ tươi này quyết định kiến trúc ở A4.</p>
   </section>
 
-  <section id="q2">
-    <h2><span class="n">2</span>Dữ liệu đến từ đâu?</h2>
-    <p class="ans">Từ hai hệ thống: <b>thiết bị GPS trên xe</b> gửi vị trí vào Kafka, và <b>database đơn hàng</b> (Postgres, do team khác quản lý) gồm 3 bảng.</p>
+  <section id="a2">
+    <h2><span class="n">A2</span>Yêu cầu đo được</h2>
+    <p class="ans">Câu chuyện ở A1 được viết lại thành con số, để sau này có test chứng minh. Bản đầy đủ ở <code>docs/requirements.md</code>.</p>
+    <div class="tw"><table>
+      <tr><th>Yêu cầu</th><th>Con số</th><th>Đến từ</th></tr>
+      <tr><td>Cảnh báo kịp</td><td>GPS → cảnh báo p95 &lt; 10 giây; phát ≥ 15 phút trước khi trễ; mỗi đơn một lần</td><td>Dispatcher · NFR-1, BR-3</td></tr>
+      <tr><td>Đơn trễ là gì</td><td>Giao sau <code>promised_end</code>. Đơn thất bại tính là không đúng giờ</td><td>Quản lý · BR-1, BR-2</td></tr>
+      <tr><td>KPI tươi</td><td>Số tạm ≤ 5 phút; số chốt sau 01:00, theo ngày giờ Việt Nam</td><td>Quản lý · NFR-1, BR-4</td></tr>
+      <tr><td>KPI đúng</td><td>Event trễ ≤ 2 giờ hoặc bị trùng cho <b>cùng</b> KPI như dữ liệu sạch</td><td>Quản lý, analyst · NFR-2</td></tr>
+      <tr><td>Không mất dữ liệu</td><td>0 event mất. Pipeline dừng thì chạy lại đọc tiếp</td><td>Mọi người · NFR-3, NFR-4</td></tr>
+      <tr><td>Riêng tư</td><td>Tầng gold không có tọa độ nhà khách, chỉ có ô geohash ≈ 150 m</td><td>Pháp lý · NFR-6</td></tr>
+      <tr><td>Khối lượng</td><td>30 ngày ≈ 100 triệu ping GPS; đo throughput có ghi cấu hình máy</td><td>Quy mô · NFR-11</td></tr>
+      <tr><td>Chi phí</td><td>Máy cá nhân $0; mỗi lần demo AWS &lt; $5</td><td>Ngân sách · NFR-9</td></tr>
+    </table></div>
+    <p class="key"><b>Điểm cần nhớ:</b> mỗi dòng ở đây sẽ có một test ở phần C. Yêu cầu không đo được thì không chứng minh được.</p>
+  </section>
+
+  <section id="a3">
+    <h2><span class="n">A3</span>Dữ liệu nguồn</h2>
+    <p class="ans">Từ hai hệ thống: <b>thiết bị GPS trên xe</b> gửi vị trí vào Kafka, và <b>database đơn hàng</b> (Postgres, do team khác quản lý) gồm 3 bảng. <span class="st ok">Đã chạy</span> (simulator sinh cả hai)</p>
     <div class="tw"><table>
       <tr><th>Bảng · một dòng là</th><th>Cột chính</th><th>Thay đổi · lượng</th></tr>
       <tr><td><code>depots</code><br>một kho</td><td class="m">depot_id, name, lat, lon</td><td>gần như không đổi</td></tr>
       <tr><td><code>vans</code><br>một xe</td><td class="m">van_id, depot_id, plate, capacity</td><td>ít đổi · 200 xe</td></tr>
-      <tr><td><code>orders</code><br>một đơn</td><td class="m">order_id, depot_id, van_id, dest_lat/lon, promised_start/end, status, …_at</td><td>UPDATE 4–5 lần/đơn · ~5k đơn/ngày</td></tr>
+      <tr><td><code>orders</code><br>một đơn</td><td class="m">order_id, depot_id, van_id, stop_seq, dest_lat/lon, promised_start/end, status, …_at</td><td>UPDATE 4–5 lần/đơn · ~5k đơn/ngày</td></tr>
       <tr><td><code>gps.pings.v1</code> (Kafka)<br>một vị trí xe</td><td class="m">vehicle_id, event_ts, lat, lon, speed_kmh, heading_deg</td><td>chỉ thêm mới, 5 giây/xe · ~3,5 triệu/ngày</td></tr>
     </table></div>
-    <p><b>Nối với nhau:</b> một kho có nhiều xe và nhiều đơn; mỗi đơn do một xe giao (<code>orders.van_id</code>); ping GPS nối với xe qua <code>vehicle_id = van_id</code>.</p>
-    <p>Một đơn đi qua các trạng thái <code>created → assigned → out_for_delivery → delivered</code> hoặc <code>failed</code>, mỗi bước ghi giờ vào cột <code>…_at</code> tương ứng.</p>
-    <p>Hai nguồn có bản chất khác nhau. <b>GPS là sự kiện</b>: mỗi ping là một dòng mới, không bao giờ sửa. <b>Đơn hàng là trạng thái</b>: cùng một dòng bị UPDATE nhiều lần.</p>
-    <div class="two">
-      <div class="demo"><h3>GPS ping <span class="st ok">Đã chạy</span></h3><div class="tw"><table>
-        <tr><th>vehicle_id</th><th>event_ts</th><th class="num">speed</th></tr>
-        <tr><td class="m">VAN-0001</td><td class="m">08:00:00</td><td class="m num">0</td></tr>
-        <tr><td class="m">VAN-0001</td><td class="m">08:02:05</td><td class="m num">37,5</td></tr>
-        <tr><td class="m">VAN-0001</td><td class="m">08:04:15</td><td class="m num">36,3</td></tr>
-      </table></div></div>
-      <div class="demo"><h3>Bảng orders (Postgres) <span class="st ok">Đã chạy</span></h3><div class="tw"><table>
-        <tr><th>order_id</th><th>van_id</th><th>status</th></tr>
-        <tr class="hl"><td class="m">ORD_001</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td></tr>
-      </table></div><p class="cap">Một dòng duy nhất. Trạng thái cũ bị ghi đè.</p></div>
-    </div>
+    <ul class="pts">
+      <li><b>Nối với nhau:</b> một kho có nhiều xe và nhiều đơn; mỗi đơn do một xe giao (<code>orders.van_id</code>), theo thứ tự <code>stop_seq</code>; ping GPS nối với xe qua <code>vehicle_id = van_id</code>.</li>
+      <li><b>Vòng đời đơn:</b> <code>created → assigned → out_for_delivery → delivered</code> hoặc <code>failed</code>. Mỗi bước ghi giờ vào cột <code>…_at</code>.</li>
+      <li><b>Bản chất khác nhau:</b> GPS là <b>sự kiện</b>, mỗi ping một dòng mới, không sửa. Đơn hàng là <b>trạng thái</b>, cùng một dòng bị UPDATE nhiều lần và giá trị cũ mất.</li>
+    </ul>
     <h3>Vì sao phải giữ lịch sử, không chỉ trạng thái mới nhất?</h3>
-    <p>Mỗi dòng dưới đây là một câu hỏi nghiệp vụ mà nếu chỉ có <b>vị trí xe hiện tại</b> và <b>trạng thái đơn hiện tại</b> thì không trả lời được:</p>
+    <p>Các câu hỏi nghiệp vụ dưới đây không trả lời được nếu chỉ có <b>vị trí xe hiện tại</b> và <b>trạng thái đơn hiện tại</b>:</p>
     <div class="tw"><table>
       <tr><th>Câu hỏi</th><th>Ai hỏi</th><th>Cần lịch sử gì</th></tr>
-      <tr><td>Xe có đang dừng bất thường không? (đứng yên 12 phút, không phải điểm giao)</td><td>Dispatcher</td><td>Chuỗi ping GPS 12 phút gần nhất của xe</td></tr>
-      <tr><td>ETA hôm nay sai bao nhiêu phút? (đoán 08:45, giao 08:47)</td><td>Quản lý, analyst</td><td>ETA đã đoán lúc 08:10 + giờ giao thật</td></tr>
-      <tr><td>Cảnh báo có đúng không, hay báo động giả?</td><td>Quản lý</td><td>Cảnh báo đã phát + kết quả thật của đơn</td></tr>
-      <tr><td>Đơn chuyển từ VAN-0001 sang VAN-0007 lúc 08:12. Trễ tính cho tài xế nào?</td><td>Quản lý</td><td>Mọi lần đổi <code>van_id</code> của đơn</td></tr>
+      <tr><td>Xe đứng yên 12 phút ở chỗ không phải điểm giao, có bất thường không?</td><td>Dispatcher</td><td>Các ping GPS 12 phút gần nhất của xe</td></tr>
+      <tr><td>ETA sai bao nhiêu phút? (đoán 08:45, giao 08:47)</td><td>Quản lý, analyst</td><td>ETA đã đoán lúc 08:10 và giờ giao thật</td></tr>
+      <tr><td>Cảnh báo có đúng không, hay là báo động giả?</td><td>Quản lý</td><td>Cảnh báo đã phát và kết quả thật của đơn</td></tr>
+      <tr><td>Đơn <code>ORD_005</code> chuyển từ VAN-0001 sang VAN-0007 lúc 08:12. Nếu trễ, tính cho tài xế nào?</td><td>Quản lý</td><td>Mọi lần đổi <code>van_id</code> của đơn</td></tr>
       <tr><td>Khách khiếu nại "xe không tới". Lúc 08:40–08:50 xe ở đâu?</td><td>Dispatcher</td><td>Vị trí xe trong khung giờ đó</td></tr>
-      <tr><td>Tính sai KPI vì lỗi code, sửa xong tính lại tháng trước được không?</td><td>Kỹ sư dữ liệu</td><td>Toàn bộ dữ liệu thô, chưa xử lý</td></tr>
+      <tr><td>Code tính KPI bị lỗi. Sửa xong, tính lại tháng trước được không?</td><td>Kỹ sư dữ liệu</td><td>Toàn bộ dữ liệu thô, chưa xử lý</td></tr>
     </table></div>
-    <p class="key"><b>Điểm cần nhớ:</b> GPS là sự kiện nên chỉ cần thêm dòng là có lịch sử. Đơn hàng bị ghi đè (ví dụ <code>van_id</code> đổi thì giá trị cũ mất), nên phải bắt từng thay đổi (phần 3).</p>
+    <p class="key"><b>Điểm cần nhớ:</b> GPS chỉ cần lưu thêm dòng là có lịch sử. Đơn hàng bị ghi đè, nên phải bắt từng thay đổi ngay khi nó xảy ra (B1).</p>
   </section>
 
-  <section id="q3">
-    <h2><span class="n">3</span>Lấy thay đổi của đơn hàng ra bằng cách nào?</h2>
-    <p class="ans">Dùng <b>CDC</b> (Change Data Capture). Debezium đọc nhật ký giao dịch (WAL) của Postgres, và mỗi INSERT/UPDATE thành một message có trạng thái <b>trước</b> và <b>sau</b>.</p>
+  <section id="a4">
+    <h2><span class="n">A4</span>Kiến trúc: ba đường đi của dữ liệu</h2>
+    <p class="ans">Ba độ tươi ở A1 thành ba đường. Cả ba đọc <b>cùng một nguồn</b> là Kafka và các bảng bronze/silver, không có hai bộ code tính cùng một thứ.</p>
+    <div class="flow"><div class="lanes">
+      <div class="lane"><i>Vào<small>chung cho cả ba</small></i>
+        <div class="box">GPS<small>simulator, 200 xe</small></div>
+        <div class="box">Postgres → Debezium<small>CDC đơn hàng</small></div>
+        <div class="box">Kafka (Redpanda)<small>gps.pings.v1, cdc.*</small></div>
+        <div class="box">Flink: decode, kiểm tra<small>lỗi → DLQ</small></div></div>
+      <div class="lane"><i>Đường lịch sử<small>nhiều tuần · analyst</small></i>
+        <div class="box">Iceberg bronze<small>dữ liệu thô, chỉ thêm</small></div>
+        <div class="box plan">Iceberg silver<small>khử trùng, đúng thứ tự</small></div>
+        <div class="box">Trino<small>truy vấn SQL</small></div>
+        <div class="box plan">dựng lại được<small>từ bronze bất cứ lúc nào</small></div></div>
+      <div class="lane"><i>Đường KPI<small>vài phút · quản lý</small></i>
+        <div class="box plan">dbt mỗi 5 phút<small>tính lại 2 giờ gần nhất</small></div>
+        <div class="box plan">dbt 01:00<small>chốt ngày hôm trước</small></div>
+        <div class="box plan">Iceberg gold<small>fct_delivery, agg_depot_daily</small></div>
+        <div class="box plan">Grafana<small>KPI tạm / chốt</small></div></div>
+      <div class="lane"><i>Đường nóng<small>vài giây · dispatcher</small></i>
+        <div class="box plan">Flink: vị trí mới nhất<small>mỗi xe một dòng</small></div>
+        <div class="box plan">Flink: nối với đơn đang giao<small>ETA, cảnh báo (B8)</small></div>
+        <div class="box plan">Postgres serving<small>order_eta, alerts</small></div>
+        <div class="box plan">Grafana<small>bản đồ, cảnh báo</small></div></div>
+    </div></div>
     <div class="tw"><table>
-      <tr><th>Cách</th><th>Vấn đề</th></tr>
-      <tr><td>Polling <code>WHERE updated_at &gt; …</code> mỗi 5 giây</td><td>Bỏ sót khi một dòng đổi 2 lần giữa hai lần đọc; tạo tải lên database</td></tr>
-      <tr><td>Ứng dụng vừa UPDATE vừa gửi Kafka</td><td>Một bên thành công, bên kia lỗi thì hai nơi lệch nhau</td></tr>
-      <tr class="new"><td><b>CDC đọc WAL</b> (đã chọn, ADR 0004)</td><td>Không sửa ứng dụng, không sót thay đổi đã commit</td></tr>
+      <tr><th>Phương án</th><th>Vấn đề</th></tr>
+      <tr><td>Chỉ batch (chạy đêm như hôm nay)</td><td>Không có cảnh báo trước 15 phút</td></tr>
+      <tr><td>Chỉ stream, KPI cũng tính trong Flink</td><td>Event đến trễ sau khi đã tính thì KPI sai; muốn tính lại phải chạy lại cả job</td></tr>
+      <tr><td>Lambda: một code stream, một code batch</td><td>Hai bộ logic tính cùng một việc, dễ lệch nhau</td></tr>
+      <tr class="new"><td><b>Đã chọn:</b> stream cho nhanh, batch cho đúng, trên cùng một log (ADR 0006)</td><td>Cảnh báo có thể lỡ khi event rất trễ, nhưng KPI vẫn đúng vì dbt tính lại</td></tr>
     </table></div>
-    <div class="demo">
-      <div class="h"><b>Thử: các thay đổi của ORD_001</b><div class="row"><button class="btn pri" id="cdcNext" type="button">Thay đổi tiếp theo</button><button class="btn" id="cdcReset" type="button">Làm lại</button></div></div>
-      <div class="two">
-        <div><h3>Câu SQL simulator chạy</h3><pre id="cdcSql"></pre></div>
-        <div><h3>Message CDC Debezium gửi</h3><pre id="cdcMsg"></pre></div>
-      </div>
-      <p class="cap" id="cdcCap"></p>
-    </div>
-    <p class="key"><b>Điểm cần nhớ:</b> database chỉ giữ trạng thái mới nhất, còn CDC giữ <b>mọi lần thay đổi</b>, theo đúng thứ tự commit (<code>source_lsn</code>).</p>
+    <p class="key"><b>Điểm cần nhớ:</b> cảnh báo là <b>dự đoán</b> nên cần nhanh. KPI là <b>sổ sách</b> nên cần đúng. Tách hai việc này là quyết định thiết kế quan trọng nhất.</p>
   </section>
 
-  <section id="q4">
-    <h2><span class="n">4</span>Vì sao cần Kafka (Redpanda) ở giữa?</h2>
-    <p class="ans">Kafka là một <b>cuốn sổ ghi thêm</b>. Bên gửi và bên đọc không cần chạy cùng lúc, và có thể đọc lại từ đầu.</p>
+  <!-- ================= B ================= -->
+  <div class="part"><span class="k">Phần B</span><h2>Thực hiện: mỗi vấn đề một pattern</h2><p>Đi theo dòng dữ liệu, từ nguồn tới người dùng. Mỗi mục nêu vấn đề cụ thể, cách project giải, cái giá phải trả, và cách chứng minh.</p></div>
+
+  <section id="b0">
+    <h2><span class="n">B</span>Bản đồ vấn đề → pattern</h2>
+    <div class="tw"><table>
+      <tr><th>#</th><th>Vấn đề</th><th>Pattern</th><th>Trạng thái</th></tr>
+      <tr><td>B1</td><td>Đơn hàng bị ghi đè, mất lịch sử</td><td class="m">Change Data Capture</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>B2</td><td>Bên gửi đổi schema làm hỏng bên đọc</td><td class="m">Schema Compatibility Enforcer</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>B3</td><td>Một message hỏng làm dừng cả job</td><td class="m">Dead-Letter</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>B4</td><td>Job chết giữa chừng thì mất hoặc trùng</td><td class="m">Checkpointer + Transactional Writer</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>B5</td><td>Truy vấn quét cả 100 triệu dòng</td><td class="m">Horizontal Partitioner</td><td><span class="st ok">Đã chạy</span> một phần</td></tr>
+      <tr><td>B6</td><td>Event bị gửi trùng, đếm hai lần</td><td class="m">Windowed Deduplicator</td><td><span class="st plan">feature 4</span></td></tr>
+      <tr><td>B7</td><td>Event đến trễ, sai thứ tự</td><td class="m">Late Data Detector + Dynamic Late Data Integrator</td><td><span class="st plan">feature 4, 7</span></td></tr>
+      <tr><td>B8</td><td>Nối vị trí xe với đơn đang giao để ra ETA</td><td class="m">Dynamic Joiner</td><td><span class="st plan">feature 6</span></td></tr>
+      <tr><td>B9</td><td>Ghi lại sau sự cố tạo cảnh báo trùng</td><td class="m">Keyed Idempotency</td><td><span class="st plan">feature 6</span></td></tr>
+      <tr><td>B10</td><td>Xe đứng yên lâu ở chỗ lạ</td><td class="m">Stateful Sessionizer</td><td><span class="st plan">feature 6</span></td></tr>
+      <tr><td>B11</td><td>KPI sai bị đưa lên dashboard</td><td class="m">Audit-Write-Audit-Publish</td><td><span class="st plan">feature 7</span></td></tr>
+      <tr><td>B12</td><td>Lộ địa chỉ khách</td><td class="m">Anonymizer</td><td><span class="st plan">feature 7</span></td></tr>
+      <tr><td>B13</td><td>Pipeline chậm hoặc ngừng mà không ai biết</td><td class="m">Lag Detector, Flow Interruption Detector</td><td><span class="st plan">feature 8</span></td></tr>
+    </table></div>
+  </section>
+
+  <section id="b1">
+    <h2><span class="n">B1</span>Lấy thay đổi của đơn hàng</h2>
+    <div class="hmeta"><span class="pn">Change Data Capture</span><span class="st ok">Đã chạy · spec 002</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Bảng <code>orders</code> chỉ giữ trạng thái mới nhất. Đọc định kỳ <code>WHERE updated_at &gt; …</code> sẽ bỏ sót khi một đơn đổi hai lần giữa hai lần đọc, và tạo tải lên database của team khác.</dd>
+      <dt>Cách làm</dt><dd>Debezium đọc nhật ký giao dịch (WAL) của Postgres. Mỗi INSERT/UPDATE đã commit thành một message có <b>trước</b>/<b>sau</b> và vị trí trong log (<code>source_lsn</code>), gửi vào topic <code>cdc.public.orders</code>. Flink ghi nguyên văn vào <code>bronze.orders_cdc</code>. Dữ liệu có sẵn trước khi bật CDC được chụp một lần (snapshot).</dd>
+      <dt>Đánh đổi</dt><dd>Khi connector dừng, Postgres phải giữ WAL chưa đọc (giới hạn 1 GB) nên cần theo dõi. Thứ tự đúng là thứ tự commit (<code>source_lsn</code>), không phải giờ nhận.</dd>
+      <dt>Kiểm chứng</dt><dd><code>test_n_changes_n_rows_in_commit_order</code>: N thay đổi → đúng N dòng, đúng thứ tự commit. <code>test_connector_restart_loses_and_duplicates_nothing</code>: dừng connector, ghi M thay đổi, bật lại → đúng M dòng. <code>make cdc-status</code> cho thấy độ trễ của replication slot.</dd>
+    </dl>
+  </section>
+
+  <section id="b2">
+    <h2><span class="n">B2</span>Giữ hợp đồng dữ liệu</h2>
+    <div class="hmeta"><span class="pn">Schema Compatibility Enforcer</span><span class="st ok">Đã chạy · spec 003</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Bên gửi xóa hoặc đổi tên một trường (ví dụ <code>lat</code>), job Flink đang chạy đọc không được nữa.</dd>
+      <dt>Cách làm</dt><dd>Mọi message là Avro, schema đăng ký ở Schema Registry với chế độ <b>FULL_TRANSITIVE</b>: chỉ được thêm hoặc bỏ trường có giá trị mặc định, kiểm tra với mọi phiên bản trước. Schema GPS nằm trong git và được kiểm tra trong CI trước khi merge.</dd>
+      <dt>Đánh đổi</dt><dd>Thay đổi phá vỡ phải ra topic mới (<code>.v2</code>). Bù lại message nhỏ hơn: một ping 52 byte thay vì 133 byte JSON.</dd>
+      <dt>Kiểm chứng</dt><dd><code>tests/unit/test_compat.py</code> (thêm trường tùy chọn thì qua; xóa, đổi tên, đổi kiểu thì bị chặn). <code>test_v1_and_v2_pings_reach_bronze</code>: producer v1 và v2 cùng vào bronze, job vẫn đọc bằng v1.</dd>
+    </dl>
+  </section>
+
+  <section id="b3">
+    <h2><span class="n">B3</span>Message hỏng không làm dừng job</h2>
+    <div class="hmeta"><span class="pn">Dead-Letter</span><span class="st ok">Đã chạy · spec 003</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Một message không đọc được, hoặc tọa độ nằm ngoài TP.HCM, tốc độ 150 km/h: trước đây làm dừng job, hoặc nếu bỏ qua thì mất dấu.</dd>
+      <dt>Cách làm</dt><dd>Một hàm decode kiểm tra từng message và gắn lý do nếu sai: <code>not_decodable</code>, <code>unknown_schema_id</code>, <code>schema_mismatch</code>, <code>missing_vehicle_id</code>, <code>out_of_bbox</code>, <code>speed_out_of_range</code>, <code>event_ts_in_future</code>. Message tốt vào bronze; message lỗi vào bảng <code>bronze.dlq_events</code> và topic <code>dlq.&lt;topic&gt;</code>, kèm bytes gốc để phát lại sau.</dd>
+      <dt>Đánh đổi</dt><dd>Hàm decode viết bằng Python nên chậm hơn Java; tốc độ cho 100 triệu event sẽ đo ở feature 5. Registry không trả lời <b>không</b> phải message hỏng: job dừng và thử lại, để không đẩy nhầm message tốt vào DLQ.</dd>
+      <dt>Kiểm chứng</dt><dd><code>test_garbage_goes_to_dlq_once_and_job_keeps_running</code>, <code>test_rule_breaks_routed_with_reason</code>. Demo: cố ý sinh 31 event lỗi thuộc 5 loại, <code>make dlq-status</code> đếm đúng 31, khớp từng loại.</dd>
+    </dl>
+  </section>
+
+  <section id="b4">
+    <h2><span class="n">B4</span>Không mất, không ghi trùng khi job chết</h2>
+    <div class="hmeta"><span class="pn">Checkpointer</span><span class="pn">Transactional Writer</span><span class="st ok">Đã chạy · spec 001</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Flink đã ghi một nửa thì chết. Chạy lại từ đầu thì ghi trùng; chạy tiếp từ chỗ đọc cuối thì mất phần chưa ghi.</dd>
+      <dt>Cách làm</dt><dd>Mỗi 30 giây Flink lưu checkpoint: vị trí đã đọc trong Kafka và dữ liệu đang chờ. Iceberg chỉ commit dữ liệu khi checkpoint thành công, nên vị trí đọc và dữ liệu đã ghi luôn khớp nhau (exactly-once). Chết giữa chừng thì quay về checkpoint trước và đọc lại phần chưa commit.</dd>
+      <dt>Đánh đổi</dt><dd>Dữ liệu chỉ hiện ra sau mỗi lần commit, tức chậm tối đa khoảng 30 giây. Bronze cam kết ≤ 60 giây nên chấp nhận được; đường nóng (B8) sẽ ghi upsert thay vì chờ commit.</dd>
+      <dt>Kiểm chứng</dt><dd><code>test_exactly_n_rows</code>: 480 ping vào → đúng 480 dòng. <code>test_freshness_under_60s</code>. <code>test_data_survives_restart</code>: dừng cả stack, bật lại, dữ liệu còn nguyên.</dd>
+    </dl>
+  </section>
+
+  <section id="b5">
+    <h2><span class="n">B5</span>Chia partition cho 100 triệu dòng</h2>
+    <div class="hmeta"><span class="pn">Horizontal Partitioner</span><span class="st ok">Đã chạy</span><span class="st plan">bucket + gộp file: feature 5</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Hầu hết câu hỏi là "hôm nay", "tuần này", "xe này". Không chia thì mỗi truy vấn quét toàn bộ 30 ngày dữ liệu.</dd>
+      <dt>Cách làm</dt><dd><code>bronze.gps_pings</code> chia theo <code>day(event_ts)</code> (ngày xảy ra, không phải ngày nhận); feature 5 thêm <code>bucket(16, vehicle_id)</code>. <code>orders_cdc</code> chia theo ngày commit.</dd>
+      <dt>Đánh đổi</dt><dd>Ghi mỗi 30 giây tạo nhiều file nhỏ, nên cần chạy gộp file định kỳ (feature 5). Event đến trễ rơi vào partition của ngày cũ.</dd>
+      <dt>Kiểm chứng</dt><dd><code>test_bronze_schema_and_partitioning</code>. Feature 5: <code>make bench</code> đo thời gian truy vấn và throughput trên 100 triệu dòng.</dd>
+    </dl>
+  </section>
+
+  <section id="b6">
+    <h2><span class="n">B6</span>Khử trùng</h2>
+    <div class="hmeta"><span class="pn">Windowed Deduplicator</span><span class="st plan">Dự kiến · feature 4</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Thiết bị mất sóng rồi gửi lại cùng ping; CDC đọc lại sau sự cố. Nếu không khử, quãng đường và số đơn bị đếm hai lần.</dd>
+      <dt>Cách làm</dt><dd>Mỗi bảng có <b>khóa khử trùng</b> từ nghiệp vụ, không dùng offset Kafka (offset đổi khi đọc lại). GPS: <code>(vehicle_id, event_ts)</code>. CDC: <code>(order_id, source_lsn, op)</code>. Flink nhớ các khóa đã thấy trong một cửa sổ thời gian; silver ghi bằng MERGE theo khóa nên bản trùng đến muộn hơn cửa sổ cũng không tạo dòng mới.</dd>
+      <dt>Đánh đổi</dt><dd>Cửa sổ càng dài càng tốn bộ nhớ. Bronze vẫn giữ bản trùng, vì bronze là bản ghi nguyên văn.</dd>
+      <dt>Kiểm chứng</dt><dd>Simulator có chế độ cố ý gửi trùng. Test: cùng một ngày, dữ liệu sạch và dữ liệu có 5% trùng cho cùng số dòng silver.</dd>
+    </dl>
+  </section>
+
+  <section id="b7">
+    <h2><span class="n">B7</span>Event đến trễ</h2>
+    <div class="hmeta"><span class="pn">Late Data Detector</span><span class="pn">Dynamic Late Data Integrator</span><span class="st plan">Dự kiến · feature 4, 7</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Ping lúc 08:07 của VAN-0001 tới hệ thống lúc 08:11, sau ping 08:10. Nếu lấy "ping đến sau cùng" làm vị trí hiện tại, xe trên bản đồ nhảy lùi. Nếu KPI đã tính xong thì ping đó bị bỏ sót.</dd>
+      <dt>Cách làm</dt><dd>
+        <ul>
+          <li>Mọi logic dùng <code>event_ts</code> (lúc xảy ra); <code>ingest_ts</code> (lúc nhận) chỉ để đo độ trễ.</li>
+          <li>Flink dùng watermark khoảng 30 giây: chờ event chậm tối đa 30 giây rồi coi thời điểm đó là đủ.</li>
+          <li>Event trễ hơn vẫn được lưu vào silver, nhưng không kích hoạt lại cảnh báo cũ.</li>
+          <li>dbt mỗi 5 phút tính lại 2 giờ gần nhất, nên event trễ dưới 2 giờ được đưa vào KPI ở lần chạy sau.</li>
+          <li>01:00 chốt ngày hôm trước (<code>is_final</code>); event về sau khi chốt được đếm trong <code>closed_days.late_after_close</code>.</li>
+        </ul></dd>
+      <dt>Đánh đổi</dt><dd>Số KPI trong ngày là số <b>tạm</b>, có thể đổi trong 2 giờ; dashboard phải ghi rõ "tạm". Sửa một ngày đã chốt phải làm có chủ đích, có ghi log.</dd>
+      <dt>Kiểm chứng</dt><dd>Test tương đương: cùng một ngày, dữ liệu sạch và dữ liệu có event trễ tới 2 giờ, sai thứ tự, trùng → <b>gold KPI giống hệt</b>.</dd>
+    </dl>
+  </section>
+
+  <section id="b8">
+    <h2><span class="n">B8</span>Nối vị trí xe với đơn đang giao trong Flink</h2>
+    <div class="hmeta"><span class="pn">Dynamic Joiner</span><span class="st plan">Dự kiến · feature 6, thiết kế đề xuất</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>ETA cần hai thứ đến từ hai luồng khác nhau: <b>xe đang ở đâu</b> (GPS, mỗi 5 giây) và <b>xe đang chở đơn nào, giao đi đâu, hạn mấy giờ</b> (CDC, thay đổi vài lần mỗi đơn). Hai luồng không đến cùng lúc, và phía nào thay đổi thì ETA cũng phải tính lại.</dd>
+      <dt>Cách làm</dt><dd>Flink giữ hai "bảng sống" trong bộ nhớ (state) và nối chúng theo mã xe:
+        <ul>
+          <li><b>Vị trí mới nhất</b>: mỗi xe một dòng, chọn ping có <code>event_ts</code> lớn nhất (không phải ping đến sau cùng). Kèm tốc độ trung bình 5 phút gần nhất. Khoảng 200 dòng.</li>
+          <li><b>Đơn đang giao</b>: từ CDC, giữ bản mới nhất của mỗi đơn theo <code>source_lsn</code>, chỉ những đơn có <code>status = 'out_for_delivery'</code>. Vài trăm đến vài nghìn dòng.</li>
+          <li><b>Nối</b> <code>đơn.van_id = xe.vehicle_id</code>. Một xe chở nhiều đơn, nên một ping cập nhật ETA của mọi đơn trên xe đó.</li>
+          <li><b>ETA</b> (bản v1) = giờ của ping + khoảng cách còn lại ÷ tốc độ trung bình + 4 phút cho mỗi điểm giao còn phía trước.</li>
+          <li><b>Cảnh báo</b> SLA_RISK khi ETA vượt hạn ≥ 1 phút; mỗi đơn một lần.</li>
+        </ul></dd>
+    </dl>
+
+    <h3>Ví dụ: hai đơn trên VAN-0001</h3>
+    <p><code>ORD_002</code> (điểm giao 1, hạn 08:33) và <code>ORD_005</code> (điểm giao 2, hạn 09:30). Mỗi dòng là một event Flink nhận được và kết quả nó tạo ra:</p>
+    <div class="tw"><table class="wide">
+      <tr><th>Event</th><th>Flink cập nhật</th><th>Kết quả ra</th></tr>
+      <tr><td><b>CDC</b> 08:00: hai đơn chuyển sang <code>out_for_delivery</code>, xe VAN-0001</td><td>Đơn đang giao: ORD_002→VAN-0001, ORD_005→VAN-0001</td><td>Chờ vị trí xe</td></tr>
+      <tr><td><b>GPS</b> 08:00:00: cách ORD_002 10 km, cách ORD_005 14 km, trung bình 30 km/h</td><td>Vị trí mới nhất VAN-0001 = 08:00:00</td><td>ORD_002: ETA 08:20 <span class="ok-t">kịp</span><br>ORD_005: 14 km ÷ 30 + 4 phút = 08:32 <span class="ok-t">kịp</span></td></tr>
+      <tr><td><b>GPS</b> 08:10:00: kẹt xe, trung bình còn 12 km/h, cách ORD_002 7 km, cách ORD_005 12 km</td><td>Vị trí mới nhất = 08:10:00</td><td>ORD_002: ETA 08:45 <span class="bad-t">trễ 12 phút → cảnh báo SLA_RISK</span><br>ORD_005: ETA 09:14 <span class="ok-t">kịp</span></td></tr>
+      <tr><td><b>GPS</b> 08:10:05: ping tiếp theo</td><td>Vị trí mới nhất = 08:10:05</td><td>ETA cập nhật. Không phát cảnh báo lần hai</td></tr>
+      <tr><td><b>GPS</b> có <code>event_ts</code> 08:07, đến lúc 08:11 (trễ)</td><td>Không đổi: 08:07 cũ hơn 08:10:05</td><td>Không có gì. Ping vẫn được lưu vào silver cho lịch sử</td></tr>
+      <tr><td><b>CDC</b> 08:12: dispatcher chuyển ORD_005 sang VAN-0007</td><td>Đơn đang giao: ORD_005→VAN-0007. Cặp cũ (ORD_005, VAN-0001) bị gỡ</td><td>ORD_005: ETA tính lại từ vị trí VAN-0007 (cách 5 km, 30 km/h) = 08:22 <span class="ok-t">kịp</span></td></tr>
+      <tr><td><b>CDC</b> 08:47: ORD_002 <code>delivered</code></td><td>ORD_002 rời danh sách đang giao</td><td>Dòng ETA của ORD_002 đóng, cảnh báo kết thúc. Sau đó dbt tính: trễ 14 phút, ETA sai 2 phút, cảnh báo đúng và phát sớm 23 phút</td></tr>
+    </table></div>
+
+    <h3>Vì sao chọn cách nối này</h3>
+    <div class="tw"><table>
+      <tr><th>Cách nối</th><th>Vấn đề với bài toán này</th></tr>
+      <tr><td>Mỗi ping truy vấn thẳng Postgres để lấy đơn (lookup join)</td><td>Khoảng 40 truy vấn mỗi giây vào database của team khác. Kết quả phụ thuộc lúc truy vấn, nên chạy lại dữ liệu cũ cho ra kết quả khác</td></tr>
+      <tr><td>Nối ping và thay đổi đơn trong một khoảng thời gian, ví dụ ±10 phút (interval join)</td><td>Đơn sống hàng giờ; lần thay đổi cuối của đơn có thể cách ping rất xa, không có khoảng nào hợp lý</td></tr>
+      <tr><td>Nối mỗi ping với phiên bản của đơn tại giờ ping (temporal join)</td><td>Chỉ chạy khi có ping mới; Flink cũng yêu cầu nối theo khóa chính của bảng đơn (<code>order_id</code>), trong khi ở đây phải nối theo mã xe</td></tr>
+      <tr class="new"><td><b>Đã chọn:</b> nối hai bảng sống theo mã xe (regular join)</td><td>Phía nào đổi cũng tính lại; không gọi database ngoài; trạng thái nhỏ (vài nghìn dòng)</td></tr>
+    </table></div>
+
+    <dl class="pat">
+      <dt>Đánh đổi</dt><dd>
+        <ul>
+          <li>Kết quả là dòng được <b>cập nhật liên tục</b>, không phải chỉ thêm, nên nơi nhận phải ghi đè theo khóa (B9).</li>
+          <li>State phải có thời hạn (TTL, ví dụ 1 ngày) để đơn bị kẹt ở trạng thái mở hoặc xe ngừng gửi GPS không làm bộ nhớ tăng mãi.</li>
+          <li>ETA v1 dùng đường chim bay nên thường đoán sớm hơn thực tế; sai số được đo ở gold (<code>eta_error_t15_min</code>) để cải tiến sau.</li>
+          <li>Sau khi khởi động lại, các ping cũ hơn 10 phút chỉ cập nhật vị trí, không phát cảnh báo (tránh báo động hàng loạt khi xử lý dữ liệu tồn đọng).</li>
+        </ul></dd>
+      <dt>Kiểm chứng</dt><dd>Test dự kiến cho feature 6: kịch bản như bảng trên phát đúng một cảnh báo cho ORD_002, sớm ≥ 15 phút; ping đến trễ không làm xe lùi; đổi xe làm ETA tính lại; đơn đã giao không còn ETA; GPS → cảnh báo p95 &lt; 10 giây.</dd>
+    </dl>
+    <details>
+      <summary>Phác thảo Flink SQL (sẽ chốt ở spec 006)</summary>
+<pre>-- 1. Vị trí mới nhất mỗi xe: chọn theo event_ts, không theo thứ tự đến
+CREATE VIEW vehicle_latest AS
+SELECT vehicle_id, event_ts, lat, lon, avg_speed_kmh FROM (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY vehicle_id ORDER BY event_ts DESC) AS rn
+  FROM gps_with_avg_speed)          -- silver GPS + tốc độ TB 5 phút
+WHERE rn = 1;
+
+-- 2. Đơn đang giao: bản mới nhất của mỗi đơn theo source_lsn
+CREATE VIEW active_orders AS
+SELECT order_id, van_id, stop_seq, dest_lat, dest_lon, promised_end
+FROM orders_latest
+WHERE status = 'out_for_delivery';
+
+-- 3. Nối theo mã xe; Flink tính lại khi một trong hai phía thay đổi
+SELECT o.order_id, v.vehicle_id, v.event_ts AS position_ts,
+       eta_ts(v.event_ts, v.lat, v.lon, o.dest_lat, o.dest_lon,
+              v.avg_speed_kmh, stops_ahead) AS eta,
+       o.promised_end
+FROM active_orders AS o
+JOIN vehicle_latest AS v ON o.van_id = v.vehicle_id;</pre>
+      <p><code>eta_ts</code> và <code>stops_ahead</code> là hàm Python thuần trong <code>flink/udf/</code>, có unit test không cần Flink.</p>
+    </details>
+  </section>
+
+  <section id="b9">
+    <h2><span class="n">B9</span>Ghi kết quả ra serving không trùng</h2>
+    <div class="hmeta"><span class="pn">Keyed Idempotency</span><span class="st plan">Dự kiến · feature 6</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Phép nối ở B8 cập nhật ETA liên tục. Sau sự cố, Flink đọc lại từ checkpoint và gửi lại cùng kết quả; nếu chỉ thêm dòng thì dispatcher thấy hai cảnh báo cho cùng một đơn.</dd>
+      <dt>Cách làm</dt><dd>Mỗi bảng serving có khóa: <code>order_eta</code> theo <code>order_id</code>, <code>vehicle_latest</code> theo <code>van_id</code>, <code>alerts</code> theo <code>alert_id</code> sinh từ đơn và lần phát. Ghi bằng upsert, và chỉ ghi đè khi dữ liệu mới hơn (so <code>event_ts</code>).</dd>
+      <dt>Đánh đổi</dt><dd>Bảng serving chỉ có hiện trạng, không có lịch sử; lịch sử nằm ở silver và gold.</dd>
+      <dt>Kiểm chứng</dt><dd>Test dự kiến: dừng job giữa kịch bản B8, chạy lại → vẫn đúng một cảnh báo cho ORD_002.</dd>
+    </dl>
+  </section>
+
+  <section id="b10">
+    <h2><span class="n">B10</span>Phát hiện xe dừng bất thường</h2>
+    <div class="hmeta"><span class="pn">Stateful Sessionizer</span><span class="st plan">Dự kiến · feature 6</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Xe đứng yên 12 phút ở chỗ không phải điểm giao hay kho: có thể hỏng xe hoặc tài xế bỏ tuyến. Một ping riêng lẻ không cho biết điều này; cần một chuỗi ping.</dd>
+      <dt>Cách làm</dt><dd>Với mỗi xe, các ping liên tiếp có tốc độ gần 0 gom thành một "phiên dừng". Phiên dài quá N phút và cách mọi điểm giao, kho quá 100 m thì phát cảnh báo ABNORMAL_STOP. Thời gian tính theo <code>event_ts</code>.</dd>
+      <dt>Đánh đổi</dt><dd>Chọn N là đánh đổi giữa báo sớm và báo sai; dừng giao hàng bình thường mất 2–6 phút trong simulator.</dd>
+      <dt>Kiểm chứng</dt><dd>Test dự kiến: xe dừng 12 phút ngoài điểm giao → một cảnh báo; dừng 5 phút tại điểm giao → không cảnh báo.</dd>
+    </dl>
+  </section>
+
+  <section id="b11">
+    <h2><span class="n">B11</span>KPI sai không được công bố</h2>
+    <div class="hmeta"><span class="pn">Audit-Write-Audit-Publish</span><span class="st plan">Dự kiến · feature 7</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Một lỗi logic (ví dụ đơn thất bại bị tính là đúng giờ) làm tỉ lệ đúng giờ đẹp hơn thực tế, và quản lý ra quyết định dựa trên số sai.</dd>
+      <dt>Cách làm</dt><dd>dbt kiểm tra dữ liệu vào (nguồn còn tươi không), dựng bảng gold, rồi kiểm tra kết quả: khóa không trùng, không rỗng, đơn <code>failed</code> luôn có <code>is_on_time = false</code>, ngày tính theo giờ Việt Nam. Test hỏng thì bảng mới không được công bố, dashboard giữ số cũ.</dd>
+      <dt>Đánh đổi</dt><dd>Khi test hỏng, số trên dashboard đứng yên cho tới khi sửa; cần cảnh báo để người vận hành biết.</dd>
+      <dt>Kiểm chứng</dt><dd>dbt test chạy trong CI; một dữ liệu mẫu cố ý sai phải làm CI đỏ.</dd>
+    </dl>
+  </section>
+
+  <section id="b12">
+    <h2><span class="n">B12</span>Che địa chỉ khách</h2>
+    <div class="hmeta"><span class="pn">Anonymizer</span><span class="st plan">Dự kiến · feature 7</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd><code>dest_lat</code>, <code>dest_lon</code> là địa chỉ nhà khách, tức dữ liệu cá nhân. Analyst không cần tọa độ chính xác để phân tích theo khu vực.</dd>
+      <dt>Cách làm</dt><dd>Bronze và silver giữ tọa độ nhưng hạn chế quyền đọc. Gold chỉ lưu <code>dest_area</code>, một geohash 7 ký tự (ô khoảng 150 m).</dd>
+      <dt>Đánh đổi</dt><dd>Không phân tích được chính xác tới từng nhà ở gold; ai cần phải xin quyền đọc silver.</dd>
+      <dt>Kiểm chứng</dt><dd>dbt test: không bảng gold nào có cột <code>dest_lat</code> hoặc <code>dest_lon</code>.</dd>
+    </dl>
+  </section>
+
+  <section id="b13">
+    <h2><span class="n">B13</span>Biết khi pipeline có vấn đề</h2>
+    <div class="hmeta"><span class="pn">Lag Detector</span><span class="pn">Flow Interruption Detector</span><span class="st plan">Dự kiến · feature 8</span></div>
+    <dl class="pat">
+      <dt>Vấn đề</dt><dd>Flink chậm dần hoặc simulator ngừng gửi: dashboard vẫn hiện số, chỉ là số cũ, và không ai biết.</dd>
+      <dt>Cách làm</dt><dd>Cảnh báo khi: độ trễ đọc Kafka tăng liên tục quá 5 phút; checkpoint thất bại; replication slot giữ quá 500 MB WAL; bronze không nhận dòng nào trong 2 phút. Hiện đã có <code>make cdc-status</code> và <code>make dlq-status</code> để kiểm tra bằng tay.</dd>
+      <dt>Đánh đổi</dt><dd>Ngưỡng quá chặt thì báo động giả; quá lỏng thì phát hiện muộn.</dd>
+      <dt>Kiểm chứng</dt><dd>Test dự kiến: dừng simulator → cảnh báo "không có dữ liệu" trong 2 phút.</dd>
+    </dl>
+  </section>
+
+  <!-- ================= C ================= -->
+  <div class="part"><span class="k">Phần C</span><h2>Kiểm chứng</h2><p>Mỗi feature đi theo cùng quy trình: spec có tiêu chí chấp nhận dạng Given/When/Then → plan → viết test trước → code → <code>make check</code> và <code>make e2e</code> → PR. Tiêu chí nào cũng có test.</p></div>
+
+  <section id="c1">
+    <h2><span class="n">C1</span>Kiểm chứng ở những mức nào</h2>
+    <div class="tw"><table>
+      <tr><th>Mức</th><th>Chạy bằng</th><th>Kiểm cái gì</th><th>Trạng thái</th></tr>
+      <tr><td>Unit</td><td><code>make check</code>, CI mỗi PR</td><td>Logic Python thuần: decode, luật kiểm tra, simulator. 77 test, dưới 5 giây, không cần Docker</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>Hợp đồng</td><td><code>make check</code></td><td>Schema mới không làm hỏng bên đọc</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>End-to-end</td><td><code>make up</code> rồi <code>make e2e</code></td><td>Dữ liệu thật qua cả stack Docker: đúng N dòng, độ tươi, DLQ, partition</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>Sự cố</td><td><code>make e2e-restart</code></td><td>Dừng và chạy lại không mất, không trùng</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>Tương đương</td><td>Simulator chế độ hỗn loạn</td><td>Dữ liệu trễ, trùng, sai thứ tự cho cùng KPI như dữ liệu sạch</td><td><span class="st plan">feature 4, 7</span></td></tr>
+      <tr><td>Hiệu năng</td><td><code>make bench</code></td><td>Throughput với 100 triệu event, kèm cấu hình máy</td><td><span class="st plan">feature 5</span></td></tr>
+      <tr><td>Độ trễ cảnh báo</td><td>Test feature 6</td><td>GPS → cảnh báo p95 &lt; 10 giây</td><td><span class="st plan">feature 6</span></td></tr>
+    </table></div>
+    <h3>Đã đo được</h3>
     <ul class="pts">
-      <li><b>Giữ 7 ngày:</b> Flink dừng 1 giờ thì chạy lại vẫn đọc tiếp từ chỗ cũ, không mất dữ liệu.</li>
-      <li><b>Nhiều bên đọc:</b> job bronze và (sau này) job ETA đọc cùng một topic.</li>
-      <li><b>Đúng thứ tự cho từng xe:</b> message có key <code>vehicle_id</code>, nên mọi ping của VAN-0001 nằm cùng một partition, theo thứ tự gửi.</li>
+      <li>Một ping vào bronze trong vòng 60 giây (<code>test_freshness_under_60s</code>).</li>
+      <li>480 ping vào → đúng 480 dòng; N thay đổi đơn → đúng N dòng CDC.</li>
+      <li>31 event cố ý lỗi → 31 dòng DLQ, khớp từng loại lỗi.</li>
+      <li>Ping 52 byte (Avro) thay vì 133 byte (JSON).</li>
+      <li>Cả stack dùng 3,97 GiB RAM, dưới giới hạn 6 GB; dựng từ đầu trong khoảng 1 phút 21 giây.</li>
     </ul>
+  </section>
+
+  <section id="c2">
+    <h2><span class="n">C2</span>Yêu cầu nào được chứng minh bằng gì</h2>
     <div class="tw"><table>
-      <tr><th>topic</th><th>key</th><th class="num">offset</th><th>nội dung</th></tr>
-      <tr><td class="m">gps.pings.v1</td><td class="m">VAN-0001</td><td class="m num">4703</td><td class="m">08:02:05, 37,5 km/h</td></tr>
-      <tr><td class="m">cdc.public.orders</td><td class="m">ORD_001</td><td class="m num">381</td><td class="m">out_for_delivery → delivered</td></tr>
+      <tr><th>Câu hỏi</th><th>Yêu cầu</th><th>Bằng chứng</th></tr>
+      <tr><td>Dispatcher có biết đủ nhanh?</td><td>NFR-1, BR-3</td><td>Test độ trễ và kịch bản B8 <span class="st plan">feature 6</span></td></tr>
+      <tr><td>Event trễ hoặc trùng có làm đổi số?</td><td>NFR-2</td><td>Bronze đúng N dòng <span class="st ok">Đã chạy</span>; test tương đương gold <span class="st plan">feature 7</span></td></tr>
+      <tr><td>Đơn thất bại có bị tính là đúng giờ?</td><td>BR-2</td><td>dbt test <span class="st plan">feature 7</span></td></tr>
+      <tr><td>06:30 sáng thuộc ngày nào?</td><td>BR-4</td><td>dbt test với event quanh 00:00 giờ Việt Nam <span class="st plan">feature 7</span></td></tr>
+      <tr><td>Pipeline dừng có mất dữ liệu?</td><td>NFR-3, NFR-4</td><td>Test restart stack và connector <span class="st ok">Đã chạy</span>; test bắt kịp sau restart <span class="st plan">feature 6</span></td></tr>
+      <tr><td>Message hỏng có làm dừng hệ thống?</td><td>DLQ</td><td>Test DLQ e2e <span class="st ok">Đã chạy</span></td></tr>
+      <tr><td>Địa chỉ khách có lộ ra gold?</td><td>NFR-6</td><td>dbt test <span class="st plan">feature 7</span></td></tr>
+      <tr><td>Chịu được 100 triệu event?</td><td>NFR-11</td><td><code>make bench</code> <span class="st plan">feature 5</span></td></tr>
     </table></div>
-    <p class="key"><b>Điểm cần nhớ:</b> offset chỉ là vị trí trong sổ. Nó đổi khi đọc lại, nên <b>không bao giờ dùng offset làm khóa</b>.</p>
-  </section>
-
-  <section id="q5">
-    <h2><span class="n">5</span>Flink ghi vào lakehouse như thế nào?</h2>
-    <p class="ans">Hai job riêng, mỗi job ghi một bảng Iceberg chỉ thêm dòng. Dữ liệu chỉ <b>hiện ra</b> khi Flink chạy checkpoint (mỗi 30 giây) và commit. <span class="st ok">Đã chạy</span></p>
-    <div class="demo">
-      <div class="h"><b>Thử: message → checkpoint → truy vấn</b><div class="row"><button class="btn pri" id="ckSend" type="button">Flink đọc 1 message</button><button class="btn" id="ckRun" type="button">Chạy checkpoint</button><button class="btn" id="ckReset" type="button">Làm lại</button></div></div>
-      <div class="two">
-        <div><h3>Đang chờ commit</h3><div class="tw"><table id="ckPend"></table></div></div>
-        <div><h3>Đã commit vào Iceberg</h3><div class="tw"><table id="ckDone"></table></div></div>
-      </div>
-      <p class="cap" id="ckCap"></p>
-    </div>
-    <p class="key"><b>Điểm cần nhớ:</b> checkpoint + commit cùng nhau cho <b>exactly-once</b>. Job chết giữa chừng thì phần chưa commit được đọc lại, không bị ghi hai lần.</p>
-  </section>
-
-  <section id="q6">
-    <h2><span class="n">6</span>Giữ lịch sử hay chỉ giữ vị trí mới nhất?</h2>
-    <p class="ans">Cả hai, trong <b>hai bảng khác nhau</b>. <code>bronze.gps_pings</code> giữ mọi ping để phân tích. Dispatcher chỉ cần xe đang ở đâu <b>lúc này</b>, nên có thêm bảng <code>vehicle_latest</code>, mỗi xe một dòng.</p>
-    <div class="demo">
-      <div class="h"><b>Thử: VAN-0001 gửi GPS</b><div class="row"><button class="btn pri" id="gpsNext" type="button">GPS tiếp theo</button><button class="btn" id="gpsReset" type="button">Làm lại</button></div></div>
-      <div class="two">
-        <div><h3>bronze.gps_pings · thêm dòng <span class="st ok">Đã chạy</span></h3><div class="tw"><table id="gpsHist"></table></div></div>
-        <div><h3>vehicle_latest · thay dòng <span class="st plan">Dự kiến</span></h3><div class="tw"><table id="gpsLatest"></table></div></div>
-      </div>
-      <p class="cap">Bên trái dài ra sau mỗi lần bấm, bên phải luôn chỉ có một dòng cho VAN-0001.</p>
-    </div>
-    <p class="key"><b>Điểm cần nhớ:</b> bảng lịch sử dùng <b>append</b> (thêm). Bảng trạng thái dùng <b>upsert</b> theo khóa (<code>vehicle_id</code>).</p>
-  </section>
-
-  <section id="q7">
-    <h2><span class="n">7</span>Nếu event đến trễ hoặc bị gửi trùng?</h2>
-    <p class="ans">Mỗi event có hai mốc thời gian: <code>event_ts</code> (lúc xảy ra) và <code>ingest_ts</code> (lúc hệ thống nhận). Logic nghiệp vụ luôn dùng <code>event_ts</code>.</p>
-    <div class="demo">
-      <div class="h"><b>Thử: ping 08:02:05 bị gửi lại, đến sau ping 08:09:05</b>
-        <div class="row" role="group" aria-label="Cách chọn vị trí mới nhất"><button class="btn" id="byIngest" type="button" aria-pressed="false">Lấy ping đến sau cùng</button><button class="btn" id="byEvent" type="button" aria-pressed="true">Lấy event_ts lớn nhất</button></div></div>
-      <div class="tw"><table>
-        <tr><th>thứ tự đến</th><th>event_ts</th><th class="num">cách nhà khách</th></tr>
-        <tr><td class="m">1</td><td class="m">08:04:15</td><td class="m num">34 m</td></tr>
-        <tr id="lateGood"><td class="m">2</td><td class="m">08:09:05</td><td class="m num">6 m</td></tr>
-        <tr id="lateBad"><td class="m">3 (gửi lại)</td><td class="m">08:02:05</td><td class="m num">1.328 m</td></tr>
-      </table></div>
-      <p class="res" id="lateRes"></p>
-    </div>
+    <h3>Còn mở</h3>
     <ul class="pts">
-      <li><b>Trùng:</b> khử bằng khóa. GPS dùng <code>(vehicle_id, event_ts)</code>; CDC dùng <code>(khóa chính, source_lsn, op)</code>.</li>
-      <li><b>Trễ:</b> Flink chờ tối đa 30 giây (watermark). Trễ hơn nữa thì dbt sửa lại KPI ở lần chạy sau (phần 9).</li>
+      <li>Job e2e trên CI chưa chạy được vì thiếu secret Docker Hub; hiện e2e chạy trên máy cá nhân.</li>
+      <li>Tốc độ của hàm decode Python với 100 triệu event chưa đo (feature 5).</li>
+      <li>Thiết kế nối ở B8 là đề xuất; sẽ chốt trong spec 006 sau khi bạn duyệt.</li>
+      <li>Database đơn hàng không ép thứ tự trạng thái; silver phải tự kiểm tra.</li>
     </ul>
-    <p class="key"><b>Điểm cần nhớ:</b> "mới nhất" phải tính theo <b>thời gian xảy ra</b>, không theo thứ tự đến.</p>
   </section>
 
-  <section id="q8">
-    <h2><span class="n">8</span>Bronze, silver, gold khác nhau gì?</h2>
-    <p class="ans">Ba tầng làm sạch dần. Tầng sau luôn dựng lại được từ tầng trước.</p>
+  <!-- ================= D ================= -->
+  <section id="d1">
+    <h2><span class="n">D</span>Chạy ở đâu, đang ở bước nào</h2>
+    <p class="ans">Phát triển trên máy cá nhân với chi phí $0. Khi demo thì dựng bản AWS bằng Terraform rồi xóa ngay (dưới $5 mỗi lần). Khác biệt giữa hai môi trường chỉ nằm trong file cấu hình (ADR 0005).</p>
     <div class="tw"><table>
-      <tr><th>Tầng</th><th>Lưu gì</th><th>ORD_001 trông thế nào</th><th>Trạng thái</th></tr>
-      <tr><td><b>bronze</b></td><td>Dữ liệu thô, đúng như nhận, kể cả bản trùng</td><td>4 dòng CDC: created, assigned, out_for_delivery, delivered</td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td><b>silver</b></td><td>Đã khử trùng, đúng thứ tự</td><td>1 dòng trạng thái mới nhất + 4 dòng lịch sử</td><td><span class="st plan">Dự kiến</span></td></tr>
-      <tr><td><b>gold</b></td><td>Số liệu nghiệp vụ cho KPI</td><td>1 dòng: đúng giờ, giao sớm 87 phút</td><td><span class="st plan">Dự kiến</span></td></tr>
-    </table></div>
-    <p class="key"><b>Điểm cần nhớ:</b> bronze không bao giờ sửa. Sai ở silver/gold thì xóa và dựng lại từ bronze.</p>
-  </section>
-
-  <section id="q9">
-    <h2><span class="n">9</span>Stream và batch chia việc thế nào?</h2>
-    <p class="ans"><b>Stream cho nhanh, batch cho đúng</b> (ADR 0006). Cả hai đọc cùng dữ liệu bronze/silver.</p>
-    <div class="tw"><table>
-      <tr><th>Việc</th><th>Ai làm</th><th>Nhanh cỡ nào</th></tr>
-      <tr><td>Cảnh báo đơn sắp trễ</td><td>Flink, theo từng event</td><td>p95 &lt; 10 giây</td></tr>
-      <tr><td>KPI trong ngày (tạm)</td><td>dbt mỗi 5 phút, tính lại 2 giờ gần nhất</td><td>≤ 5 phút</td></tr>
-      <tr><td>KPI chốt (<code>is_final</code>)</td><td>dbt chạy đêm, 01:00, tính lại cả ngày</td><td>sáng hôm sau</td></tr>
-    </table></div>
-    <p class="key"><b>Điểm cần nhớ:</b> event đến trễ 1 giờ có thể làm cảnh báo lỡ, nhưng <b>không làm sai KPI</b>, vì batch tính lại.</p>
-  </section>
-
-  <section id="q10">
-    <h2><span class="n">10</span>Tính ETA và cảnh báo trễ thế nào? <span class="st plan">Dự kiến</span></h2>
-    <p class="ans">Flink ghép <b>vị trí mới nhất</b> của xe với <b>đơn đang giao</b> của xe đó. ETA bản đầu là công thức đơn giản: khoảng cách ÷ tốc độ, cộng thời gian dừng ở các điểm giao trước. Cảnh báo phát khi ETA vượt hạn giao ≥ 1 phút.</p>
-    <div class="demo">
-      <div class="h"><b>Thử: ORD_001 lúc 08:02:05, hạn giao 09:36</b></div>
-      <div class="calc">
-        <label for="dist">Khoảng cách còn lại: <output id="distO"></output><input type="range" id="dist" min="0.5" max="25" step="0.1" value="1.3"></label>
-        <label for="spd">Tốc độ trung bình: <output id="spdO"></output><input type="range" id="spd" min="5" max="60" step="0.5" value="37.5"></label>
-        <label for="stops">Điểm giao còn trước ORD_001: <output id="stopsO"></output><input type="range" id="stops" min="0" max="12" step="1" value="0"></label>
-      </div>
-      <p class="res" id="etaRes"></p>
-      <p class="cap">Mỗi điểm giao trước tính 4 phút dừng. Thực tế còn tuyến đường và kẹt xe; ML để sau v1.</p>
-    </div>
-    <p class="key"><b>Điểm cần nhớ:</b> kết quả được <b>upsert</b> vào <code>order_eta</code> (mỗi đơn một dòng). Cảnh báo ghi vào <code>alerts</code>, mỗi đơn chỉ một lần.</p>
-  </section>
-
-  <section id="q11">
-    <h2><span class="n">11</span>Chạy ở đâu?</h2>
-    <p class="ans">Phát triển trên laptop với chi phí $0. Khi demo thì dựng bản AWS bằng Terraform rồi xóa ngay (dưới $5 mỗi lần). Khác biệt giữa hai môi trường chỉ nằm trong file cấu hình (ADR 0005).</p>
-    <div class="tw"><table>
-      <tr><th>Việc</th><th>Trên laptop</th><th>Trên AWS</th></tr>
+      <tr><th>Việc</th><th>Trên máy cá nhân</th><th>Trên AWS</th></tr>
       <tr><td>Kafka</td><td>Redpanda</td><td>MSK Serverless</td></tr>
       <tr><td>CDC</td><td>Postgres + Debezium</td><td>RDS PostgreSQL + MSK Connect</td></tr>
       <tr><td>Xử lý stream</td><td>Flink 1.20</td><td>Managed Service for Apache Flink</td></tr>
@@ -360,119 +571,29 @@ details code { font-size: 12.5px; }
       <tr><td>Truy vấn SQL</td><td>Trino</td><td>Athena</td></tr>
       <tr><td>Dashboard</td><td>Grafana</td><td>Grafana trên ECS Fargate</td></tr>
     </table></div>
-  </section>
-
-  <section id="sum">
-    <h2><span class="n">✓</span>Tóm lại: mỗi bảng một việc</h2>
     <div class="tw"><table>
-      <tr><th>Bảng</th><th>Lưu gì</th><th>Cách thay đổi</th><th>Trạng thái</th></tr>
-      <tr><td class="m">orders (Postgres)</td><td>Trạng thái hiện tại của đơn</td><td>INSERT / UPDATE</td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td class="m">bronze.gps_pings</td><td>Mọi ping GPS đã nhận</td><td>Append</td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td class="m">bronze.orders_cdc</td><td>Mọi thay đổi của đơn</td><td>Append</td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td class="m">silver.*</td><td>Bản đã khử trùng</td><td>MERGE theo khóa</td><td><span class="st plan">Dự kiến</span></td></tr>
-      <tr><td class="m">gold.fct_delivery</td><td>Mỗi đơn đã giao: đúng giờ hay trễ</td><td>dbt tính lại</td><td><span class="st plan">Dự kiến</span></td></tr>
-      <tr><td class="m">vehicle_latest</td><td>Vị trí mới nhất mỗi xe</td><td>Upsert</td><td><span class="st plan">Dự kiến</span></td></tr>
-      <tr><td class="m">order_eta, alerts</td><td>ETA và cảnh báo mỗi đơn</td><td>Upsert</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><th>#</th><th>Feature</th><th>Pattern chính</th><th>Trạng thái</th></tr>
+      <tr><td>1</td><td>Khung chạy được: GPS → Kafka → Flink → Iceberg bronze</td><td>B4, B5</td><td><span class="st ok">Xong</span></td></tr>
+      <tr><td>2</td><td>Đơn hàng qua CDC</td><td>B1</td><td><span class="st ok">Xong</span></td></tr>
+      <tr><td>3</td><td>Hợp đồng dữ liệu và DLQ</td><td>B2, B3</td><td><span class="st ok">Xong</span></td></tr>
+      <tr><td>4</td><td>Silver: khử trùng, watermark, simulator hỗn loạn</td><td>B6, B7</td><td><span class="st plan">Tiếp theo</span></td></tr>
+      <tr><td>5</td><td>Quy mô: 100 triệu event, partition, gộp file, benchmark</td><td>B5</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td>6</td><td>Đường nóng: ETA, cảnh báo, serving</td><td>B8, B9, B10</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td>7</td><td>Gold với dbt: KPI tạm và chốt</td><td>B7, B11, B12</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td>8</td><td>Grafana và giám sát pipeline</td><td>B13</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td>9–11</td><td>Chạy trên AWS, Terraform, hoàn thiện</td><td>–</td><td><span class="st plan">Dự kiến</span></td></tr>
     </table></div>
-    <details>
-      <summary>13 điểm cần xem lại trong repo (Design review)</summary>
-      <ol id="drn"></ol>
-    </details>
   </section>
 </main>
 
 <script>
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-/* theme */
-const root = document.documentElement;
+const root = document.documentElement, btn = document.getElementById('theme');
 function curTheme() { return root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
-function paintTheme() { $('theme').textContent = curTheme() === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'; }
+function paintTheme() { btn.textContent = curTheme() === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'; }
 try { const t = localStorage.getItem('ct-theme'); if (t) root.dataset.theme = t; } catch (e) { /* storage blocked */ }
-$('theme').addEventListener('click', () => { const t = curTheme() === 'dark' ? 'light' : 'dark'; root.dataset.theme = t; try { localStorage.setItem('ct-theme', t); } catch (e) { /* storage blocked */ } paintTheme(); });
+btn.addEventListener('click', () => { const t = curTheme() === 'dark' ? 'light' : 'dark'; root.dataset.theme = t; try { localStorage.setItem('ct-theme', t); } catch (e) { /* storage blocked */ } paintTheme(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTheme);
 paintTheme();
-
-/* table of contents from section headings */
-$('toc').innerHTML = [...document.querySelectorAll('section')].map(s => { const h = s.querySelector('h2'); const n = h.querySelector('.n').textContent; const t = [...h.childNodes].filter(x => x.nodeType === 3).map(x => x.textContent).join('').trim(); return `<li><a href="#${s.id}"><span>${n}</span>${esc(t)}</a></li>`; }).join('');
-
-/* 3. CDC: real values from the ORD_001 run (local times, UTC+7) */
-const CDC = [
-  { sql: "INSERT INTO orders (order_id, status, …)\nVALUES ('ORD_001', 'created', …);", op: 'c', b: null, a: 'created', lsn: 27101288, cap: '02:57:55 · đơn được tạo. op = c (create), chưa có trạng thái trước.' },
-  { sql: "UPDATE orders\nSET status = 'assigned', van_id = 'VAN-0001'\nWHERE order_id = 'ORD_001';", op: 'u', b: 'created', a: 'assigned', lsn: 27187680, cap: '07:30:00 · phân công cho VAN-0001.' },
-  { sql: "UPDATE orders\nSET status = 'out_for_delivery'\nWHERE order_id = 'ORD_001';", op: 'u', b: 'assigned', a: 'out_for_delivery', lsn: 27390824, cap: '08:00:00 · xe rời kho cùng 13 đơn.' },
-  { sql: "UPDATE orders\nSET status = 'delivered'\nWHERE order_id = 'ORD_001';", op: 'u', b: 'out_for_delivery', a: 'delivered', lsn: 27586392, cap: '08:09:07 · giao xong, sớm 87 phút so với hạn. Bảng orders giờ chỉ còn "delivered", nhưng CDC đã giữ đủ 4 bước.' },
-];
-let ci = 0;
-function drawCdc() {
-  const e = CDC[ci];
-  $('cdcSql').textContent = e.sql;
-  $('cdcMsg').textContent = `{\n  "op": "${e.op}",\n  "before": ${e.b ? `{ "status": "${e.b}" }` : 'null'},\n  "after":  { "status": "${e.a}" },\n  "source": { "lsn": ${e.lsn} }\n}`;
-  $('cdcCap').textContent = `Thay đổi ${ci + 1}/4 · ${e.cap}`;
-  $('cdcNext').disabled = ci === CDC.length - 1;
-}
-$('cdcNext').addEventListener('click', () => { ci = Math.min(ci + 1, CDC.length - 1); drawCdc(); });
-$('cdcReset').addEventListener('click', () => { ci = 0; drawCdc(); });
-drawCdc();
-
-/* 5. checkpoint */
-const MSG = [['orders_cdc', 'ORD_001 created'], ['orders_cdc', 'ORD_001 assigned'], ['gps_pings', 'VAN-0001 08:00:00'], ['orders_cdc', 'ORD_001 out_for_delivery'], ['gps_pings', 'VAN-0001 08:02:05'], ['gps_pings', 'VAN-0001 08:04:15'], ['gps_pings', 'VAN-0001 08:09:05'], ['orders_cdc', 'ORD_001 delivered']];
-let ckRead = 0, ckDone = 0, ckN = 0;
-function tbl(rows, empty) { return rows.length ? `<tr><th>bảng</th><th>message</th></tr>` + rows.map(([t, m]) => `<tr><td class="m">${t}</td><td class="m">${m}</td></tr>`).join('') : `<tr><td>${empty}</td></tr>`; }
-function drawCk() {
-  $('ckPend').innerHTML = tbl(MSG.slice(ckDone, ckRead), 'Không có');
-  $('ckDone').innerHTML = tbl(MSG.slice(0, ckDone), 'Chưa có dòng nào');
-  $('ckCap').textContent = `Trino đếm được ${ckDone} dòng. ${ckRead > ckDone ? `${ckRead - ckDone} message Flink đã đọc nhưng Trino chưa thấy.` : ''}${ckN ? ` Checkpoint gần nhất: #${ckN}.` : ''}`;
-  $('ckSend').disabled = ckRead === MSG.length; $('ckRun').disabled = ckRead === ckDone;
-}
-$('ckSend').addEventListener('click', () => { ckRead = Math.min(ckRead + 1, MSG.length); drawCk(); });
-$('ckRun').addEventListener('click', () => { ckDone = ckRead; ckN++; drawCk(); });
-$('ckReset').addEventListener('click', () => { ckRead = ckDone = ckN = 0; drawCk(); });
-drawCk();
-
-/* 6. history vs latest (real positions of VAN-0001) */
-const GPS = [['08:00:00', 10.775999, 106.699981], ['08:02:05', 10.783058, 106.691112], ['08:04:15', 10.790442, 106.681952], ['08:09:05', 10.790574, 106.681723]];
-let gi = 0;
-function drawGps() {
-  const head = '<tr><th>vehicle_id</th><th>event_ts</th><th class="num">lat</th><th class="num">lon</th></tr>';
-  const row = (g, cls) => `<tr class="${cls}"><td class="m">VAN-0001</td><td class="m">${g[0]}</td><td class="m num">${g[1].toFixed(4)}</td><td class="m num">${g[2].toFixed(4)}</td></tr>`;
-  $('gpsHist').innerHTML = head + GPS.slice(0, gi + 1).map((g, k) => row(g, k === gi && gi ? 'new' : '')).join('');
-  $('gpsLatest').innerHTML = head + row(GPS[gi], gi ? 'hl' : '');
-  $('gpsNext').disabled = gi === GPS.length - 1;
-}
-$('gpsNext').addEventListener('click', () => { gi = Math.min(gi + 1, GPS.length - 1); drawGps(); });
-$('gpsReset').addEventListener('click', () => { gi = 0; drawGps(); });
-drawGps();
-
-/* 7. late event */
-function drawLate(byEvent) {
-  $('byEvent').setAttribute('aria-pressed', byEvent); $('byIngest').setAttribute('aria-pressed', !byEvent);
-  $('byEvent').classList.toggle('pri', byEvent); $('byIngest').classList.toggle('pri', !byEvent);
-  $('lateGood').className = byEvent ? 'new' : ''; $('lateBad').className = byEvent ? '' : 'bad';
-  const r = $('lateRes'); r.className = 'res ' + (byEvent ? 'ok' : 'bad');
-  r.innerHTML = byEvent ? '<b>Đúng:</b> xe đang ở nhà khách (cách 6 m), vừa giao xong.' : '<b>Sai:</b> dashboard báo xe "lùi" về chỗ cách khách 1,3 km, ngay sau khi đã giao xong.';
-}
-$('byEvent').addEventListener('click', () => drawLate(true));
-$('byIngest').addEventListener('click', () => drawLate(false));
-drawLate(true);
-
-/* 10. ETA */
-const NOW = 8 * 60 + 2 + 5 / 60, DUE = 9 * 60 + 36 + 11 / 60;
-const hhmm = m => { const t = Math.round(m * 60), h = Math.floor(t / 3600) % 24, mi = Math.floor(t / 60) % 60, s = t % 60; return [h, mi, s].map(x => String(x).padStart(2, '0')).join(':'); };
-function drawEta() {
-  const d = +$('dist').value, v = +$('spd').value, n = +$('stops').value;
-  $('distO').textContent = d.toFixed(1).replace('.', ',') + ' km'; $('spdO').textContent = String(v).replace('.', ',') + ' km/h'; $('stopsO').textContent = n;
-  const eta = NOW + d / v * 60 + n * 4, late = eta - DUE, r = $('etaRes');
-  if (late >= 1) { r.className = 'res bad'; r.innerHTML = `<b class="big">ETA ${hhmm(eta)}</b>Trễ ${Math.round(late)} phút so với hạn 09:36. <b>Cảnh báo SLA_RISK phát ngay lúc 08:02:05</b>, sớm ${Math.round(DUE - NOW)} phút trước khi trễ thật.`; }
-  else { r.className = 'res ok'; r.innerHTML = `<b class="big">ETA ${hhmm(eta)}</b>Còn dư ${Math.round(-late)} phút so với hạn 09:36. Không cảnh báo.`; }
-}
-['dist', 'spd', 'stops'].forEach(id => $(id).addEventListener('input', drawEta));
-drawEta();
-
-/* design review notes */
-const DRN = ['Spec có đường DLQ nhưng chưa làm; một message JSON hỏng làm dừng job Flink.', 'Profile Docker Compose khác ADR 0005 (ADR: core/cdc/ui; thực tế: cdc, jobs).', 'ADR 0001/0002/0008 còn ghi "feature 8" là AWS; giờ là feature 10.', 'Job e2e trên CI chưa từng chạy (thiếu secret Docker Hub).', 'requirements.md từng ghi Draft sau khi merge (đã sửa ở PR #5).', 'CLAUDE.md ghi timestamp(3); bronze lưu timestamp(6).', 'LSN không luôn duy nhất: 200 dòng snapshot vans chung một LSN. Khóa khử trùng: (khóa chính, source_lsn, op).', 'Database không ép: xe cùng kho với đơn, thứ tự trạng thái, giao khi ở gần.', 'OLTP không lưu lịch sử phân công; chỉ CDC còn giữ.', 'bronze.orders_cdc chia partition theo ngày commit; KPI phải dùng ngày nghiệp vụ.', 'Ở chế độ history, commit_ts muộn hơn thời gian nghiệp vụ hàng giờ.', 'Khóa (order_id, status) giả định mỗi trạng thái chỉ xảy ra một lần.', 'Topic heartbeat của Debezium được tự tạo; trên MSK phải tạo trước.'];
-$('drn').innerHTML = DRN.map(t => `<li>${esc(t)}</li>`).join('');
 </script>
 </body>
 </html>
