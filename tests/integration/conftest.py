@@ -154,3 +154,43 @@ def compose_services() -> list[dict]:
 def prefix() -> str:
     """Unique vehicle-id prefix so each test only counts its own rows."""
     return f"E2E-{uuid.uuid4().hex[:8]}"
+
+
+def produce_raw(topic: str, key: bytes, value: bytes) -> tuple[int, int]:
+    """Send one message as-is and return its (partition, offset) from the delivery report."""
+    from confluent_kafka import Producer
+
+    out: dict[str, tuple[int, int]] = {}
+
+    def done(err, msg) -> None:
+        if err is None:
+            out["at"] = (msg.partition(), msg.offset())
+
+    p = Producer({"bootstrap.servers": BOOTSTRAP, "acks": "all"})
+    p.produce(topic, key=key, value=value, on_delivery=done)
+    p.flush(10)
+    assert "at" in out, f"message to {topic} was not delivered"
+    return out["at"]
+
+
+def dlq_rows(topic: str, partition: int, offset: int) -> list[tuple]:
+    return query(
+        "SELECT reason, detail, schema_id, raw_value FROM lakehouse.bronze.dlq_events "
+        "WHERE source_topic = ? AND kafka_partition = ? AND kafka_offset = ?",
+        (topic, partition, offset),
+    )
+
+
+def registry_get(path: str):
+    import urllib.request
+
+    with urllib.request.urlopen(f"{REGISTRY}{path}", timeout=5) as r:
+        return json.load(r)
+
+
+def job_states() -> dict[str, str]:
+    import urllib.request
+
+    with urllib.request.urlopen("http://localhost:8081/jobs/overview", timeout=5) as r:
+        jobs = json.load(r)["jobs"]
+    return {j["name"]: j["state"] for j in jobs if j["state"] != "CANCELED"}
