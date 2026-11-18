@@ -8,13 +8,13 @@ import subprocess
 import time
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TypeVar
 
 import pytest
 
-from simulator.fleet import generate_pings
+from simulator.day import local_dates, merged_stream, simulate_day
 from simulator.producer import make_producer, produce_all
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,13 +60,18 @@ def count_prefix(prefix: str) -> int:
 
 
 def produce(prefix: str, *, vans: int, steps: int, interval_s: int = 5, seed: int = 7) -> int:
-    pings = generate_pings(
-        seed=seed,
-        vans=vans,
-        interval_s=interval_s,
-        steps=steps,
-        end_ts=datetime.now(UTC).replace(microsecond=0),
-        prefix=prefix,
+    """Send `vans * steps` GPS pings ending now, with vehicle ids renamed to `prefix-NNNN`."""
+    epoch = int(datetime.now(UTC).timestamp())
+    end = datetime.fromtimestamp(epoch - epoch % interval_s, UTC)
+    start = end - timedelta(seconds=interval_s * (steps - 1))
+    plans = [
+        simulate_day(seed=seed, local_date=d, vans=vans, orders_per_day=0, interval_s=interval_s)
+        for d in local_dates(start, end)
+    ]
+    pings = (
+        type(p)(f"{prefix}-{p.vehicle_id.split('-')[-1]}", p.event_ts, p.lat, p.lon,
+                p.speed_kmh, p.heading_deg)
+        for _, _, p in merged_stream(plans, start, end, orders=False)
     )
     return produce_all(make_producer(BOOTSTRAP), TOPIC, pings)
 

@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Real-time last-mile delivery tracking on a streaming lakehouse (Kafka, Flink, Iceberg, dbt) on AWS."
 readme = "README.md"
 requires-python = ">=3.11,<3.12" # PyFlink supports up to 3.11 (ADR 0002)
-dependencies = ["confluent-kafka>=2.16,<3"]
+dependencies = [
+    "confluent-kafka>=2.16,<3",
+    "psycopg[binary]>=3.3,<4",
+]
 
 [dependency-groups]
 dev = ["ruff>=0.8", "pytest>=8"]

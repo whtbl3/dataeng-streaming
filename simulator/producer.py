@@ -37,6 +37,17 @@ def make_producer(bootstrap: str) -> ProducerLike:
     )
 
 
+def send(producer: ProducerLike, topic: str, ping: Ping) -> None:
+    key, value = encode(ping)
+    while True:
+        try:
+            producer.produce(topic, key=key, value=value)
+            break
+        except BufferError:  # local queue full: let deliveries drain, then retry
+            producer.poll(0.5)
+    producer.poll(0)
+
+
 def produce_all(
     producer: ProducerLike,
     topic: str,
@@ -52,14 +63,7 @@ def produce_all(
             if delay > 0:
                 producer.flush()
                 time.sleep(delay)
-        key, value = encode(ping)
-        while True:
-            try:
-                producer.produce(topic, key=key, value=value)
-                break
-            except BufferError:  # local queue full: let deliveries drain, then retry
-                producer.poll(0.5)
-        producer.poll(0)
+        send(producer, topic, ping)
         sent += 1
     remaining = producer.flush(30)
     if remaining:
