@@ -5,7 +5,7 @@ Items marked *(cut if late)* can move to "Stretch" without breaking the story.
 
 | # | Week | Feature | Status | Spec |
 |---|---|---|---|---|
-| 1 | 1 | Walking skeleton: simulator → Redpanda `gps.pings.v1` → Flink → Iceberg bronze on MinIO → query in Trino; one test; `make up` / `make check`; CI | Planned | — |
+| 1 | 1 | Walking skeleton: simulator → Redpanda `gps.pings.v1` → Flink → Iceberg bronze on MinIO → query in Trino; one test; `make up` / `make check`; CI | In spec | [001](../specs/001-walking-skeleton/spec.md) |
 | 2 | 2 | Order domain: Postgres schema + seed (depots, vans), order simulator, Debezium CDC → Kafka → bronze | Planned | — |
 | 3 | 2 | Data contracts: Avro schemas + Schema Registry (BACKWARD), invalid events → DLQ | Planned | — |
 | 4 | 3 | Silver: dedup + event-time watermarks; simulator chaos mode (late, out-of-order, duplicate events); tests | Planned | — |
