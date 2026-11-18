@@ -18,12 +18,69 @@ from simulator.day import local_dates, merged_stream, simulate_day
 from simulator.producer import make_producer, produce_all
 
 ROOT = Path(__file__).resolve().parents[2]
-COMPOSE = ["docker", "compose", "-f", str(ROOT / "infra/local/docker-compose.yml")]
+PROFILES = os.environ.get("PROFILES", "cdc").split()
+COMPOSE = [
+    "docker",
+    "compose",
+    "-f",
+    str(ROOT / "infra/local/docker-compose.yml"),
+    *[arg for p in PROFILES for arg in ("--profile", p)],
+]
 TOPIC = os.environ.get("GPS_TOPIC", "gps.pings.v1")
 BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:19092")
 TABLE = "lakehouse.bronze.gps_pings"
+CONNECT_URL = "http://localhost:8083"
+ORDERS_DSN = os.environ.get("ORDERS_DSN", "postgresql://ct:ct-local@localhost:15432/control_tower")
 
 T = TypeVar("T")
+
+
+def pg_query(sql: str, params: tuple = ()) -> list[tuple]:
+    import psycopg
+
+    with psycopg.connect(ORDERS_DSN) as conn:
+        return conn.execute(sql, params).fetchall()
+
+
+def connector_status() -> dict:
+    import urllib.request
+
+    with urllib.request.urlopen(f"{CONNECT_URL}/connectors/ct-orders/status", timeout=5) as r:
+        return json.load(r)
+
+
+def connector_running() -> bool:
+    try:
+        s = connector_status()
+    except OSError:
+        return False
+    return s["connector"]["state"] == "RUNNING" and [t["state"] for t in s["tasks"]] == ["RUNNING"]
+
+
+def run_orders_sim(prefix: str, *, vans: int = 4, orders_per_day: int = 20, hours: float = 24):
+    """Run the day simulator (orders only) for [now - hours, now]; return DB changes made."""
+    from simulator.__main__ import build_parser, run_day
+    from simulator.orders_db import connect
+    from simulator.producer import make_producer as _mp
+
+    args = build_parser().parse_args(
+        [
+            "day",
+            "--vans",
+            str(vans),
+            "--orders-per-day",
+            str(orders_per_day),
+            "--history-hours",
+            str(hours),
+            "--prefix",
+            prefix,
+            "--no-gps",
+            "--dsn",
+            ORDERS_DSN,
+        ]
+    )
+    changes, _ = run_day(args, _mp, connect)
+    return changes
 
 
 def compose(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
