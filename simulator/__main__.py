@@ -23,7 +23,7 @@ from simulator.orders_db import ConnectionLike, OrdersWriter, connect
 from simulator.producer import ProducerLike, make_producer, send
 from simulator.world import seed_sql
 
-DEFAULT_DSN = "postgresql://ct:ct-local@localhost:5432/control_tower"
+DEFAULT_DSN = "postgresql://ct:ct-local@localhost:15432/control_tower"
 
 
 def build_parser() -> argparse.ArgumentParser:

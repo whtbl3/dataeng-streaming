@@ -1,24 +1,6 @@
 -- bronze_gps: raw GPS pings from Kafka → Iceberg bronze (append-only, exactly-once).
--- ${VARS} are filled from env by submit.sh, so the same SQL runs locally and on AWS.
-
+-- Catalog and checkpointing come from _init_catalog.sql.
 SET 'pipeline.name' = 'bronze_gps';
-SET 'execution.runtime-mode' = 'streaming';
-SET 'execution.checkpointing.interval' = '${CHECKPOINT_INTERVAL}';
-SET 'execution.checkpointing.mode' = 'EXACTLY_ONCE';
-SET 'table.local-time-zone' = 'UTC';
-
-CREATE CATALOG lakehouse WITH (
-  'type' = 'iceberg',
-  'catalog-type' = 'rest',
-  'uri' = '${ICEBERG_CATALOG_URI}',
-  'warehouse' = '${WAREHOUSE}',
-  'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
-  's3.endpoint' = '${S3_ENDPOINT}',
-  's3.path-style-access' = 'true',
-  's3.access-key-id' = '${S3_ACCESS_KEY}',
-  's3.secret-access-key' = '${S3_SECRET_KEY}',
-  'client.region' = '${AWS_REGION}'
-);
 
 CREATE TEMPORARY TABLE gps_pings_source (
   vehicle_id      STRING,

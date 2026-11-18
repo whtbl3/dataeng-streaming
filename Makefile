@@ -1,8 +1,9 @@
 # Rule: `make check` must run exactly what CI runs.
-COMPOSE := docker compose -f infra/local/docker-compose.yml
+PROFILES ?= cdc
+COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -44,6 +45,9 @@ e2e:              # needs `make up`
 
 e2e-restart:      # restarts the stack (slow)
 	uv run pytest -q tests/integration -m restart
+
+psql:
+	$(COMPOSE) exec postgres psql -U ct -d control_tower
 
 stack-mem:
 	@docker stats --no-stream --format '{{.Name}}\t{{.MemUsage}}' $$($(COMPOSE) ps -q)

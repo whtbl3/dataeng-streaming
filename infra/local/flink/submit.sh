@@ -21,14 +21,21 @@ if job_running; then
   exit 0
 fi
 
-RENDERED="/tmp/$(basename "$SQL_FILE")"
-envsubst < "$SQL_FILE" > "$RENDERED"
-if grep -n '\${' "$RENDERED"; then
-  echo "unrendered variables left in $SQL_FILE" >&2
-  exit 1
-fi
+INIT_FILE="$(dirname "$SQL_FILE")/_init_catalog.sql"
+render() {
+  local out="/tmp/$(basename "$1")"
+  envsubst < "$1" > "$out"
+  if grep -n '\${' "$out"; then
+    echo "unrendered variables left in $1" >&2
+    exit 1
+  fi
+  echo "$out"
+}
+RENDERED_INIT="$(render "$INIT_FILE")"
+RENDERED="$(render "$SQL_FILE")"
 
-/opt/flink/bin/sql-client.sh -Drest.address="${FLINK_JOBMANAGER_HOST:-jobmanager}" -f "$RENDERED"
+/opt/flink/bin/sql-client.sh -Drest.address="${FLINK_JOBMANAGER_HOST:-jobmanager}" \
+  -i "$RENDERED_INIT" -f "$RENDERED"
 
 for _ in $(seq 1 30); do
   if job_running; then

@@ -5,9 +5,9 @@
 - [x] T2: failing tests for `day.py` (AC2, AC3, AC4, re-targeted 001 GPS properties)
 - [x] T3: implement `day.py` until T2 passes; remove the random walk
 - [x] T4: `orders_db.py` + CLI subcommands with fake-cursor tests; `make check` green
-- [ ] T5: compose Postgres (schema, seed, logical WAL); healthy; `make psql`
-- [ ] T6: compose Connect + connector registration + CDC topics; snapshot visible in Kafka
-- [ ] T7: bronze CDC DDL + Flink `bronze_cdc` job (submit handles 2 jobs, slots = 4); rows in Trino
+- [x] T5: compose Postgres (schema, seed, logical WAL); healthy; `make psql`
+- [x] T6: compose Connect + connector registration + CDC topics; snapshot visible in Kafka
+- [x] T7: bronze CDC DDL + Flink `bronze_cdc` job (submit handles 2 jobs, slots = 4); rows in Trino
 - [ ] T8: e2e AC1, AC5, AC6, AC9
 - [ ] T9: e2e AC7 (connector restart) + `make cdc-status` + AC8 test
 - [ ] T10: CI e2e (clean → no volume), `.env.example`, README, project-spec, roadmap
