@@ -4,9 +4,9 @@
 |---|---|---|---|---|
 | Language | Python 3.11 (uv) | — | PyFlink supports up to 3.11; one language across simulator, jobs and tests | Java/Scala Flink (more boilerplate) |
 | Message bus | Redpanda (Kafka API) | Amazon MSK Serverless | Most transferable skill; same client code everywhere (ADR 0001) | Kinesis Data Streams |
-| Schemas | Avro + Redpanda Schema Registry | AWS Glue Schema Registry | Data contracts, compatibility checks (ADR 0008) | JSON + JSON Schema in CI |
+| Schemas | Avro + Redpanda Schema Registry (FULL_TRANSITIVE), `fastavro` 1.13.1, Confluent Avro converter 8.4.0 for Debezium | AWS Glue Schema Registry | Data contracts, compatibility checks in the registry and in CI (ADR 0008) | JSON + JSON Schema in CI |
 | CDC | Postgres 16 + Debezium (Kafka Connect) | RDS PostgreSQL + MSK Connect | Realistic OLTP → stream pattern (ADR 0004) | DMS; app writes to Kafka directly |
-| Stream processing | Apache Flink 1.20 (Flink SQL + PyFlink) | Managed Service for Apache Flink | Event time, watermarks, state, exactly-once (ADR 0002) | Spark Structured Streaming; plain consumers |
+| Stream processing | Apache Flink 1.20 (Flink SQL + PyFlink 1.20.5 UDFs for decode/validation, ADR 0010) | Managed Service for Apache Flink | Event time, watermarks, state, exactly-once (ADR 0002) | Spark Structured Streaming; plain consumers |
 | Object storage | MinIO `RELEASE.2025-09-07` via Docker Hardened Images (`dhi.io`) | Amazon S3 | S3-compatible API; upstream stopped publishing images in 2025, DHI is maintained by Docker | SeaweedFS, RustFS, Bitnami legacy image |
 | Table format | Apache Iceberg | Iceberg on S3 | Native in Athena, Flink, Trino; ACID + time travel (ADR 0003) | Delta Lake, Hudi |
 | Catalog | Iceberg REST catalog | AWS Glue Data Catalog | Swap by config only | Nessie, Hive Metastore |
@@ -27,7 +27,8 @@
 simulator/          Python package: fleet + order generators (HCMC bounding box)
 flink/jobs/         Flink SQL jobs (*.sql) + PyFlink entrypoints
 flink/udf/          Python UDFs (e.g. haversine, ETA) — pure functions, unit tested
-schemas/            Avro schemas = data contracts (versioned: *.v1.avsc)
+schemas/            Avro schemas = data contracts: schemas/<subject>/v1.avsc, v2.avsc, ...
+contracts/          wire format, registry client, rules, decoders, PyFlink UDFs (spec 003)
 dbt/                dbt project: staging (silver) → marts (gold)
 infra/local/        docker-compose.yml + service configs
 infra/aws/          Terraform modules for the managed env (network, msk, flink, rds, s3_glue, ecs)

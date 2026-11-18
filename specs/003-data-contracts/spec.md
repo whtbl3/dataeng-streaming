@@ -1,5 +1,5 @@
 # Spec 003: Data contracts (Avro + Schema Registry, invalid events → DLQ)
-Status: Approved (2026-11-18) · Intent: roadmap item 3 · Author: project owner + Claude
+Status: Implemented (2026-11-18) · Intent: roadmap item 3 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -11,7 +11,7 @@ A GPS ping with an impossible position or a missing vehicle id is stored like an
 
 ## Outcome
 - Every event on the GPS and CDC topics has a registered schema.
-- The registry rejects changes that would break existing consumers (BACKWARD compatibility), and CI catches them before merge.
+- The registry rejects changes that would break existing consumers (FULL_TRANSITIVE compatibility, see plan decision 1), and CI catches them before merge.
 - Events that cannot be read, or that break a basic rule, go to a dead-letter queue with the reason. The good events keep flowing.
 - Bronze keeps the same tables and columns as today.
 
@@ -21,7 +21,7 @@ A GPS ping with an impossible position or a missing vehicle id is stored like an
 - **Interviewer:** sees schema evolution, compatibility rules and a DLQ that keeps the pipeline alive.
 
 ## Acceptance criteria
-- [ ] AC1: Given a fresh stack, when it starts, then the GPS and CDC subjects are registered with BACKWARD compatibility, and the GPS producer and the CDC connector write registry-encoded messages.
+- [ ] AC1: Given a fresh stack, when it starts, then the GPS and CDC subjects are registered with FULL_TRANSITIVE compatibility, and the GPS producer and the CDC connector write registry-encoded messages.
 - [ ] AC2: Given the stack is running, when N valid pings and M order changes are produced, then bronze contains exactly N and M new rows with the same columns and values as before this feature (spec 001 AC3/AC5, spec 002 AC5 still pass).
 - [ ] AC3: Given the stack is running, when a message that is not decodable is produced to a source topic, then the bronze job keeps running, the message appears once in the dead-letter queue with its raw bytes, source topic, partition, offset and the reason, and the next valid messages still reach bronze.
 - [ ] AC4: Given the stack is running, when pings break a validation rule (missing vehicle id, position outside the city bounding box, speed outside 0–80 km/h, event time more than 5 minutes in the future), then each is routed to the dead-letter queue with a rule-specific reason and is not written to bronze.

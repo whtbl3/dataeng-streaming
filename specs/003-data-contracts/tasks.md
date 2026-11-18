@@ -9,5 +9,5 @@
 - [x] T6: registration in `redpanda-init`, DLQ topics + table, `bronze_gps` rewrite; 001 e2e green
 - [x] T7: Connect image + Avro converter; capture the CDC fixture; tests, then `decode_cdc`; `bronze_cdc` rewrite; 002 e2e green
 - [x] T8: e2e AC1, AC3, AC4, AC6, AC8 + `make dlq-status`; AC9 memory
-- [ ] T9: ADR 0010, ADR 0008 and spec AC1 update, project-spec, tech-stack, README, roadmap
-- [ ] T10: `make check` + `make e2e` + `make e2e-restart` green; spec Implemented; PR
+- [x] T9: ADR 0010, ADR 0008 and spec AC1 update, project-spec, tech-stack, README, roadmap
+- [x] T10: `make check` + `make e2e` + `make e2e-restart` green; spec Implemented; PR
