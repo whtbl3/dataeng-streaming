@@ -65,6 +65,7 @@ events therefore cannot skew the final numbers.
 ## 5. Interfaces
 - **Kafka topics:** `gps.pings.v1`, `cdc.public.orders`, `alerts.v1`, `dlq.*`. Avro schemas live in `schemas/`, and Schema Registry enforces BACKWARD compatibility.
 - **Lakehouse:** Iceberg namespaces `bronze`, `silver`, `gold`, queried with SQL (Trino locally, Athena on AWS).
+  - `bronze.gps_pings` (spec 001): raw ping fields + `ingest_ts` (Kafka record time) + `kafka_partition`/`kafka_offset`; partitioned by `day(event_ts)`; written by Flink job `bronze_gps` (exactly-once, commit every 30 s checkpoint).
 - **Serving DB:** Postgres schema `serving` (read by Grafana).
 - **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make backfill DAYS=N`, `make bench`, `make down`; `make aws-up|aws-down` (managed).
 

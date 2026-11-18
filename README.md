@@ -28,18 +28,28 @@ See [ADR 0006](docs/decisions/0006-stream-freshness-batch-correctness.md).
 | Event log | Redpanda | Amazon MSK Serverless |
 | CDC | Debezium on Kafka Connect | MSK Connect + RDS PostgreSQL |
 | Stream processing | Apache Flink | Managed Service for Apache Flink |
-| Lakehouse | Iceberg on MinIO + REST catalog | Iceberg on S3 + Glue Data Catalog |
+| Lakehouse | Iceberg on MinIO (S3 API) + REST catalog | Iceberg on S3 + Glue Data Catalog |
 | SQL / transforms | Trino + dbt | Athena + dbt |
 | Dashboards | Grafana + Prometheus | Grafana on ECS + CloudWatch |
 
 ## Quick start
+Prerequisites: Docker with ~6 GB free RAM, [uv](https://docs.astral.sh/uv/), and a free
+Docker Hub account for the hardened MinIO image (`docker login dhi.io`, once).
 ```bash
 make install                  # Python 3.11 + dev tools
 make check                    # lint + unit tests (same as CI)
-make up && make demo          # full stack + live simulator
-make backfill DAYS=30         # ~100M events
-make bench                    # throughput report
+make up                       # core stack + Flink job (~30 s with images cached)
+make demo                     # live simulator, 20 vans (Ctrl-C to stop)
+make e2e                      # acceptance tests against the running stack
+make backfill DAYS=30         # ~100M events      (roadmap feature 5)
+make bench                    # throughput report (roadmap feature 5)
 ```
+Query the bronze table:
+```bash
+docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
+  "SELECT count(*), max(event_ts) FROM lakehouse.bronze.gps_pings"
+```
+UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001
 
 ## Docs
 - [Intent](docs/intent.md) · [Project spec](docs/project-spec.md) · [Tech stack](docs/tech-stack.md)

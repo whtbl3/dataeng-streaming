@@ -88,3 +88,13 @@ code on branch `feat/001-walking-skeleton`. On approval, this plan is saved as
 - `make check`: lint + unit tests, no Docker (this is what CI runs).
 - `make up` (timed) → `make e2e` → `make e2e-restart` → `make stack-mem`.
 - Manual check: `make demo` for 2 minutes, then in Trino `SELECT count(*), max(event_ts) FROM lakehouse.bronze.gps_pings`. The Flink UI on :8081 shows `bronze_gps` RUNNING with checkpoints completing.
+
+## Departures from the plan (recorded during build)
+- `make up` = `docker compose up -d` + `docker compose run --rm flink-submit` instead of `up --wait`:
+  `--wait` fails on one-shot init containers that nothing depends on. `run` waits for every
+  `depends_on` condition (healthy / completed) and returns the submit's exit code.
+  `flink-submit` lives in compose profile `jobs`.
+- No custom Trino `jvm.config`: the image default sizes the heap to 80% of `mem_limit`.
+- Iceberg REST catalog DB lives at `/home/iceberg/catalog.db` (a directory the non-root image user owns).
+- Measured (2026-11-18, laptop, WSL 10 GB / 8 vCPU): cold `make up` with images cached 32 s;
+  stack memory ≈ 2.4 GiB (Trino 1.15 GiB); e2e suite 5 passed; restart test passed.
