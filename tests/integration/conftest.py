@@ -69,8 +69,14 @@ def produce(prefix: str, *, vans: int, steps: int, interval_s: int = 5, seed: in
         for d in local_dates(start, end)
     ]
     pings = (
-        type(p)(f"{prefix}-{p.vehicle_id.split('-')[-1]}", p.event_ts, p.lat, p.lon,
-                p.speed_kmh, p.heading_deg)
+        type(p)(
+            f"{prefix}-{p.vehicle_id.split('-')[-1]}",
+            p.event_ts,
+            p.lat,
+            p.lon,
+            p.speed_kmh,
+            p.heading_deg,
+        )
         for _, _, p in merged_stream(plans, start, end, orders=False)
     )
     return produce_all(make_producer(BOOTSTRAP), TOPIC, pings)
