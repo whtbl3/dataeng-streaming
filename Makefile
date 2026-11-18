@@ -21,6 +21,7 @@ lint:
 
 test:
 	bash scripts/test_hooks.sh
+	uv run python -m contracts.compat schemas/
 	uv run pytest -q tests/unit
 
 check: lint test

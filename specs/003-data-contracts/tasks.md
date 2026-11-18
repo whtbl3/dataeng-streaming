@@ -1,8 +1,8 @@
 # Tasks 003: Data contracts
 
 <!-- Small, independently testable. Test first. Tick as you go. -->
-- [ ] T1: tests, then `contracts/bounds`, `wire`, `validate` (simulator imports bounds)
-- [ ] T2: tests, then `contracts/compat` + schemas v1/v2 + the `make check` step
+- [x] T1: tests, then `contracts/bounds`, `wire`, `validate` (simulator imports bounds)
+- [x] T2: tests, then `contracts/compat` + schemas v1/v2 + the `make check` step
 - [ ] T3: tests, then `contracts/registry` + `decode_gps` (fake registry)
 - [ ] T4: tests, then producer Avro encoding + `--invalid-rate` injection; `make check` green
 - [ ] T5: Flink image with PyFlink + UDF smoke test + `EXPLAIN` sub-plan check
