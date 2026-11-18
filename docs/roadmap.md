@@ -6,7 +6,7 @@ Items marked *(cut if late)* can move to "Stretch" without breaking the story.
 | # | Week | Feature | Status | Spec |
 |---|---|---|---|---|
 | 1 | 1 | Walking skeleton: simulator → Redpanda `gps.pings.v1` → Flink → Iceberg bronze on MinIO → query in Trino; one test; `make up` / `make check`; CI | Implemented | [001](../specs/001-walking-skeleton/spec.md) |
-| 2 | 2 | Order domain: Postgres schema + seed (depots, vans), order simulator, Debezium CDC → Kafka → bronze | In spec (approved) | [002](../specs/002-orders-cdc/spec.md) |
+| 2 | 2 | Order domain: Postgres schema + seed (depots, vans), order simulator, Debezium CDC → Kafka → bronze | In progress | [002](../specs/002-orders-cdc/spec.md) |
 | 3 | 2 | Data contracts: Avro schemas + Schema Registry (BACKWARD), invalid events → DLQ | Planned | — |
 | 4 | 3 | Silver: dedup + event-time watermarks; simulator chaos mode (late, out-of-order, duplicate events); tests | Planned | — |
 | 5 | 3 | Scale: data tiers (`dev` / `standard` 100M / `stress`), `make backfill DAYS=N`, Iceberg partitioning + compaction, bounded Kafka retention, `make bench` → `bench/results/` | Planned | — |
