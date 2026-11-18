@@ -72,6 +72,12 @@ td.m, td code { font-family: var(--f-m); font-size: 13.5px; } td code { backgrou
 tr.new td { background: var(--ok-bg); } tr.hl td { background: var(--hl); } tr.bad td { background: var(--bad-bg); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
+.users { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.user { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.user h3 { font-size: 16px; } .user h3 small { display: block; font: 500 13px var(--f-b); color: var(--faint); margin-top: 2px; }
+.user dl { margin: 0; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.55; }
+.user dt { font: 600 11.5px var(--f-b); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.user dd { margin: 0; } .user dd.now { color: var(--bad); } .user .ids { font: 12.5px var(--f-m); color: var(--accent-ink); }
 .demo { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
 .demo > * { min-width: 0; }
 .demo .h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
@@ -144,18 +150,41 @@ details code { font-size: 12.5px; }
 
   <section id="q1">
     <h2><span class="n">1</span>Bài toán là gì?</h2>
-    <p class="ans">Dispatcher chỉ thấy <b>trạng thái</b> của đơn, không biết xe đang ở đâu. Họ biết đơn trễ khi hạn đã qua, lúc đó đã muộn để gọi khách hay đổi tuyến.</p>
-    <div class="demo">
-      <div class="h"><b>Màn hình dispatcher hôm nay · 08:30</b></div>
-      <div class="tw"><table>
-        <tr><th>Đơn</th><th>Xe</th><th>Trạng thái</th><th>Hạn giao</th></tr>
-        <tr><td class="m">ORD_001</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td><td class="m">09:36</td></tr>
-        <tr><td class="m">ORD_002</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td><td class="m">08:33</td></tr>
-      </table></div>
-      <p class="cap">Không có vị trí xe, không có ETA. KPI đúng giờ có vào sáng hôm sau.</p>
+    <p class="ans">GPS của xe và trạng thái đơn nằm ở hai hệ thống riêng. Vì vậy không ai biết <b>đơn đang ở đâu</b> và <b>có kịp hạn không</b>. KPI thì đến từ batch đêm, chậm một ngày.</p>
+    <p>Ba người dùng, mỗi người cần ra một quyết định khác nhau, ở một độ tươi khác nhau:</p>
+    <div class="users">
+      <div class="user">
+        <h3>Dispatcher<small>điều phối, theo thời gian thực</small></h3>
+        <dl>
+          <dt>Quyết định</dt><dd>Gọi khách hoặc đổi tuyến <b>trước khi</b> đơn trễ.</dd>
+          <dt>Hôm nay</dt><dd class="now">Chỉ thấy trạng thái đơn; biết trễ khi hạn đã qua.</dd>
+          <dt>Cần</dt><dd>ETA sống cho mỗi đơn đang giao, từ GPS mới nhất. Cảnh báo <b>SLA_RISK</b> khi ETA vượt hạn ≥ 1 phút, phát <b>≥ 15 phút trước</b> lúc trễ thật, mỗi đơn một lần. Cờ xe dừng bất thường.</dd>
+          <dt>Độ tươi</dt><dd>GPS → cảnh báo p95 &lt; 10 giây.</dd>
+        </dl>
+        <span class="ids">BR-3 · BR-5 · NFR-1</span>
+      </div>
+      <div class="user">
+        <h3>Quản lý vận hành<small>theo giờ, theo ngày</small></h3>
+        <dl>
+          <dt>Quyết định</dt><dd>Kho nào, tài xế nào cần cải thiện; ETA có đáng tin không.</dd>
+          <dt>Hôm nay</dt><dd class="now">KPI có vào sáng hôm sau.</dd>
+          <dt>Cần</dt><dd>Tỉ lệ đúng giờ = đúng giờ ÷ (đã giao + thất bại); đơn thất bại tính là trễ. Sai số ETA, chất lượng cảnh báo (precision, recall), theo tài xế và kho. Ngày tính theo giờ Việt Nam.</dd>
+          <dt>Độ tươi</dt><dd>Trong ngày ≤ 5 phút; số chốt sau 01:00.</dd>
+        </dl>
+        <span class="ids">BR-1 · BR-2 · BR-4 · BR-5</span>
+      </div>
+      <div class="user">
+        <h3>Data analyst<small>truy vấn lịch sử</small></h3>
+        <dl>
+          <dt>Quyết định</dt><dd>Tự phân tích bằng SQL, không phải hỏi kỹ sư.</dd>
+          <dt>Hôm nay</dt><dd class="now">Dữ liệu thô, rời rạc giữa hai hệ thống.</dd>
+          <dt>Cần</dt><dd>Bảng sạch raw → cleaned → business-ready. Event trễ hoặc trùng <b>không làm sai KPI</b>. Không có tọa độ khách hàng ở tầng gold.</dd>
+          <dt>Độ tươi</dt><dd>Trong ngày ≤ 5 phút; lịch sử giữ 2 năm (gold).</dd>
+        </dl>
+        <span class="ids">NFR-1 · NFR-2 · NFR-5 · NFR-6</span>
+      </div>
     </div>
-    <p>Mục tiêu: mỗi đơn đang giao có ETA từ GPS mới nhất, và cảnh báo phát <b>ít nhất 15 phút trước</b> khi trễ hạn.</p>
-    <p class="key"><b>Điểm cần nhớ:</b> bắt đầu từ quyết định của người dùng (gọi khách, đổi tuyến), rồi mới tới dữ liệu và công cụ.</p>
+    <p class="key"><b>Điểm cần nhớ:</b> bắt đầu từ quyết định của từng người dùng, suy ra cần dữ liệu gì và tươi tới đâu, rồi mới chọn công cụ. Định nghĩa đầy đủ ở <code>docs/requirements.md</code>.</p>
   </section>
 
   <section id="q2">
