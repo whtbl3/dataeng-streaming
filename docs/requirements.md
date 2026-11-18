@@ -1,5 +1,5 @@
 # Requirements: Delivery Control Tower
-Status: **Draft, awaiting approval** · Date: 2026-11-18 · Derived from: docs/intent.md (approved)
+Status: **Approved (2026-11-18)** · Date: 2026-11-18 · Derived from: docs/intent.md (approved)
 
 This document closes the requirement gaps found in the design walkthrough
 (`docs/design/system-design-walkthrough.html`). It fixes business definitions,
@@ -10,24 +10,24 @@ Every item has an ID so that specs, ADRs and tests can reference it.
 | ID | Term | Definition | Status |
 |---|---|---|---|
 | BR-1 | Late delivery | `closed_at > promised_end` for a delivered order. | Final (spec 002) |
-| BR-2 | On-time rate | `on-time deliveries / (delivered + failed)`. A failed order counts as **not on time**; the failure rate is reported separately. | Proposed |
-| BR-3 | At-risk order | An open order whose predicted ETA is later than `promised_end`. The alert fires when the ETA exceeds `promised_end` by ≥ 1 min, and it fires once per order. It is re-raised only after it was resolved for ≥ 10 min. | Proposed (feature 6 refines) |
-| BR-4 | Business day | The local calendar day in **Asia/Ho_Chi_Minh** (UTC+7). All timestamps are stored in UTC; daily KPIs, partitions in gold and the nightly close use the local day. | Proposed |
-| BR-5 | Alert quality | Precision = share of SLA_RISK alerts whose order was actually late. Recall = share of late orders that got an alert ≥ 15 min before `promised_end`. | Proposed |
+| BR-2 | On-time rate | `on-time deliveries / (delivered + failed)`. A failed order counts as **not on time**; the failure rate is reported separately. | Approved |
+| BR-3 | At-risk order | An open order whose predicted ETA is later than `promised_end`. The alert fires when the ETA exceeds `promised_end` by ≥ 1 min, and it fires once per order. It is re-raised only after it was resolved for ≥ 10 min. | Approved (feature 6 refines) |
+| BR-4 | Business day | The local calendar day in **Asia/Ho_Chi_Minh** (UTC+7). All timestamps are stored in UTC; daily KPIs, partitions in gold and the nightly close use the local day. | Approved |
+| BR-5 | Alert quality | Precision = share of SLA_RISK alerts whose order was actually late. Recall = share of late orders that got an alert ≥ 15 min before `promised_end`. | Approved |
 
 ## 2. Non-functional requirements
 | ID | Area | Requirement | Status |
 |---|---|---|---|
 | NFR-1 | Freshness | Alert path p95 < 10 s (GPS event → `serving.alerts`); bronze ≤ 60 s; provisional KPIs ≤ 5 min + run time; final KPIs after the nightly close (01:00 local). | Final (intent, ADR 0006) |
 | NFR-2 | Correctness | Duplicate or late events give identical gold KPIs: intraday for events ≤ 2 h late, at the nightly close for anything that arrived that day. | Final |
-| NFR-3 | RPO | **0 events lost**. Kafka keeps 7 days; the Postgres WAL is kept by the replication slot (capped at 1 GB). | Proposed |
-| NFR-4 | RTO | Alert path back within **15 min** of a restart. On catch-up, events older than the alert horizon (default 10 min) update state but **do not raise alerts**. | Proposed |
-| NFR-5 | Retention | Kafka 7 days · bronze GPS 90 days · bronze CDC 1 year · silver 1 year · gold 2 years. Iceberg snapshots expire after 7 days (scheduled `expire_snapshots`). | Proposed |
-| NFR-6 | Privacy (PII) | `dest_lat`/`dest_lon` are personal data (a customer address). They are read-restricted in bronze/silver. Gold stores only `dest_area` (geohash, 7 characters, ≈ 150 m). | Proposed |
-| NFR-7 | Security (AWS) | Least-privilege IAM per service; KMS encryption for S3, MSK and RDS; RDS in private subnets; no credentials in git (already enforced by hooks). | Proposed (feature 10) |
+| NFR-3 | RPO | **0 events lost**. Kafka keeps 7 days; the Postgres WAL is kept by the replication slot (capped at 1 GB). | Approved |
+| NFR-4 | RTO | Alert path back within **15 min** of a restart. On catch-up, events older than the alert horizon (default 10 min) update state but **do not raise alerts**. | Approved |
+| NFR-5 | Retention | Kafka 7 days · bronze GPS 90 days · bronze CDC 1 year · silver 1 year · gold 2 years. Iceberg snapshots expire after 7 days (scheduled `expire_snapshots`). | Approved |
+| NFR-6 | Privacy (PII) | `dest_lat`/`dest_lon` are personal data (a customer address). They are read-restricted in bronze/silver. Gold stores only `dest_area` (geohash, 7 characters, ≈ 150 m). | Approved |
+| NFR-7 | Security (AWS) | Least-privilege IAM per service; KMS encryption for S3, MSK and RDS; RDS in private subnets; no credentials in git (already enforced by hooks). | Approved (feature 10) |
 | NFR-8 | Availability | No HA commitment (demo project; see intent "Out of scope"). | Final |
 | NFR-9 | Cost | Local $0. A managed demo is < $5 per session and is destroyed afterwards. Budget alerts at $20 and $50. | Final (ADR 0005) |
-| NFR-10 | Observability | Alert when consumer lag grows for > 5 min, a checkpoint fails, slot lag > 500 MB, or bronze receives no rows for 2 min. | Proposed (feature 8) |
+| NFR-10 | Observability | Alert when consumer lag grows for > 5 min, a checkpoint fails, slot lag > 500 MB, or bronze receives no rows for 2 min. | Approved (feature 8) |
 | NFR-11 | Volume | Designed and benchmarked for the `standard` tier (≈ 100M GPS events, 30 days). Measured event sizes replace the estimates (CDC ≈ 1.5 KB is not yet measured). | Final (ADR 0009); measurement in feature 5 |
 
 ## 3. Data-modeling rules (streaming + batch)
@@ -84,7 +84,7 @@ to every table from silver onward. A batch-only design could skip them.
 | Is customer location protected? | NFR-6 | `dest_area` in gold, restricted bronze/silver | dbt test: no `dest_lat`/`dest_lon` in gold |
 | Does a van changing depot rewrite history? | rule 2, dim_van SCD2 | SCD2 built from `bronze.vans_cdc` | dbt test (feature 7) |
 
-## 6. Open questions (with recommended answers)
-1. Alert horizon on catch-up: is 10 min right? *Recommended: yes for v1; measure in feature 6.*
-2. ETA error is measured at T-30 and T-15 min before `promised_end`, or before the actual close? *Recommended: before `promised_end`, because that is when the dispatcher acts.*
-3. Should dashboards show provisional and final KPIs side by side, or only the latest value with a "provisional" marker? *Recommended: the latest value plus a visible marker; final-only views for reports.*
+## 6. Resolved questions (approved 2026-11-18)
+1. Alert horizon on catch-up: **10 min** for v1; measured in feature 6.
+2. ETA error is measured at T-30 and T-15 min **before `promised_end`** (when the dispatcher acts).
+3. Dashboards show **the latest value plus a visible "provisional" marker**; reports use final-only views.
