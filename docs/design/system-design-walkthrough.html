@@ -18,7 +18,7 @@
   --impl: #1f8a50; --impl-bg: #e3f4ea; --des: #7D879A; --des-bg: #EEF1F6; --bad: #c43a35; --bad-bg: #fce7e5; --warn: #9a5b00; --warn-bg: #fbeedb;
   --code: #F6F9FE; --chg: #fff2bf; --new: #e2f5ea;
   --hero-a: #FFFFFE; --hero-b: #E6F0FC; --hero-c: #9FB9E0; --hero-d: #4572B9; --dot: rgba(255,255,254,.55);
-  --node: #FFFFFE; --node-stroke: #4572B9; --depth: #B9CDEC; --halo: rgba(255,255,254,.9); --band: rgba(255,255,254,.42); --band-stroke: rgba(255,255,254,.65);
+  --node: #FFFFFE; --node-stroke: #4572B9; --depth: #B9CDEC; --halo: rgba(255,255,254,.9); --band: #F3F7FD; --band-stroke: #E3ECF8;
   --legend-bg: rgba(255,255,254,.9); --bandl-on: #FFFFFE; --page-a: #FFFFFE; --page-b: #FDFEFD; --page-c: #E6F0FC; --decor: #99A2B2;
   color-scheme: light;
   --f-d: "Lexend", "Segoe UI", system-ui, sans-serif; --f-b: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -41,7 +41,7 @@
   color-scheme: dark; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: linear-gradient(115deg, var(--page-a) 0%, var(--page-b) 50%, var(--page-c) 100%) fixed var(--bg); color: var(--ink); font: 15px/1.6 var(--f-b); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15.5px/1.65 var(--f-b); }
 h1, h2, h3, h4 { font-family: var(--f-d); margin: 0; line-height: 1.2; text-wrap: balance; }
 p { margin: 0; }
 code { font: 500 .86em var(--f-m); background: var(--sunk); border-radius: 5px; padding: 1px 5px; overflow-wrap: anywhere; }
@@ -101,10 +101,11 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .problem::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 34%; z-index: 0;
   background-image: radial-gradient(circle, var(--dot) 1.3px, transparent 1.7px); background-size: 16px 16px;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%); mask-image: linear-gradient(90deg, transparent, #000 40%); }
-@media (max-width: 700px) { .problem { background: linear-gradient(160deg, var(--hero-a) 0 62%, var(--hero-b) 80%, var(--hero-c) 100%); } .problem::after { display: none; } }
+.problem::after { display: none; }
+.problem { background: linear-gradient(112deg, var(--hero-a) 0 55%, var(--hero-b) 100%); border-left: 4px solid var(--accent); padding: 18px 22px 20px; border-radius: 14px; }
 .problem .k { font: 600 11.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
-.problem h2 { font-size: clamp(22px, 2.6vw, 31px); font-weight: 700; letter-spacing: -.015em; max-width: 30ch; color: var(--ink); }
-.problem p { color: var(--soft); max-width: 62ch; font-size: 15.5px; }
+.problem h2 { font-size: clamp(19px, 1.9vw, 24px); font-weight: 700; letter-spacing: -.01em; max-width: 52ch; color: var(--ink); }
+.problem p { color: var(--soft); max-width: 75ch; font-size: 15px; }
 .decision { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .decision .q { font: 700 16px var(--f-d); }
 .opts { display: grid; gap: 6px; }
@@ -113,28 +114,30 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .opt b { font-weight: 600; } .opt span.s { display: block; font-size: 13px; color: var(--soft); }
 .opt.right { border-color: var(--impl); background: var(--impl-bg); } .opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
 .fb { font-size: 14px; border-radius: 10px; padding: 10px 12px; } .fb.ok { background: var(--impl-bg); } .fb.no { background: var(--bad-bg); }
+.sec { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sec h3 { font: 700 17px var(--f-d); } .sec span { font-size: 13px; color: var(--faint); }
 .reqs { display: flex; flex-wrap: wrap; gap: 6px; }
 .req { font-size: 12.5px; background: var(--teal-bg); color: var(--ink); border-radius: 8px; padding: 4px 9px; }
 .req b { color: var(--teal); }
 
 /* panes */
-.panes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; }
 .pane { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 6px 18px -10px var(--depth); padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; position: relative; }
 .pane.wide { grid-column: 1 / -1; }
 .pane.flash { animation: flash 1.1s ease; }
 @keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .pane.flash { animation: none; } }
-.pane h3 { font: 700 13.5px var(--f-b); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.pane h3 { font: 700 14px var(--f-b); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
 .pane h3 small { font: 500 11.5px var(--f-m); color: var(--faint); }
 .pane h3 button.insp-open { margin-left: auto; border: 0; background: none; color: var(--teal); font-size: 12px; font-weight: 600; cursor: pointer; }
-.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; font-size: 13px; margin: 0; }
-.kv dt { color: var(--faint); } .kv dd { margin: 0; font: 500 12.5px var(--f-m); overflow-wrap: anywhere; }
+.kv { max-width: 640px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: 13.5px; margin: 0; }
+.kv dt { color: var(--faint); } .kv dd { margin: 0; font: 500 13px var(--f-m); overflow-wrap: anywhere; }
 .kv dd.chg { background: var(--chg); border-radius: 4px; padding: 0 4px; }
-.mt { border-collapse: collapse; width: 100%; font: 12px/1.45 var(--f-m); }
+.mt { border-collapse: collapse; width: 100%; font: 12.5px/1.5 var(--f-m); }
 .mt th, .mt td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
 .mt th { font: 600 10.5px var(--f-b); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); white-space: nowrap; overflow-wrap: normal; }
 .mt tr.new td { background: var(--new); } .mt tr.dup td { background: var(--bad-bg); }
-.note { font-size: 12.5px; color: var(--soft); }
+.note { font-size: 13px; color: var(--soft); }
 .st { display: inline-flex; align-items: center; gap: 4px; font: 600 10.5px/1 var(--f-b); padding: 3px 7px; border-radius: 999px; white-space: nowrap; letter-spacing: 0; text-transform: none; }
 .st::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .st.impl { color: var(--impl); background: var(--impl-bg); } .st.des { color: var(--des); background: var(--des-bg); } .st.prop, .st.ex { color: var(--warn); background: var(--warn-bg); }
@@ -157,11 +160,11 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .rel-l { fill: var(--soft); font: 500 11px var(--f-b); }
 
 /* architecture */
-.arch { background: linear-gradient(112deg, var(--hero-a) 0 22%, var(--hero-b) 42%, var(--hero-c) 66%, var(--hero-d) 100%); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.arch { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .arch-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; }
 .arch-head h3 { font: 700 13.5px var(--f-b); }
 .arch-svg { overflow-x: auto; } .arch-svg svg { display: block; width: 100%; min-width: 820px; height: auto; }
-.band { fill: var(--band); stroke: var(--band-stroke); } .bandl { fill: var(--ink); font: 600 10.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; } .bandl.on { fill: var(--bandl-on); }
+.band { fill: var(--band); stroke: var(--band-stroke); } .bandl { fill: var(--soft); font: 600 11px var(--f-b); letter-spacing: .12em; text-transform: uppercase; } .bandl.on { fill: var(--bandl-on); }
 .an rect { fill: var(--node); stroke: var(--node-stroke); stroke-width: 1.6; filter: drop-shadow(0 5px 0 var(--depth)); }
 .an.impl rect { stroke: var(--node-stroke); } .an.des rect { fill: var(--node); fill-opacity: .85; stroke: var(--decor); stroke-dasharray: 5 4; filter: none; }
 .an.hot rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: none; filter: drop-shadow(0 5px 0 var(--accent)); }
@@ -172,7 +175,7 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .ael { fill: var(--ink); font: 500 10.5px var(--f-m); paint-order: stroke; stroke: var(--halo); stroke-width: 3px; } .ael.hot { fill: var(--accent-ink); font-weight: 600; }
 #mk path { fill: var(--node-stroke); } #mkh path { fill: var(--accent); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--soft); }
-.arch .legend { background: var(--legend-bg); padding: 4px 12px; border-radius: 999px; color: var(--ink); }
+.arch .legend { color: var(--soft); }
 .legend i { display: inline-block; width: 18px; height: 10px; border-radius: 3px; border: 1.5px solid; margin-right: 5px; vertical-align: -1px; }
 
 /* modes */
@@ -181,7 +184,7 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .modes-tabs button { border: 0; background: none; padding: 12px 14px 10px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--soft); border-bottom: 2.5px solid transparent; display: grid; text-align: left; gap: 1px; white-space: nowrap; }
 .modes-tabs button small { font-weight: 400; font-size: 11.5px; color: var(--faint); }
 .modes-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.mode-body { padding: 16px 18px 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 900px; }
+.mode-body { padding: 18px 22px 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 900px; }
 .mode-body p { max-width: 78ch; } .mode-body ul, .mode-body ol { margin: 0; padding-left: 1.3em; display: grid; gap: 5px; max-width: 78ch; }
 .mode-body h4 { font: 700 14px var(--f-d); margin-top: 4px; }
 .mode-body .why { border-left: 3px solid var(--accent); background: var(--accent-bg); padding: 10px 14px; border-radius: 0 10px 10px 0; }
@@ -224,7 +227,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 /* inspector */
 .insp { position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); background: var(--paper); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(0,0,0,.14);
   transform: translateX(105%); transition: transform .2s ease; display: grid; grid-template-rows: auto auto minmax(0, 1fr); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
-.insp.open { transform: none; } @media (prefers-reduced-motion: reduce) { .insp { transition: none; } }
+.insp { visibility: hidden; transition: transform .2s ease, visibility 0s linear .2s; } .insp.open { transform: none; visibility: visible; transition: transform .2s ease; } @media (prefers-reduced-motion: reduce) { .insp { transition: none; } }
 .insp header { display: flex; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; align-items: flex-start; }
 .insp header h3 { font-size: 18px; } .insp header .sub { font-size: 12.5px; color: var(--soft); margin-top: 4px; }
 .insp .x { border: 1px solid var(--line); background: var(--sunk); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 18px; flex: none; }
@@ -248,7 +251,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   main.ws { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .brand span { display: none; }
 }
-@media (max-width: 700px) { .insp { top: auto; height: 80vh; width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); padding-left: env(safe-area-inset-left, 0px); } .insp.open { transform: none; } .bar .seg-lbl { display: none; } }
+@media (max-width: 700px) { .mt { display: block; overflow-x: auto; font-size: 12px; } .bar { position: static; } .bar .brand { display: none; } .insp { top: auto; height: 80vh; width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); padding-left: env(safe-area-inset-left, 0px); } .insp.open { transform: none; } .bar .seg-lbl { display: none; } }
 </style>
 </head>
 <body>
@@ -272,16 +275,17 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   <main class="ws" id="ws">
     <section class="problem" aria-live="polite"><span class="k">Bài toán hiện tại</span><h2 id="pTitle"></h2><p id="pContext"></p></section>
     <section class="decision" id="decision" hidden></section>
+    <section class="modes">
+      <div class="modes-tabs" role="tablist" id="modeTabs"></div>
+      <div class="mode-body" id="modeBody" role="tabpanel"></div>
+    </section>
+    <div class="sec"><h3>Hệ thống lúc này</h3><span>dữ liệu của ORD_001 tại bước này</span></div>
     <section class="reqs" id="reqs" aria-label="Yêu cầu đã suy ra"></section>
     <section class="panes" id="panes" aria-label="Trạng thái hệ thống"></section>
     <section class="arch" aria-label="Kiến trúc">
       <div class="arch-head"><h3 id="archTitle"></h3><div class="legend"><span><i style="border-color:var(--accent)"></i>Đã triển khai</span><span><i style="border-color:var(--faint);border-style:dashed"></i>Mới thiết kế</span><span><i style="border-color:var(--accent);background:var(--accent-bg)"></i>Đang học ở bước này</span></div></div>
       <div class="arch-svg" id="arch"></div>
       <p class="note" id="archNote"></p>
-    </section>
-    <section class="modes">
-      <div class="modes-tabs" role="tablist" id="modeTabs"></div>
-      <div class="mode-body" id="modeBody" role="tabpanel"></div>
     </section>
     <nav class="navfoot" aria-label="Điều hướng bước"><button class="btn" id="prev" type="button">← Bước trước</button><button class="btn primary" id="next" type="button"></button></nav>
   </main>
@@ -390,7 +394,7 @@ step({ g: 1, title: 'Bắt đầu chỉ với bảng orders. Khóa chính nên l
     ['order_id, chính là mã đơn nghiệp vụ', '', true, 'Đúng. Mã ổn định, duy nhất, ai cũng dùng. Nhờ nó, simulator dùng được INSERT … ON CONFLICT (order_id) DO NOTHING, nên chạy lại không tạo trùng (idempotent).'],
     ['(dest_lat, dest_lon, created_at)', 'Ghép từ dữ liệu có sẵn.', false, 'Hai đơn tới cùng một địa chỉ trong cùng một giây là chuyện có thể xảy ra. Khóa ghép từ dữ liệu nghiệp vụ dễ đụng nhau, và đổi một cột là đổi luôn danh tính.'],
   ] },
-  learn: `<p>Một bảng bắt đầu bằng câu hỏi <b>"một dòng đại diện cho cái gì?"</b>, gọi là <b>grain</b>. Ở đây: một dòng là một đơn, ở trạng thái <i>hiện tại</i>. Khóa chính là thứ làm cho "một đơn ↔ một dòng" luôn đúng.</p><p>ERD bên trên chỉ hiện đầy đủ phần mới sau khi bạn bấm "Kiểm tra thiết kế".</p>`,
+  learn: `<p>Một bảng bắt đầu bằng câu hỏi <b>"một dòng đại diện cho cái gì?"</b>, gọi là <b>grain</b>. Ở đây: một dòng là một đơn, ở trạng thái <i>hiện tại</i>. Khóa chính là thứ làm cho "một đơn ↔ một dòng" luôn đúng.</p><p>ERD bên dưới chỉ hiện đầy đủ phần mới sau khi bạn bấm "Kiểm tra thiết kế".</p>`,
   explore: () => erdExplain(1), build: () => ddl(1) });
 step({ g: 1, title: 'Đơn xuất phát từ kho nào? Lưu thông tin kho ở đâu?', erd: 2,
   ctx: 'Có 4 kho trong thành phố. Mỗi đơn được nhận và xuất phát từ đúng một kho. Báo cáo cần tính theo kho, và cần tọa độ kho để biết xe đi từ đâu.',
@@ -811,9 +815,11 @@ function renderArch(st, intro) {
   const target = state.arch === 'target', show = id => target || intro.has(id), hot = new Set(st.hot), W = 150, H = 46;
   $('archTitle').textContent = target ? 'Target Architecture: toàn bộ thiết kế, kèm dịch vụ AWS' : 'Current Architecture: chỉ những thành phần đã cần tới ở bước này';
   const shownIds = Object.keys(N).filter(show);
-  let s = `<svg viewBox="0 0 1110 368" role="img" aria-label="Sơ đồ kiến trúc theo tầng">`;
+  const maxR = Math.max(0, ...shownIds.map(k => N[k].r)), vh = 56 + (maxR + 1) * ROWH + 8;
+  $('arch').hidden = shownIds.length === 0;
+  let s = `<svg viewBox="0 0 1110 ${vh}" role="img" aria-label="Sơ đồ kiến trúc theo tầng">`;
   s += `<defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker><marker id="mkh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
-  LAYERS.forEach((l, c) => { s += `<rect class="band" x="${14 + c * COLW}" y="8" width="${COLW - 12}" height="352" rx="12"/><text class="bandl${c >= 5 ? ' on' : ''}" x="${26 + c * COLW}" y="34">${l}</text>`; });
+  LAYERS.forEach((l, c) => { s += `<rect class="band" x="${14 + c * COLW}" y="8" width="${COLW - 12}" height="${vh - 16}" rx="12"/><text class="bandl" x="${26 + c * COLW}" y="34">${l}</text>`; });
   const port = (a, b) => { const ax = a.x + W / 2, ay = a.y + H / 2, bx = b.x + W / 2, by = b.y + H / 2, dx = bx - ax, dy = by - ay; return Math.abs(dx) > Math.abs(dy) * 1.1 ? [dx > 0 ? a.x + W : a.x, ay, dx > 0 ? b.x : b.x + W, by] : [ax, dy > 0 ? a.y + H : a.y, bx, dy > 0 ? b.y : b.y + H]; };
   E.forEach(([a, b, l]) => {
     if (!show(a) || !show(b)) return;
@@ -827,11 +833,10 @@ function renderArch(st, intro) {
     const h = !target && hot.has(id);
     s += `<g class="an ${n.st}${h ? ' hot' : ''}" data-c="${id}" tabindex="0" role="button" aria-label="${n.t}"><rect x="${n.x}" y="${n.y}" width="${W}" height="${H}" rx="9"/><text class="t" x="${n.x + 10}" y="${n.y + 19}">${n.t}</text><text class="s" x="${n.x + 10}" y="${n.y + 35}">${target ? n.aws : n.s}</text></g>`;
   });
-  if (!target && intro.size === 0) s += `<text class="ael" x="555" y="200" text-anchor="middle">Chưa xây gì. Giai đoạn 1 chỉ làm rõ vấn đề và yêu cầu.</text>`;
   $('arch').innerHTML = s + '</svg>';
   $('arch').querySelectorAll('.an').forEach(g => { const go = () => openComp(g.dataset.c); g.addEventListener('click', go); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }); });
   const ids = Object.keys(N).filter(show), nImpl = ids.filter(k => N[k].st === 'impl').length, nDes = ids.length - nImpl;
-  $('archNote').textContent = ids.length ? `${nImpl} thành phần đã chạy, ${nDes} thành phần mới nằm trong thiết kế. Bấm vào một khối để xem schema, code, cấu hình, metrics, ADR và test.` : 'Sơ đồ sẽ lớn dần theo từng quyết định của bạn.';
+  $('archNote').textContent = ids.length ? `${nImpl} thành phần đã chạy, ${nDes} thành phần mới nằm trong thiết kế. Bấm vào một khối để xem schema, code, cấu hình, metrics, ADR và test.` : 'Chưa có thành phần nào: giai đoạn 1 chỉ làm rõ vấn đề và yêu cầu. Sơ đồ sẽ lớn dần theo từng quyết định của bạn.';
 }
 function segment(el, items, current, onPick) {
   el.innerHTML = items.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === current}">${l}</button>`).join('');
