@@ -129,3 +129,19 @@ On approval this becomes `specs/002-orders-cdc/plan.md` + `tasks.md`.
 - `make check` (unit tests, no Docker).
 - `make clean && make up` (with the cdc profile) → `make e2e` → `make e2e-restart` → `make cdc-status` → `make stack-mem`.
 - Manual: `make demo` (realtime day, 20 vans), then Trino `SELECT op, count(*) FROM lakehouse.bronze.orders_cdc GROUP BY 1` and follow one order's history by `source_lsn`.
+
+## Departures from the plan (recorded during build)
+- Postgres host port is **15432** (5432 was taken on the dev machine); `ORDERS_DSN` defaults to it.
+- `window_start = max(window_end − 2 h, created_at + 15 min)` instead of `+ 1 h`: with `+ 1 h`
+  some late orders of the first wave would get an empty window. The spec only requires the
+  window to start after creation.
+- The Iceberg catalog `CREATE CATALOG` moved to `flink/jobs/_init_catalog.sql`, shared by all
+  jobs through `sql-client -i`.
+- The connector is registered by `infra/local/connect/register.sh` (mounted into `connect-init`);
+  credentials are read via Kafka Connect's `EnvVarConfigProvider` (`${env:...}`), not stored in JSON.
+- GPS jitter is a counter-based hash of (seed, van, tick), so pings for any time window equal
+  the full-day pings for the same ticks (needed for history windows and later backfill).
+- `test_seed_captured_once_as_snapshot` waits for the first Iceberg commit after a cold start
+  (it failed once when run immediately after `make up`).
+- Measured (2026-11-18, laptop, WSL 10 GB / 8 vCPU): cold `make up` with images cached 60 s;
+  stack memory ≈ 3.1 GiB (Trino 1.18, TM 0.55, Connect 0.52 GiB); e2e 10 passed, restart test passed.

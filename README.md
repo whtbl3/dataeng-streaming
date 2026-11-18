@@ -38,8 +38,9 @@ Docker Hub account for the hardened MinIO image (`docker login dhi.io`, once).
 ```bash
 make install                  # Python 3.11 + dev tools
 make check                    # lint + unit tests (same as CI)
-make up                       # core stack + Flink job (~30 s with images cached)
-make demo                     # live simulator, 20 vans (Ctrl-C to stop)
+make up                       # core + CDC stack, Flink jobs (~1 min with images cached)
+make demo                     # live delivery day, 20 vans: orders → Postgres, GPS → Kafka
+make cdc-status               # Debezium connector state + replication slot lag
 make e2e                      # acceptance tests against the running stack
 make backfill DAYS=30         # ~100M events      (roadmap feature 5)
 make bench                    # throughput report (roadmap feature 5)
@@ -48,8 +49,12 @@ Query the bronze table:
 ```bash
 docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
   "SELECT count(*), max(event_ts) FROM lakehouse.bronze.gps_pings"
+# every change of one order, in commit order (CDC changelog)
+docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
+  "SELECT op, before.status, after.status, commit_ts FROM lakehouse.bronze.orders_cdc
+   WHERE after.order_id = 'ORD-20261118-00001' ORDER BY source_lsn"
 ```
-UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001
+UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001 · Kafka Connect http://localhost:8083 · Postgres `localhost:15432` (`make psql`)
 
 ## Docs
 - [Intent](docs/intent.md) · [Project spec](docs/project-spec.md) · [Tech stack](docs/tech-stack.md)

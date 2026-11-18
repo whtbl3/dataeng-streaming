@@ -65,7 +65,9 @@ events therefore cannot skew the final numbers.
 ## 5. Interfaces
 - **Kafka topics:** `gps.pings.v1`, `cdc.public.orders`, `alerts.v1`, `dlq.*`. Avro schemas live in `schemas/`, and Schema Registry enforces BACKWARD compatibility.
 - **Lakehouse:** Iceberg namespaces `bronze`, `silver`, `gold`, queried with SQL (Trino locally, Athena on AWS).
+  - `bronze.{depots,vans,orders}_cdc` (spec 002): append-only Debezium changelogs: `op` (c/u/r), typed `before`/`after` rows (full before-images for orders), `source_lsn`, `source_txid`, `commit_ts`, `capture_ts`, Kafka partition/offset, `ingest_ts`; `orders_cdc` partitioned by `day(commit_ts)`; Flink job `bronze_cdc`.
   - `bronze.gps_pings` (spec 001): raw ping fields + `ingest_ts` (Kafka record time) + `kafka_partition`/`kafka_offset`; partitioned by `day(event_ts)`; written by Flink job `bronze_gps` (exactly-once, commit every 30 s checkpoint).
+- **Order DB (CDC source, spec 002):** Postgres `public.{depots,vans,orders}`, publication `ct_cdc`, slot `ct_cdc_slot`; written by `python -m simulator day`.
 - **Serving DB:** Postgres schema `serving` (read by Grafana).
 - **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make backfill DAYS=N`, `make bench`, `make down`; `make aws-up|aws-down` (managed).
 

@@ -37,8 +37,8 @@ down:
 clean:            # also deletes local data volumes
 	$(COMPOSE) --profile jobs down -v
 
-demo:             # live simulator at dev size (20 vans, 1 ping / 5 s); Ctrl-C to stop
-	uv run python -m simulator --realtime --vans 20 --interval 5
+demo:             # live delivery day at dev size (20 vans, 500 orders/day); Ctrl-C to stop
+	uv run python -m simulator day --realtime --vans 20
 
 e2e:              # needs `make up`
 	uv run pytest -q tests/integration -m "e2e and not restart"

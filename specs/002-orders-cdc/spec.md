@@ -1,5 +1,5 @@
 # Spec 002: Order domain with CDC (Postgres → Debezium → Kafka → bronze)
-Status: Approved (2026-11-18) · Intent: roadmap item 2 · Author: project owner + Claude
+Status: Implemented (2026-11-18) · Intent: roadmap item 2 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
