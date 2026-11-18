@@ -3,8 +3,8 @@
 <!-- Small, independently testable. Test first. Tick as you go. -->
 - [x] T1: tests, then `contracts/bounds`, `wire`, `validate` (simulator imports bounds)
 - [x] T2: tests, then `contracts/compat` + schemas v1/v2 + the `make check` step
-- [ ] T3: tests, then `contracts/registry` + `decode_gps` (fake registry)
-- [ ] T4: tests, then producer Avro encoding + `--invalid-rate` injection; `make check` green
+- [x] T3: tests, then `contracts/registry` + `decode_gps` (fake registry)
+- [x] T4: tests, then producer Avro encoding + `--invalid-rate` injection; `make check` green
 - [ ] T5: Flink image with PyFlink + UDF smoke test + `EXPLAIN` sub-plan check
 - [ ] T6: registration in `redpanda-init`, DLQ topics + table, `bronze_gps` rewrite; 001 e2e green
 - [ ] T7: Connect image + Avro converter; capture the CDC fixture; tests, then `decode_cdc`; `bronze_cdc` rewrite; 002 e2e green

@@ -2,17 +2,28 @@
 
 import json
 from datetime import UTC, date, datetime
+from pathlib import Path
 
+from contracts.decode import decode_avro, decode_gps
+from contracts.wire import unframe
 from simulator.__main__ import main
 from simulator.day import OrderEvent, simulate_day
 from simulator.fleet import Ping
 from simulator.orders_db import OrdersWriter, statement_for
-from simulator.producer import encode, produce_all
+from simulator.producer import GpsEncoder, produce_all
 
 PING = Ping(
     "VAN-0001", datetime(2026, 11, 18, 3, 0, 5, 123000, tzinfo=UTC), 10.7, 106.6, 32.5, 90.0
 )
 NOW = datetime(2026, 11, 18, 5, 0, 0, tzinfo=UTC)  # 12:00 local
+V1 = json.loads(Path("schemas/gps.pings.v1-value/v1.avsc").read_text())
+V2 = json.loads(Path("schemas/gps.pings.v1-value/v2.avsc").read_text())
+ENC = GpsEncoder(V2, 2)
+
+
+class Reg:
+    def schema_by_id(self, schema_id):
+        return {1: V1, 2: V2}[schema_id]
 
 
 class FakeProducer:
@@ -53,24 +64,40 @@ class FakeDB:
         return FakeResult(1)
 
 
-def test_encode_keys_by_vehicle_and_serialises_json_with_utc_millis():
-    key, value = encode(PING)
+def test_encode_keys_by_vehicle_and_writes_registry_framed_avro():
+    key, value = ENC.encode(PING)
     assert key == b"VAN-0001"
-    assert json.loads(value) == {
+    assert unframe(value)[0] == 2
+    record, err = decode_avro(value, Reg())
+    assert err is None
+    assert record == {
         "vehicle_id": "VAN-0001",
-        "event_ts": "2026-11-18T03:00:05.123Z",
+        "event_ts": datetime(2026, 11, 18, 3, 0, 5, 123000, tzinfo=UTC),
         "lat": 10.7,
         "lon": 106.6,
         "speed_kmh": 32.5,
         "heading_deg": 90.0,
+        "battery_pct": record["battery_pct"],
     }
+    assert 5 <= record["battery_pct"] <= 100
+
+
+def test_v1_encoder_writes_only_v1_fields():
+    record, _ = decode_avro(GpsEncoder(V1, 1).encode(PING)[1], Reg())
+    assert set(record) == {f["name"] for f in V1["fields"]}
+
+
+def test_avro_smaller_than_json():
+    _, avro = GpsEncoder(V1, 1).encode(PING)
+    json_size = len(json.dumps(PING.to_dict(), separators=(",", ":")).encode())
+    assert len(avro) < json_size / 2
 
 
 def test_produce_all_sends_every_ping_and_flushes():
     fake = FakeProducer()
     plan = simulate_day(seed=1, local_date=date(2026, 11, 18), vans=3, orders_per_day=6)
     pings = plan.pings(start=plan.start, end=plan.start.replace(minute=0, second=15))
-    assert produce_all(fake, "gps.pings.v1", pings) == 3 * 4
+    assert produce_all(fake, "gps.pings.v1", pings, ENC) == 3 * 4
     assert fake.flushed
     assert {t for t, _, _ in fake.messages} == {"gps.pings.v1"}
 
@@ -97,14 +124,38 @@ def test_writer_counts_only_real_changes():
 def test_cli_history_mode_sends_window_pings_and_orders_up_to_now(capsys):
     producer, db = FakeProducer(), FakeDB()
     argv = ["day", "--vans", "2", "--orders-per-day", "8", "--history-hours", "1", "--seed", "3"]
-    assert main(argv, lambda _b: producer, lambda _d: db, now=NOW) == 0
+    assert (
+        main(argv, lambda _b: producer, lambda _d: db, now=NOW, encoder_factory=lambda _a: ENC) == 0
+    )
     out = capsys.readouterr().out
     assert len(producer.messages) == 2 * 721  # 1 h window, both ends inclusive, every 5 s
     assert all(p["ts"] <= NOW for _, p in db.applied)
     assert f"order_changes={len(db.applied)} pings=1442" in out
     # re-running the same window writes nothing new
-    main(argv, lambda _b: FakeProducer(), lambda _d: db, now=NOW)
+    main(argv, lambda _b: FakeProducer(), lambda _d: db, now=NOW, encoder_factory=lambda _a: ENC)
     assert "order_changes=0" in capsys.readouterr().out
+
+
+def test_cli_invalid_rate_reports_labelled_counts(capsys):
+    producer = FakeProducer()
+    argv = [
+        "day",
+        "--vans",
+        "2",
+        "--orders-per-day",
+        "8",
+        "--history-hours",
+        "1",
+        "--no-db",
+        "--invalid-rate",
+        "0.1",
+    ]
+    main(argv, lambda _b: producer, lambda _d: FakeDB(), now=NOW, encoder_factory=lambda _a: ENC)
+    out = capsys.readouterr().out
+    assert "invalid=" in out and "not_decodable" in out
+    ingest = datetime.now(UTC)  # future-time pings are relative to the wall clock
+    bad = sum(1 for _, _, v in producer.messages if decode_gps(v, ingest, Reg())[1])
+    assert 0.05 * 1442 < bad < 0.15 * 1442
 
 
 def test_cli_seed_sql(capsys):
