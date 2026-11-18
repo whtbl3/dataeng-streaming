@@ -72,12 +72,17 @@ td.m, td code { font-family: var(--f-m); font-size: 13.5px; } td code { backgrou
 tr.new td { background: var(--ok-bg); } tr.hl td { background: var(--hl); } tr.bad td { background: var(--bad-bg); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-.users { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; }
-.user { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
-.user h3 { font-size: 16px; } .user h3 small { display: block; font: 500 13px var(--f-b); color: var(--faint); margin-top: 2px; }
-.user dl { margin: 0; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.55; }
-.user dt { font: 600 11.5px var(--f-b); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
-.user dd { margin: 0; } .user dd.now { color: var(--bad); } .user .ids { font: 12.5px var(--f-m); color: var(--accent-ink); }
+.story { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; max-width: 68ch; }
+.story li { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); gap: 14px; }
+.story .t { font: 600 14px/1.6 var(--f-m); color: var(--accent-ink); text-align: right; padding-top: 2px; }
+.story .b { border-left: 2px solid var(--line); padding: 0 0 22px 18px; position: relative; display: grid; gap: 4px; }
+.story li:last-child .b { padding-bottom: 4px; }
+.story .b::before { content: ""; position: absolute; left: -7px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.story li.ev .b::before { background: var(--bad); }
+.story .who { font: 700 15.5px var(--f-d); }
+.story .b p { margin: 0; }
+.story .need { color: var(--soft); }
+.story .need b { color: var(--ink); }
 .demo { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
 .demo > * { min-width: 0; }
 .demo .h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
@@ -150,41 +155,30 @@ details code { font-size: 12.5px; }
 
   <section id="q1">
     <h2><span class="n">1</span>Bài toán là gì?</h2>
-    <p class="ans">GPS của xe và trạng thái đơn nằm ở hai hệ thống riêng. Vì vậy không ai biết <b>đơn đang ở đâu</b> và <b>có kịp hạn không</b>. KPI thì đến từ batch đêm, chậm một ngày.</p>
-    <p>Ba người dùng, mỗi người cần ra một quyết định khác nhau, ở một độ tươi khác nhau:</p>
-    <div class="users">
-      <div class="user">
-        <h3>Dispatcher<small>điều phối, theo thời gian thực</small></h3>
-        <dl>
-          <dt>Quyết định</dt><dd>Gọi khách hoặc đổi tuyến <b>trước khi</b> đơn trễ.</dd>
-          <dt>Hôm nay</dt><dd class="now">Chỉ thấy trạng thái đơn; biết trễ khi hạn đã qua.</dd>
-          <dt>Cần</dt><dd>ETA sống cho mỗi đơn đang giao, từ GPS mới nhất. Cảnh báo <b>SLA_RISK</b> khi ETA vượt hạn ≥ 1 phút, phát <b>≥ 15 phút trước</b> lúc trễ thật, mỗi đơn một lần. Cờ xe dừng bất thường.</dd>
-          <dt>Độ tươi</dt><dd>GPS → cảnh báo p95 &lt; 10 giây.</dd>
-        </dl>
-        <span class="ids">BR-3 · BR-5 · NFR-1</span>
-      </div>
-      <div class="user">
-        <h3>Quản lý vận hành<small>theo giờ, theo ngày</small></h3>
-        <dl>
-          <dt>Quyết định</dt><dd>Kho nào, tài xế nào cần cải thiện; ETA có đáng tin không.</dd>
-          <dt>Hôm nay</dt><dd class="now">KPI có vào sáng hôm sau.</dd>
-          <dt>Cần</dt><dd>Tỉ lệ đúng giờ = đúng giờ ÷ (đã giao + thất bại); đơn thất bại tính là trễ. Sai số ETA, chất lượng cảnh báo (precision, recall), theo tài xế và kho. Ngày tính theo giờ Việt Nam.</dd>
-          <dt>Độ tươi</dt><dd>Trong ngày ≤ 5 phút; số chốt sau 01:00.</dd>
-        </dl>
-        <span class="ids">BR-1 · BR-2 · BR-4 · BR-5</span>
-      </div>
-      <div class="user">
-        <h3>Data analyst<small>truy vấn lịch sử</small></h3>
-        <dl>
-          <dt>Quyết định</dt><dd>Tự phân tích bằng SQL, không phải hỏi kỹ sư.</dd>
-          <dt>Hôm nay</dt><dd class="now">Dữ liệu thô, rời rạc giữa hai hệ thống.</dd>
-          <dt>Cần</dt><dd>Bảng sạch raw → cleaned → business-ready. Event trễ hoặc trùng <b>không làm sai KPI</b>. Không có tọa độ khách hàng ở tầng gold.</dd>
-          <dt>Độ tươi</dt><dd>Trong ngày ≤ 5 phút; lịch sử giữ 2 năm (gold).</dd>
-        </dl>
-        <span class="ids">NFR-1 · NFR-2 · NFR-5 · NFR-6</span>
-      </div>
-    </div>
-    <p class="key"><b>Điểm cần nhớ:</b> bắt đầu từ quyết định của từng người dùng, suy ra cần dữ liệu gì và tươi tới đâu, rồi mới chọn công cụ. Định nghĩa đầy đủ ở <code>docs/requirements.md</code>.</p>
+    <p class="ans">GPS của xe và trạng thái đơn nằm ở hai hệ thống riêng, nên không ai biết đơn nào <b>sắp trễ</b>. Theo dõi một đơn qua một buổi sáng để thấy mỗi người dùng cần gì:</p>
+    <ol class="story">
+      <li class="ev"><span class="t">08:10</span><div class="b">
+        <span class="who">VAN-0001 kẹt xe</span>
+        <p>Đơn <code>ORD_002</code> hạn giao <b>08:33</b>. Theo GPS, ETA mới là <b>08:45</b>.</p>
+      </div></li>
+      <li><span class="t">08:10</span><div class="b">
+        <span class="who">Dispatcher</span>
+        <p class="need">Cần: <b>cảnh báo ngay</b>, khi còn 23 phút trước hạn (yêu cầu: ít nhất 15 phút).</p>
+        <p class="need">Làm: gọi khách hẹn lại, hoặc chuyển đơn cho xe khác.</p>
+      </div></li>
+      <li><span class="t">09:00</span><div class="b">
+        <span class="who">Quản lý vận hành</span>
+        <p class="need">Cần: <b>tỉ lệ đúng giờ</b> hôm nay theo kho và tài xế, cập nhật mỗi 5 phút. Nếu <code>ORD_002</code> vẫn trễ, nó kéo số xuống, ví dụ còn 92%.</p>
+        <p class="need">Làm: thấy kho nào hay trễ thì điều thêm xe.</p>
+      </div></li>
+      <li><span class="t">Tuần sau</span><div class="b">
+        <span class="who">Data analyst</span>
+        <p class="need">Cần: <b>dùng SQL</b> hỏi "đơn trễ theo kho, theo giờ". Kết quả không đổi dù GPS bị gửi trùng hay đến muộn.</p>
+        <p class="need">Làm: tìm giờ cao điểm hay trễ để đề xuất đổi khung giờ giao.</p>
+      </div></li>
+    </ol>
+    <p>Hôm nay cả ba đều không có: dispatcher biết trễ khi hạn đã qua, còn KPI có vào sáng hôm sau.</p>
+    <p class="key"><b>Điểm cần nhớ:</b> mỗi người cần một độ tươi khác nhau: vài giây (cảnh báo), vài phút (KPI), lịch sử (SQL). Ba độ tươi này quyết định kiến trúc.</p>
   </section>
 
   <section id="q2">
