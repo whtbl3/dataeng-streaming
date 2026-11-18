@@ -175,8 +175,9 @@ details code { font-size: 12.5px; }
       </div></li>
       <li><span class="t">Tuần sau</span><div class="b">
         <span class="who">Data analyst</span>
-        <p class="need">Cần: <b>dùng SQL</b> hỏi "đơn trễ theo kho, theo giờ". Kết quả không đổi dù GPS bị gửi trùng hay đến muộn.</p>
-        <p class="need">Làm: tìm giờ cao điểm hay trễ để đề xuất đổi khung giờ giao.</p>
+        <p class="need">Câu hỏi: <b>ETA có đáng tin không?</b> Lúc 08:10 hệ thống đoán 08:45, thực tế xe tới 08:47: sai 2 phút. Gộp cả tháng thì thấy kho Quận 7 giờ cao điểm sai trung bình 15 phút.</p>
+        <p class="need">Cần: lịch sử GPS và lịch sử đơn của nhiều tuần, sạch, không bị đếm trùng.</p>
+        <p class="need">Làm: đề xuất chỉnh cách tính ETA cho khung giờ đó, để cảnh báo bớt báo sai.</p>
       </div></li>
     </ol>
     <p>Hôm nay cả ba đều không có: dispatcher biết trễ khi hạn đã qua, còn KPI có vào sáng hôm sau.</p>
@@ -185,7 +186,17 @@ details code { font-size: 12.5px; }
 
   <section id="q2">
     <h2><span class="n">2</span>Dữ liệu đến từ đâu?</h2>
-    <p class="ans">Hai nguồn có bản chất khác nhau. <b>GPS là sự kiện</b>: mỗi ping là một dòng mới, không bao giờ sửa. <b>Đơn hàng là trạng thái</b>: cùng một dòng bị UPDATE nhiều lần.</p>
+    <p class="ans">Từ hai hệ thống: <b>thiết bị GPS trên xe</b> gửi vị trí vào Kafka, và <b>database đơn hàng</b> (Postgres, do team khác quản lý) gồm 3 bảng.</p>
+    <div class="tw"><table>
+      <tr><th>Bảng · một dòng là</th><th>Cột chính</th><th>Thay đổi · lượng</th></tr>
+      <tr><td><code>depots</code><br>một kho</td><td class="m">depot_id, name, lat, lon</td><td>gần như không đổi</td></tr>
+      <tr><td><code>vans</code><br>một xe</td><td class="m">van_id, depot_id, plate, capacity</td><td>ít đổi · 200 xe</td></tr>
+      <tr><td><code>orders</code><br>một đơn</td><td class="m">order_id, depot_id, van_id, dest_lat/lon, promised_start/end, status, …_at</td><td>UPDATE 4–5 lần/đơn · ~5k đơn/ngày</td></tr>
+      <tr><td><code>gps.pings.v1</code> (Kafka)<br>một vị trí xe</td><td class="m">vehicle_id, event_ts, lat, lon, speed_kmh, heading_deg</td><td>chỉ thêm mới, 5 giây/xe · ~3,5 triệu/ngày</td></tr>
+    </table></div>
+    <p><b>Nối với nhau:</b> một kho có nhiều xe và nhiều đơn; mỗi đơn do một xe giao (<code>orders.van_id</code>); ping GPS nối với xe qua <code>vehicle_id = van_id</code>.</p>
+    <p>Một đơn đi qua các trạng thái <code>created → assigned → out_for_delivery → delivered</code> hoặc <code>failed</code>, mỗi bước ghi giờ vào cột <code>…_at</code> tương ứng.</p>
+    <p>Hai nguồn có bản chất khác nhau. <b>GPS là sự kiện</b>: mỗi ping là một dòng mới, không bao giờ sửa. <b>Đơn hàng là trạng thái</b>: cùng một dòng bị UPDATE nhiều lần.</p>
     <div class="two">
       <div class="demo"><h3>GPS ping <span class="st ok">Đã chạy</span></h3><div class="tw"><table>
         <tr><th>vehicle_id</th><th>event_ts</th><th class="num">speed</th></tr>
@@ -198,7 +209,18 @@ details code { font-size: 12.5px; }
         <tr class="hl"><td class="m">ORD_001</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td></tr>
       </table></div><p class="cap">Một dòng duy nhất. Trạng thái cũ bị ghi đè.</p></div>
     </div>
-    <p class="key"><b>Điểm cần nhớ:</b> sự kiện thì chỉ cần thêm dòng. Trạng thái bị ghi đè, nên muốn có lịch sử phải bắt từng thay đổi (phần 3).</p>
+    <h3>Vì sao phải giữ lịch sử, không chỉ trạng thái mới nhất?</h3>
+    <p>Mỗi dòng dưới đây là một câu hỏi nghiệp vụ mà nếu chỉ có <b>vị trí xe hiện tại</b> và <b>trạng thái đơn hiện tại</b> thì không trả lời được:</p>
+    <div class="tw"><table>
+      <tr><th>Câu hỏi</th><th>Ai hỏi</th><th>Cần lịch sử gì</th></tr>
+      <tr><td>Xe có đang dừng bất thường không? (đứng yên 12 phút, không phải điểm giao)</td><td>Dispatcher</td><td>Chuỗi ping GPS 12 phút gần nhất của xe</td></tr>
+      <tr><td>ETA hôm nay sai bao nhiêu phút? (đoán 08:45, giao 08:47)</td><td>Quản lý, analyst</td><td>ETA đã đoán lúc 08:10 + giờ giao thật</td></tr>
+      <tr><td>Cảnh báo có đúng không, hay báo động giả?</td><td>Quản lý</td><td>Cảnh báo đã phát + kết quả thật của đơn</td></tr>
+      <tr><td>Đơn chuyển từ VAN-0001 sang VAN-0007 lúc 08:12. Trễ tính cho tài xế nào?</td><td>Quản lý</td><td>Mọi lần đổi <code>van_id</code> của đơn</td></tr>
+      <tr><td>Khách khiếu nại "xe không tới". Lúc 08:40–08:50 xe ở đâu?</td><td>Dispatcher</td><td>Vị trí xe trong khung giờ đó</td></tr>
+      <tr><td>Tính sai KPI vì lỗi code, sửa xong tính lại tháng trước được không?</td><td>Kỹ sư dữ liệu</td><td>Toàn bộ dữ liệu thô, chưa xử lý</td></tr>
+    </table></div>
+    <p class="key"><b>Điểm cần nhớ:</b> GPS là sự kiện nên chỉ cần thêm dòng là có lịch sử. Đơn hàng bị ghi đè (ví dụ <code>van_id</code> đổi thì giá trị cũ mất), nên phải bắt từng thay đổi (phần 3).</p>
   </section>
 
   <section id="q3">
