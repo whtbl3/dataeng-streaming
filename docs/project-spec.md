@@ -86,6 +86,10 @@ events therefore cannot skew the final numbers.
 - **Security:** no secrets in git; least-privilege IAM; RDS in private subnets.
 - **Reproducibility:** fresh clone → running demo in < 10 min with Docker only; deterministic simulator seed.
 
+Business definitions (BR-*), non-functional requirements (NFR-*) and data-modeling rules live in
+[docs/requirements.md](requirements.md). An interactive walkthrough of the design is in
+`docs/design/system-design-walkthrough.html` (open it in a browser).
+
 ## 7. Definition of Done
 - [ ] `make check` passes (same as CI)
 - [ ] Every acceptance criterion has a test
