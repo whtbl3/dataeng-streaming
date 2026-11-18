@@ -7,1047 +7,425 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one working screen. Header (stage, arch view) · left timeline of business events ·
-   centre workspace: problem → decision → synchronized panes → architecture → Learn/Explore/Build.
-   Inspector drawer on the right opens only for a selected component. */
+/* Layout: one reading column. Each section answers one question: answer → small example → "Điểm cần nhớ". */
 :root {
   --bg: #FDFEFD; --paper: #FFFFFE; --sunk: #E6F0FC; --ink: #1E2F4F; --soft: #4A5875; --faint: #66718A; --line: #D3E1F5;
-  --accent: #4572B9; --accent-ink: #345A98; --accent-bg: #E6F0FC; --on-accent: #FFFFFE; --teal: #4572B9; --teal-bg: #E6F0FC;
-  --impl: #1f8a50; --impl-bg: #e3f4ea; --des: #7D879A; --des-bg: #EEF1F6; --bad: #c43a35; --bad-bg: #fce7e5; --warn: #9a5b00; --warn-bg: #fbeedb;
-  --code: #F6F9FE; --chg: #fff2bf; --new: #e2f5ea;
-  --hero-a: #FFFFFE; --hero-b: #E6F0FC; --hero-c: #9FB9E0; --hero-d: #4572B9; --dot: rgba(255,255,254,.55);
-  --node: #FFFFFE; --node-stroke: #4572B9; --depth: #B9CDEC; --halo: rgba(255,255,254,.9); --band: #F3F7FD; --band-stroke: #E3ECF8;
-  --legend-bg: rgba(255,255,254,.9); --bandl-on: #FFFFFE; --page-a: #FFFFFE; --page-b: #FDFEFD; --page-c: #E6F0FC; --decor: #99A2B2;
-  color-scheme: light;
+  --accent: #4572B9; --accent-ink: #345A98; --on-accent: #FFFFFE;
+  --ok: #1f7a48; --ok-bg: #e3f4ea; --plan: #66718A; --plan-bg: #EEF1F6; --bad: #b9352f; --bad-bg: #fce7e5; --hl: #fff2bf;
   --f-d: "Lexend", "Segoe UI", system-ui, sans-serif; --f-b: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0E1522; --paper: #151F31; --sunk: #1C2940; --ink: #E6F0FC; --soft: #B7C2D4; --faint: #99A2B2; --line: #26354F;
-  --accent: #6F95D3; --accent-ink: #A9C3EC; --accent-bg: #1D2F52; --on-accent: #0E1522; --teal: #8FB0E3; --teal-bg: #1D2F52;
-  --impl: #5fcb8c; --impl-bg: #13301f; --des: #99A2B2; --des-bg: #1F2738; --bad: #f08a82; --bad-bg: #3b1d1c; --warn: #e9b562; --warn-bg: #332710;
-  --code: #111A2A; --chg: #4a3c0c; --new: #13301f;
-  --hero-a: #151F31; --hero-b: #1B2A45; --hero-c: #2D4A7D; --hero-d: #4572B9; --dot: rgba(230,240,252,.22);
-  --node: #151F31; --node-stroke: #6F95D3; --depth: #0A0F19; --halo: rgba(14,21,34,.85); --band: rgba(230,240,252,.05); --band-stroke: rgba(230,240,252,.12);
-  --legend-bg: rgba(21,31,49,.92); --bandl-on: #E6F0FC; --page-a: #0E1522; --page-b: #101A2B; --page-c: #16243C; --decor: #99A2B2;
-  color-scheme: dark; } }
-:root[data-theme="dark"] { --bg: #0E1522; --paper: #151F31; --sunk: #1C2940; --ink: #E6F0FC; --soft: #B7C2D4; --faint: #99A2B2; --line: #26354F;
-  --accent: #6F95D3; --accent-ink: #A9C3EC; --accent-bg: #1D2F52; --on-accent: #0E1522; --teal: #8FB0E3; --teal-bg: #1D2F52;
-  --impl: #5fcb8c; --impl-bg: #13301f; --des: #99A2B2; --des-bg: #1F2738; --bad: #f08a82; --bad-bg: #3b1d1c; --warn: #e9b562; --warn-bg: #332710;
-  --code: #111A2A; --chg: #4a3c0c; --new: #13301f;
-  --hero-a: #151F31; --hero-b: #1B2A45; --hero-c: #2D4A7D; --hero-d: #4572B9; --dot: rgba(230,240,252,.22);
-  --node: #151F31; --node-stroke: #6F95D3; --depth: #0A0F19; --halo: rgba(14,21,34,.85); --band: rgba(230,240,252,.05); --band-stroke: rgba(230,240,252,.12);
-  --legend-bg: rgba(21,31,49,.92); --bandl-on: #E6F0FC; --page-a: #0E1522; --page-b: #101A2B; --page-c: #16243C; --decor: #99A2B2;
-  color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1522; --paper: #151F31; --sunk: #1C2940; --ink: #E6F0FC; --soft: #B7C2D4; --faint: #99A2B2; --line: #26354F;
+  --accent: #6F95D3; --accent-ink: #A9C3EC; --on-accent: #0E1522;
+  --ok: #5fcb8c; --ok-bg: #13301f; --plan: #99A2B2; --plan-bg: #1F2738; --bad: #f08a82; --bad-bg: #3b1d1c; --hl: #4a3c0c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E1522; --paper: #151F31; --sunk: #1C2940; --ink: #E6F0FC; --soft: #B7C2D4; --faint: #99A2B2; --line: #26354F;
+  --accent: #6F95D3; --accent-ink: #A9C3EC; --on-accent: #0E1522;
+  --ok: #5fcb8c; --ok-bg: #13301f; --plan: #99A2B2; --plan-bg: #1F2738; --bad: #f08a82; --bad-bg: #3b1d1c; --hl: #4a3c0c; color-scheme: dark; }
 * { box-sizing: border-box; }
-[hidden] { display: none !important; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15.5px/1.65 var(--f-b); }
-h1, h2, h3, h4 { font-family: var(--f-d); margin: 0; line-height: 1.2; text-wrap: balance; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 var(--f-b); }
+h1, h2, h3 { font-family: var(--f-d); line-height: 1.25; margin: 0; text-wrap: balance; }
 p { margin: 0; }
-code { font: 500 .86em var(--f-m); background: var(--sunk); border-radius: 5px; padding: 1px 5px; overflow-wrap: anywhere; }
-pre { margin: 0; font: 12.5px/1.6 var(--f-m); background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; white-space: pre; }
-pre .c { color: var(--faint); } pre .k { color: var(--teal); font-weight: 600; }
+code { font: .86em var(--f-m); background: var(--sunk); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
 button { font: inherit; color: inherit; }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-/* header */
-.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line);
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--paper); }
-.brand { display: grid; line-height: 1.25; } .brand b { font: 800 16px var(--f-d); } .brand span { font-size: 12px; color: var(--faint); }
-.where { display: grid; gap: 2px; margin-right: auto; min-width: 0; }
-.where .lbl { font: 600 11px var(--f-b); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
-.where .stg { font: 700 15px var(--f-d); }
-.dots { display: flex; gap: 4px; } .dots i { width: 22px; height: 5px; border-radius: 3px; background: var(--line); }
-.dots i.done { background: var(--hero-c); } .dots i.cur { background: var(--accent); }
-.seg { display: inline-flex; flex-wrap: wrap; gap: 3px; background: var(--sunk); border-radius: 10px; padding: 3px; }
-.seg button { border: 0; background: transparent; border-radius: 8px; padding: 6px 11px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--soft); }
-.seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
-.seg-lbl { font-size: 11px; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; margin-right: 4px; }
-.ctrl { display: flex; align-items: center; gap: 4px; }
-.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 9px; padding: 8px 14px; cursor: pointer; font-size: 14px; font-weight: 600; }
-.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.btn.accent { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.btn.small { padding: 5px 10px; font-size: 13px; }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
-.linkbtn { border: 0; background: none; color: var(--teal); cursor: pointer; padding: 0; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.top .in { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top b { font: 700 15px var(--f-d); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.wrap > * { min-width: 0; }
 
-/* app */
-.app { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: calc(100vh - 60px); }
-.tl { border-right: 1px solid var(--line); background: var(--paper); padding: 18px 16px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-content: start; position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto; }
-.tl h4 { font: 600 11px var(--f-b); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
-.stages { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.stages button { width: 100%; text-align: left; border: 0; background: none; border-radius: 8px; padding: 6px 8px; cursor: pointer; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 4px; font-size: 13.5px; line-height: 1.35; color: var(--soft); }
-.stages button .n { font: 600 12px/1.6 var(--f-m); color: var(--faint); }
-.stages button.done .n { color: var(--teal); }
-.stages button[aria-current="true"] { background: var(--accent); color: var(--on-accent); } .stages button[aria-current="true"] .n { color: var(--on-accent); opacity: .75; }
-.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-.events li { display: grid; grid-template-columns: 4.2em 14px minmax(0, 1fr); gap: 6px; font-size: 13px; line-height: 1.4; }
-.events time { font: 500 11.5px/1.5 var(--f-m); color: var(--faint); text-align: right; }
-.events .rl { position: relative; } .events .rl::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--line); }
-.events .rl::after { content: ""; position: absolute; left: 2px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); }
-.events li.now .rl::after { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
-.events li.future { opacity: .45; } .events li.future .rl::after { background: var(--line); }
-.events li span.t { padding-bottom: 10px; }
-.player { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; background: var(--sunk); border-radius: 12px; padding: 12px; }
-.player p { font-size: 13px; color: var(--soft); }
-.player .row { display: flex; gap: 6px; flex-wrap: wrap; }
-main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-content: start; max-width: 1240px; }
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 
-/* problem + decision */
-.problem { display: grid; gap: 8px; padding: 24px 28px 26px; border-radius: 18px; border: 1px solid var(--line); position: relative; overflow: hidden;
-  background: linear-gradient(112deg, var(--hero-a) 0 47%, var(--hero-b) 57%, var(--hero-c) 72%, var(--hero-d) 100%); }
-.problem > * { position: relative; z-index: 1; }
-.problem::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 34%; z-index: 0;
-  background-image: radial-gradient(circle, var(--dot) 1.3px, transparent 1.7px); background-size: 16px 16px;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%); mask-image: linear-gradient(90deg, transparent, #000 40%); }
-.problem::after { display: none; }
-.problem { background: linear-gradient(112deg, var(--hero-a) 0 55%, var(--hero-b) 100%); border-left: 4px solid var(--accent); padding: 18px 22px 20px; border-radius: 14px; }
-.problem .k { font: 600 11.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
-.problem h2 { font-size: clamp(19px, 1.9vw, 24px); font-weight: 700; letter-spacing: -.01em; max-width: 52ch; color: var(--ink); }
-.problem p { color: var(--soft); max-width: 75ch; font-size: 15px; }
-.decision { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
-.decision .q { font: 700 16px var(--f-d); }
-.opts { display: grid; gap: 6px; }
-.opt { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; background: var(--paper); text-align: left; }
-.opt input { margin: 3px 0 0; accent-color: var(--accent); }
-.opt b { font-weight: 600; } .opt span.s { display: block; font-size: 13px; color: var(--soft); }
-.opt.right { border-color: var(--impl); background: var(--impl-bg); } .opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
-.fb { font-size: 14px; border-radius: 10px; padding: 10px 12px; } .fb.ok { background: var(--impl-bg); } .fb.no { background: var(--bad-bg); }
-.sec { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
-.sec h3 { font: 700 17px var(--f-d); } .sec span { font-size: 13px; color: var(--faint); }
-.reqs { display: flex; flex-wrap: wrap; gap: 6px; }
-.req { font-size: 12.5px; background: var(--teal-bg); color: var(--ink); border-radius: 8px; padding: 4px 9px; }
-.req b { color: var(--teal); }
+.intro { display: grid; gap: 12px; }
+.intro h1 { font-size: clamp(24px, 3.4vw, 32px); }
+.intro p { color: var(--soft); max-width: 62ch; }
+.toc { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 2px 20px; counter-reset: q; }
+.toc a { color: var(--ink); text-decoration: none; display: grid; grid-template-columns: 2em minmax(0, 1fr); padding: 3px 0; font-size: 15px; }
+.toc a:hover { color: var(--accent-ink); text-decoration: underline; }
+.toc span { font: 600 13px/1.9 var(--f-m); color: var(--accent-ink); }
 
-/* panes */
-.panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; }
-.pane { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 6px 18px -10px var(--depth); padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; position: relative; }
-.pane.wide { grid-column: 1 / -1; }
-.pane.flash { animation: flash 1.1s ease; }
-@keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
-@media (prefers-reduced-motion: reduce) { .pane.flash { animation: none; } }
-.pane h3 { font: 700 14px var(--f-b); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
-.pane h3 small { font: 500 11.5px var(--f-m); color: var(--faint); }
-.pane h3 button.insp-open { margin-left: auto; border: 0; background: none; color: var(--teal); font-size: 12px; font-weight: 600; cursor: pointer; }
-.kv { max-width: 640px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: 13.5px; margin: 0; }
-.kv dt { color: var(--faint); } .kv dd { margin: 0; font: 500 13px var(--f-m); overflow-wrap: anywhere; }
-.kv dd.chg { background: var(--chg); border-radius: 4px; padding: 0 4px; }
-.mt { border-collapse: collapse; width: 100%; font: 12.5px/1.5 var(--f-m); }
-.mt th, .mt td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
-.mt th { font: 600 10.5px var(--f-b); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); white-space: nowrap; overflow-wrap: normal; }
-.mt tr.new td { background: var(--new); } .mt tr.dup td { background: var(--bad-bg); }
-.note { font-size: 13px; color: var(--soft); }
-.st { display: inline-flex; align-items: center; gap: 4px; font: 600 10.5px/1 var(--f-b); padding: 3px 7px; border-radius: 999px; white-space: nowrap; letter-spacing: 0; text-transform: none; }
-.st::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.st.impl { color: var(--impl); background: var(--impl-bg); } .st.des { color: var(--des); background: var(--des-bg); } .st.prop, .st.ex { color: var(--warn); background: var(--warn-bg); }
-.st.ex { background: transparent; border: 1px dashed var(--warn); }
-.status-line { font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.pill { font: 600 11.5px var(--f-m); padding: 3px 8px; border-radius: 6px; background: var(--sunk); }
-.pill.wait { background: var(--warn-bg); color: var(--warn); } .pill.ok { background: var(--impl-bg); color: var(--impl); }
-.map svg { display: block; width: 100%; height: auto; }
-.map .road { stroke: var(--line); stroke-width: 2; stroke-dasharray: 5 5; }
-.map .dep { fill: var(--ink); } .map .dst { fill: var(--accent); } .map .van { fill: var(--teal); }
-.map .ring { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 3 3; }
-.map text { fill: var(--soft); font: 500 11px var(--f-b); }
-.erd { overflow-x: auto; } .erd svg { display: block; width: 100%; min-width: 760px; height: auto; }
-.et rect.box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; } .et rect.hd { fill: var(--sunk); }
-.et text { fill: var(--ink); font: 500 12px var(--f-m); } .et text.tn { font: 700 13.5px var(--f-m); }
-.et text.ty { fill: var(--faint); font: 400 10.5px var(--f-m); } .et text.tg { fill: var(--teal); font: 600 9.5px var(--f-m); } .et text.tg.pk { fill: var(--accent-ink); }
-.et rect.newrow { fill: var(--new); }
-.et { cursor: pointer; } .et:focus { outline: none; } .et:hover rect.box, .et:focus rect.box { stroke: var(--teal); }
-.rel { stroke: var(--soft); stroke-width: 1.5; fill: none; } .rel-c { fill: var(--paper); stroke: var(--soft); stroke-width: 1.5; }
-.rel-l { fill: var(--soft); font: 500 11px var(--f-b); }
+section { display: grid; gap: 14px; padding-top: 30px; border-top: 1px solid var(--line); scroll-margin-top: 60px; }
+section > * { min-width: 0; }
+section h2 { font-size: 21px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: baseline; }
+section h2 .n { font: 600 15px var(--f-m); color: var(--on-accent); background: var(--accent); border-radius: 6px; padding: 1px 8px; }
+section p { max-width: 68ch; }
+.ans { font-size: 17px; }
+ul.pts { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; max-width: 68ch; }
+.key { background: var(--sunk); border-radius: 10px; padding: 12px 16px; max-width: 68ch; }
+.key b { color: var(--accent-ink); }
 
-/* architecture */
-.arch { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.arch-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; }
-.arch-head h3 { font: 700 13.5px var(--f-b); }
-.arch-svg { overflow-x: auto; } .arch-svg svg { display: block; width: 100%; min-width: 820px; height: auto; }
-.band { fill: var(--band); stroke: var(--band-stroke); } .bandl { fill: var(--soft); font: 600 11px var(--f-b); letter-spacing: .12em; text-transform: uppercase; } .bandl.on { fill: var(--bandl-on); }
-.an rect { fill: var(--node); stroke: var(--node-stroke); stroke-width: 1.6; filter: drop-shadow(0 5px 0 var(--depth)); }
-.an.impl rect { stroke: var(--node-stroke); } .an.des rect { fill: var(--node); fill-opacity: .85; stroke: var(--decor); stroke-dasharray: 5 4; filter: none; }
-.an.hot rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: none; filter: drop-shadow(0 5px 0 var(--accent)); }
-.an text.t { fill: var(--ink); font: 700 12.5px var(--f-b); } .an text.s { fill: var(--soft); font: 500 10.5px var(--f-m); }
-.an { cursor: pointer; } .an:focus { outline: none; } .an:hover rect, .an:focus rect { fill: var(--teal-bg); }
-.ae-halo { stroke: var(--halo); stroke-width: 4.5; fill: none; } .ae { stroke: var(--node-stroke); stroke-width: 1.6; fill: none; } .ae.hot { stroke: var(--accent); stroke-width: 2.6; }
-.ae.dash { stroke-dasharray: 5 4; }
-.ael { fill: var(--ink); font: 500 10.5px var(--f-m); paint-order: stroke; stroke: var(--halo); stroke-width: 3px; } .ael.hot { fill: var(--accent-ink); font-weight: 600; }
-#mk path { fill: var(--node-stroke); } #mkh path { fill: var(--accent); }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--soft); }
-.arch .legend { color: var(--soft); }
-.legend i { display: inline-block; width: 18px; height: 10px; border-radius: 3px; border: 1.5px solid; margin-right: 5px; vertical-align: -1px; }
+.st { display: inline-block; font: 600 12px/1 var(--f-b); padding: 4px 8px; border-radius: 999px; vertical-align: 2px; white-space: nowrap; }
+.st.ok { color: var(--ok); background: var(--ok-bg); } .st.plan { color: var(--plan); background: var(--plan-bg); border: 1px dashed var(--plan); }
 
-/* modes */
-.modes { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; display: grid; grid-template-columns: minmax(0, 1fr); }
-.modes-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); padding: 0 8px; overflow-x: auto; }
-.modes-tabs button { border: 0; background: none; padding: 12px 14px 10px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--soft); border-bottom: 2.5px solid transparent; display: grid; text-align: left; gap: 1px; white-space: nowrap; }
-.modes-tabs button small { font-weight: 400; font-size: 11.5px; color: var(--faint); }
-.modes-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.mode-body { padding: 18px 22px 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 900px; }
-.mode-body p { max-width: 78ch; } .mode-body ul, .mode-body ol { margin: 0; padding-left: 1.3em; display: grid; gap: 5px; max-width: 78ch; }
-.mode-body h4 { font: 700 14px var(--f-d); margin-top: 4px; }
-.mode-body .why { border-left: 3px solid var(--accent); background: var(--accent-bg); padding: 10px 14px; border-radius: 0 10px 10px 0; }
-.mode-body .review { border-left: 3px solid var(--bad); background: var(--bad-bg); padding: 10px 14px; border-radius: 0 10px 10px 0; }
-.mode-body .review b.t { color: var(--bad); }
-.json { font: 12px/1.6 var(--f-m); background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; white-space: pre; }
-.json .d { background: var(--chg); border-radius: 3px; } .json .mu { color: var(--faint); }
-.ops { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
-.op { flex: 1 1 150px; border: 1px solid var(--line); background: var(--sunk); border-radius: 10px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; text-align: left; cursor: pointer; }
-.op b { font: 600 12.5px var(--f-m); overflow-wrap: anywhere; } .op span { font-size: 12px; color: var(--soft); }
-.op[aria-pressed="true"] { background: var(--teal-bg); border-color: var(--teal); }
-.io { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } @media (max-width: 720px) { .io { grid-template-columns: minmax(0, 1fr); } }
-.io div { background: var(--sunk); border-radius: 10px; padding: 10px 12px; font-size: 13px; } .io b { display: block; font: 600 10.5px var(--f-b); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-bottom: 4px; }
-.lin { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 8px; min-width: 1060px; }
-.lcard { background: var(--sunk); border-radius: 10px; padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; font-size: 12.5px; align-content: start; }
-.lcard .ly { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; font: 600 10.5px var(--f-b); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
-.lcard b { font: 600 12.5px var(--f-m); overflow-wrap: anywhere; }
-.tl-rows { display: grid; gap: 7px; }
-.tl-row { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; }
-.tl-row small { display: block; color: var(--faint); font-size: 11.5px; }
-.track { position: relative; height: 22px; background: var(--sunk); border-radius: 6px; overflow: hidden; }
-.track i { position: absolute; top: 4px; bottom: 4px; border-radius: 4px; } .track .now { top: 0; bottom: 0; width: 2px; background: var(--ink); border-radius: 0; }
-.tl-axis { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr); gap: 10px; font: 500 10.5px var(--f-m); color: var(--faint); }
-.tl-axis div { position: relative; height: 14px; } .tl-axis div span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-.tl-axis div span:first-child { transform: none; } .tl-axis div span:last-child { transform: translateX(-100%); }
-@media (max-width: 640px) { .tl-row, .tl-axis { grid-template-columns: minmax(0, 1fr); } .tl-axis > span:first-child { display: none; } }
-.tl-state { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 8px; }
-.tl-state div { background: var(--sunk); border-radius: 10px; padding: 10px 12px; font-size: 13px; display: grid; gap: 3px; }
-.tl-state div.g { background: var(--impl-bg); } .tl-state div.w { background: var(--warn-bg); }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12.5px; font-weight: 600; color: var(--faint); letter-spacing: .03em; }
+td.m, td code { font-family: var(--f-m); font-size: 13.5px; } td code { background: none; padding: 0; }
+tr.new td { background: var(--ok-bg); } tr.hl td { background: var(--hl); } tr.bad td { background: var(--bad-bg); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.demo { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+.demo > * { min-width: 0; }
+.demo .h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.demo .h b { font: 600 12.5px var(--f-b); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.demo .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo .cap { font-size: 14px; color: var(--soft); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.two > * { min-width: 0; }
+.two h3 { font: 600 14px var(--f-b); margin-bottom: 4px; }
+pre { margin: 0; font: 13px/1.6 var(--f-m); background: var(--sunk); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+
+/* overview flow */
+.flow { overflow-x: auto; padding-bottom: 4px; }
+.lanes { display: grid; gap: 10px; min-width: 720px; }
+.lane { display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); gap: 8px; align-items: center; }
+.lane > i { font: 600 12px var(--f-b); font-style: normal; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; }
+.box { position: relative; border: 1.5px solid var(--accent); background: var(--paper); border-radius: 9px; padding: 6px 10px; font-size: 13.5px; line-height: 1.35; }
+.box small { display: block; font: 12px var(--f-m); color: var(--soft); overflow-wrap: anywhere; }
+.box.plan { border-style: dashed; border-color: var(--plan); color: var(--soft); }
+.box + .box::before { content: "→"; position: absolute; left: -9px; top: 50%; transform: translate(-50%, -50%); color: var(--faint); font-size: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; color: var(--soft); }
+
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.calc label { display: grid; gap: 4px; font-size: 14px; }
+.calc output { font: 600 14px var(--f-m); }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
-.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
-.calc label { display: grid; gap: 4px; font-size: 13px; } .calc input { font: 500 14px var(--f-m); padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); }
-.out { background: var(--sunk); border-radius: 10px; padding: 10px 12px; } .out b { font: 700 20px var(--f-d); display: block; } .out span { font-size: 12px; color: var(--soft); }
-.trace { display: grid; gap: 6px; }
-.trace button { display: grid; grid-template-columns: 2em minmax(0, 1fr) auto; gap: 10px; align-items: start; text-align: left; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
-.trace button:hover { border-color: var(--teal); }
-.trace .n { font: 700 13px var(--f-m); color: var(--accent-ink); } .trace small { display: block; color: var(--soft); font-size: 12.5px; }
-.navfoot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-
-/* inspector */
-.insp { position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); background: var(--paper); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(0,0,0,.14);
-  transform: translateX(105%); transition: transform .2s ease; display: grid; grid-template-rows: auto auto minmax(0, 1fr); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
-.insp { visibility: hidden; transition: transform .2s ease, visibility 0s linear .2s; } .insp.open { transform: none; visibility: visible; transition: transform .2s ease; } @media (prefers-reduced-motion: reduce) { .insp { transition: none; } }
-.insp header { display: flex; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; align-items: flex-start; }
-.insp header h3 { font-size: 18px; } .insp header .sub { font-size: 12.5px; color: var(--soft); margin-top: 4px; }
-.insp .x { border: 1px solid var(--line); background: var(--sunk); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 18px; flex: none; }
-.insp .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); padding: 0 10px; overflow-x: auto; }
-.insp .tabs button { border: 0; background: none; padding: 8px 10px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--soft); border-bottom: 2px solid transparent; white-space: nowrap; }
-.insp .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.insp .content { overflow-y: auto; padding: 14px 16px 30px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-content: start; font-size: 14px; }
-.insp .content h5 { margin: 4px 0 0; font: 600 11px var(--f-b); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
-.insp .content pre { font-size: 11.5px; }
-.drn { display: grid; gap: 6px; } .drn div { background: var(--sunk); border-radius: 10px; padding: 9px 11px; font-size: 13px; } .drn b.id { font: 700 12px var(--f-m); color: var(--bad); margin-right: 6px; }
-@media (min-width: 1400px) { body.insp-on main.ws { padding-right: 480px; } }
-
-/* responsive */
-.tl-toggle { display: none; }
-@media (max-width: 980px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
-  .tl { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; gap: 14px; }
-  .tl .stages-box, .tl .events-box { display: none; }
-  .tl.show-all .stages-box, .tl.show-all .events-box { display: block; }
-  .tl-toggle { display: inline-block; justify-self: start; }
-  main.ws { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .brand span { display: none; }
-}
-@media (max-width: 700px) { .mt { display: block; overflow-x: auto; font-size: 12px; } .bar { position: static; } .bar .brand { display: none; } .insp { top: auto; height: 80vh; width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); padding-left: env(safe-area-inset-left, 0px); } .insp.open { transform: none; } .bar .seg-lbl { display: none; } }
+.res { border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+.res.ok { background: var(--ok-bg); } .res.bad { background: var(--bad-bg); }
+.res b.big { font: 700 22px var(--f-d); display: block; }
+details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--paper); }
+details summary { cursor: pointer; font-weight: 600; }
+details ol { margin: 10px 0 0; padding-left: 1.4em; display: grid; gap: 4px; font-size: 14.5px; }
+details code { font-size: 12.5px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 </style>
 </head>
 <body>
 
-<header class="bar">
-  <div class="brand"><b>Delivery Control Tower — Design Lab</b><span>Bạn là Data Engineer. Hãy thiết kế hệ thống cảnh báo đơn sắp trễ.</span></div>
-  <div class="where"><span class="lbl" id="whereLbl"></span><span class="stg" id="whereStage"></span><div class="dots" id="dots"></div></div>
-  <div class="ctrl"><span class="seg-lbl">Kiến trúc</span><div class="seg" id="archView" role="group" aria-label="Xem kiến trúc"></div></div>
-  <button class="btn small" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối"></button>
-  <button class="btn small" id="drnBtn" type="button">Design review</button>
-</header>
+<header class="top"><div class="in"><b>Control Tower · hiểu thiết kế</b><button class="btn" id="theme" type="button"></button></div></header>
 
-<div class="app">
-  <aside class="tl" id="tl" aria-label="Tiến trình">
-    <button class="btn small tl-toggle" id="tlToggle" type="button" aria-expanded="false">Giai đoạn và sự kiện</button>
-    <div class="stages-box"><h4>8 giai đoạn</h4><ol class="stages" id="stages"></ol></div>
-    <div class="player" id="player"></div>
-    <div class="events-box"><h4>Sự kiện của ORD_001</h4><ol class="events" id="events"></ol></div>
-  </aside>
+<main class="wrap">
+  <div class="intro">
+    <h1>Một đơn hàng đi qua hệ thống như thế nào?</h1>
+    <p>Trang này theo một đơn có thật trong simulator, <code>ORD_001</code>, giao bởi xe <code>VAN-0001</code> sáng 18/11. Mỗi phần trả lời một câu hỏi, có ví dụ nhỏ và một câu cần nhớ.</p>
+    <ol class="toc" id="toc"></ol>
+  </div>
 
-  <main class="ws" id="ws">
-    <section class="problem" aria-live="polite"><span class="k">Bài toán hiện tại</span><h2 id="pTitle"></h2><p id="pContext"></p></section>
-    <section class="decision" id="decision" hidden></section>
-    <section class="modes">
-      <div class="modes-tabs" role="tablist" id="modeTabs"></div>
-      <div class="mode-body" id="modeBody" role="tabpanel"></div>
-    </section>
-    <div class="sec"><h3>Hệ thống lúc này</h3><span>dữ liệu của ORD_001 tại bước này</span></div>
-    <section class="reqs" id="reqs" aria-label="Yêu cầu đã suy ra"></section>
-    <section class="panes" id="panes" aria-label="Trạng thái hệ thống"></section>
-    <section class="arch" aria-label="Kiến trúc">
-      <div class="arch-head"><h3 id="archTitle"></h3><div class="legend"><span><i style="border-color:var(--accent)"></i>Đã triển khai</span><span><i style="border-color:var(--faint);border-style:dashed"></i>Mới thiết kế</span><span><i style="border-color:var(--accent);background:var(--accent-bg)"></i>Đang học ở bước này</span></div></div>
-      <div class="arch-svg" id="arch"></div>
-      <p class="note" id="archNote"></p>
-    </section>
-    <nav class="navfoot" aria-label="Điều hướng bước"><button class="btn" id="prev" type="button">← Bước trước</button><button class="btn primary" id="next" type="button"></button></nav>
-  </main>
-</div>
+  <section id="q0">
+    <h2><span class="n">0</span>Bức tranh chung</h2>
+    <p class="ans">Có hai luồng dữ liệu: <b>GPS của xe</b> và <b>thay đổi của đơn hàng</b>. Cả hai đi qua Kafka, Flink ghi chúng vào lakehouse. Phần tính ETA, cảnh báo và dashboard đang ở dạng thiết kế.</p>
+    <div class="flow"><div class="lanes">
+      <div class="lane"><i>GPS</i>
+        <div class="box">Simulator<small>200 xe, 5 giây/lần</small></div>
+        <div class="box">Redpanda<small>gps.pings.v1</small></div>
+        <div class="box">Flink<small>job bronze_gps</small></div>
+        <div class="box">Iceberg<small>bronze.gps_pings</small></div></div>
+      <div class="lane"><i>Đơn hàng</i>
+        <div class="box">Postgres<small>bảng orders</small></div>
+        <div class="box">Debezium → Redpanda<small>cdc.public.orders</small></div>
+        <div class="box">Flink<small>job bronze_cdc</small></div>
+        <div class="box">Iceberg<small>bronze.orders_cdc</small></div></div>
+      <div class="lane"><i>Dùng dữ liệu</i>
+        <div class="box">Trino<small>truy vấn SQL bronze</small></div>
+        <div class="box plan">dbt<small>silver → gold (KPI)</small></div>
+        <div class="box plan">Flink ETA + cảnh báo<small>vehicle_latest, order_eta, alerts</small></div>
+        <div class="box plan">Grafana<small>bản đồ, cảnh báo, KPI</small></div></div>
+    </div></div>
+    <div class="legend"><span><span class="st ok">Đã chạy</span> code có trong repo, có test</span><span><span class="st plan">Dự kiến</span> đã thiết kế, chưa code</span></div>
+  </section>
 
-<aside class="insp" id="insp" aria-label="Inspector" aria-hidden="true">
-  <header><div><h3 id="iTitle"></h3><div class="sub" id="iSub"></div></div><button class="x" id="iClose" type="button" aria-label="Đóng">×</button></header>
-  <div class="tabs" id="iTabs" role="tablist"></div>
-  <div class="content" id="iBody"></div>
-</aside>
+  <section id="q1">
+    <h2><span class="n">1</span>Bài toán là gì?</h2>
+    <p class="ans">Dispatcher chỉ thấy <b>trạng thái</b> của đơn, không biết xe đang ở đâu. Họ biết đơn trễ khi hạn đã qua, lúc đó đã muộn để gọi khách hay đổi tuyến.</p>
+    <div class="demo">
+      <div class="h"><b>Màn hình dispatcher hôm nay · 08:30</b></div>
+      <div class="tw"><table>
+        <tr><th>Đơn</th><th>Xe</th><th>Trạng thái</th><th>Hạn giao</th></tr>
+        <tr><td class="m">ORD_001</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td><td class="m">09:36</td></tr>
+        <tr><td class="m">ORD_002</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td><td class="m">08:33</td></tr>
+      </table></div>
+      <p class="cap">Không có vị trí xe, không có ETA. KPI đúng giờ có vào sáng hôm sau.</p>
+    </div>
+    <p>Mục tiêu: mỗi đơn đang giao có ETA từ GPS mới nhất, và cảnh báo phát <b>ít nhất 15 phút trước</b> khi trễ hạn.</p>
+    <p class="key"><b>Điểm cần nhớ:</b> bắt đầu từ quyết định của người dùng (gọi khách, đổi tuyến), rồi mới tới dữ liệu và công cụ.</p>
+  </section>
+
+  <section id="q2">
+    <h2><span class="n">2</span>Dữ liệu đến từ đâu?</h2>
+    <p class="ans">Hai nguồn có bản chất khác nhau. <b>GPS là sự kiện</b>: mỗi ping là một dòng mới, không bao giờ sửa. <b>Đơn hàng là trạng thái</b>: cùng một dòng bị UPDATE nhiều lần.</p>
+    <div class="two">
+      <div class="demo"><h3>GPS ping <span class="st ok">Đã chạy</span></h3><div class="tw"><table>
+        <tr><th>vehicle_id</th><th>event_ts</th><th class="num">speed</th></tr>
+        <tr><td class="m">VAN-0001</td><td class="m">08:00:00</td><td class="m num">0</td></tr>
+        <tr><td class="m">VAN-0001</td><td class="m">08:02:05</td><td class="m num">37,5</td></tr>
+        <tr><td class="m">VAN-0001</td><td class="m">08:04:15</td><td class="m num">36,3</td></tr>
+      </table></div></div>
+      <div class="demo"><h3>Bảng orders (Postgres) <span class="st ok">Đã chạy</span></h3><div class="tw"><table>
+        <tr><th>order_id</th><th>van_id</th><th>status</th></tr>
+        <tr class="hl"><td class="m">ORD_001</td><td class="m">VAN-0001</td><td class="m">out_for_delivery</td></tr>
+      </table></div><p class="cap">Một dòng duy nhất. Trạng thái cũ bị ghi đè.</p></div>
+    </div>
+    <p class="key"><b>Điểm cần nhớ:</b> sự kiện thì chỉ cần thêm dòng. Trạng thái bị ghi đè, nên muốn có lịch sử phải bắt từng thay đổi (phần 3).</p>
+  </section>
+
+  <section id="q3">
+    <h2><span class="n">3</span>Lấy thay đổi của đơn hàng ra bằng cách nào?</h2>
+    <p class="ans">Dùng <b>CDC</b> (Change Data Capture). Debezium đọc nhật ký giao dịch (WAL) của Postgres, và mỗi INSERT/UPDATE thành một message có trạng thái <b>trước</b> và <b>sau</b>.</p>
+    <div class="tw"><table>
+      <tr><th>Cách</th><th>Vấn đề</th></tr>
+      <tr><td>Polling <code>WHERE updated_at &gt; …</code> mỗi 5 giây</td><td>Bỏ sót khi một dòng đổi 2 lần giữa hai lần đọc; tạo tải lên database</td></tr>
+      <tr><td>Ứng dụng vừa UPDATE vừa gửi Kafka</td><td>Một bên thành công, bên kia lỗi thì hai nơi lệch nhau</td></tr>
+      <tr class="new"><td><b>CDC đọc WAL</b> (đã chọn, ADR 0004)</td><td>Không sửa ứng dụng, không sót thay đổi đã commit</td></tr>
+    </table></div>
+    <div class="demo">
+      <div class="h"><b>Thử: các thay đổi của ORD_001</b><div class="row"><button class="btn pri" id="cdcNext" type="button">Thay đổi tiếp theo</button><button class="btn" id="cdcReset" type="button">Làm lại</button></div></div>
+      <div class="two">
+        <div><h3>Câu SQL simulator chạy</h3><pre id="cdcSql"></pre></div>
+        <div><h3>Message CDC Debezium gửi</h3><pre id="cdcMsg"></pre></div>
+      </div>
+      <p class="cap" id="cdcCap"></p>
+    </div>
+    <p class="key"><b>Điểm cần nhớ:</b> database chỉ giữ trạng thái mới nhất, còn CDC giữ <b>mọi lần thay đổi</b>, theo đúng thứ tự commit (<code>source_lsn</code>).</p>
+  </section>
+
+  <section id="q4">
+    <h2><span class="n">4</span>Vì sao cần Kafka (Redpanda) ở giữa?</h2>
+    <p class="ans">Kafka là một <b>cuốn sổ ghi thêm</b>. Bên gửi và bên đọc không cần chạy cùng lúc, và có thể đọc lại từ đầu.</p>
+    <ul class="pts">
+      <li><b>Giữ 7 ngày:</b> Flink dừng 1 giờ thì chạy lại vẫn đọc tiếp từ chỗ cũ, không mất dữ liệu.</li>
+      <li><b>Nhiều bên đọc:</b> job bronze và (sau này) job ETA đọc cùng một topic.</li>
+      <li><b>Đúng thứ tự cho từng xe:</b> message có key <code>vehicle_id</code>, nên mọi ping của VAN-0001 nằm cùng một partition, theo thứ tự gửi.</li>
+    </ul>
+    <div class="tw"><table>
+      <tr><th>topic</th><th>key</th><th class="num">offset</th><th>nội dung</th></tr>
+      <tr><td class="m">gps.pings.v1</td><td class="m">VAN-0001</td><td class="m num">4703</td><td class="m">08:02:05, 37,5 km/h</td></tr>
+      <tr><td class="m">cdc.public.orders</td><td class="m">ORD_001</td><td class="m num">381</td><td class="m">out_for_delivery → delivered</td></tr>
+    </table></div>
+    <p class="key"><b>Điểm cần nhớ:</b> offset chỉ là vị trí trong sổ. Nó đổi khi đọc lại, nên <b>không bao giờ dùng offset làm khóa</b>.</p>
+  </section>
+
+  <section id="q5">
+    <h2><span class="n">5</span>Flink ghi vào lakehouse như thế nào?</h2>
+    <p class="ans">Hai job riêng, mỗi job ghi một bảng Iceberg chỉ thêm dòng. Dữ liệu chỉ <b>hiện ra</b> khi Flink chạy checkpoint (mỗi 30 giây) và commit. <span class="st ok">Đã chạy</span></p>
+    <div class="demo">
+      <div class="h"><b>Thử: message → checkpoint → truy vấn</b><div class="row"><button class="btn pri" id="ckSend" type="button">Flink đọc 1 message</button><button class="btn" id="ckRun" type="button">Chạy checkpoint</button><button class="btn" id="ckReset" type="button">Làm lại</button></div></div>
+      <div class="two">
+        <div><h3>Đang chờ commit</h3><div class="tw"><table id="ckPend"></table></div></div>
+        <div><h3>Đã commit vào Iceberg</h3><div class="tw"><table id="ckDone"></table></div></div>
+      </div>
+      <p class="cap" id="ckCap"></p>
+    </div>
+    <p class="key"><b>Điểm cần nhớ:</b> checkpoint + commit cùng nhau cho <b>exactly-once</b>. Job chết giữa chừng thì phần chưa commit được đọc lại, không bị ghi hai lần.</p>
+  </section>
+
+  <section id="q6">
+    <h2><span class="n">6</span>Giữ lịch sử hay chỉ giữ vị trí mới nhất?</h2>
+    <p class="ans">Cả hai, trong <b>hai bảng khác nhau</b>. <code>bronze.gps_pings</code> giữ mọi ping để phân tích. Dispatcher chỉ cần xe đang ở đâu <b>lúc này</b>, nên có thêm bảng <code>vehicle_latest</code>, mỗi xe một dòng.</p>
+    <div class="demo">
+      <div class="h"><b>Thử: VAN-0001 gửi GPS</b><div class="row"><button class="btn pri" id="gpsNext" type="button">GPS tiếp theo</button><button class="btn" id="gpsReset" type="button">Làm lại</button></div></div>
+      <div class="two">
+        <div><h3>bronze.gps_pings · thêm dòng <span class="st ok">Đã chạy</span></h3><div class="tw"><table id="gpsHist"></table></div></div>
+        <div><h3>vehicle_latest · thay dòng <span class="st plan">Dự kiến</span></h3><div class="tw"><table id="gpsLatest"></table></div></div>
+      </div>
+      <p class="cap">Bên trái dài ra sau mỗi lần bấm, bên phải luôn chỉ có một dòng cho VAN-0001.</p>
+    </div>
+    <p class="key"><b>Điểm cần nhớ:</b> bảng lịch sử dùng <b>append</b> (thêm). Bảng trạng thái dùng <b>upsert</b> theo khóa (<code>vehicle_id</code>).</p>
+  </section>
+
+  <section id="q7">
+    <h2><span class="n">7</span>Nếu event đến trễ hoặc bị gửi trùng?</h2>
+    <p class="ans">Mỗi event có hai mốc thời gian: <code>event_ts</code> (lúc xảy ra) và <code>ingest_ts</code> (lúc hệ thống nhận). Logic nghiệp vụ luôn dùng <code>event_ts</code>.</p>
+    <div class="demo">
+      <div class="h"><b>Thử: ping 08:02:05 bị gửi lại, đến sau ping 08:09:05</b>
+        <div class="row" role="group" aria-label="Cách chọn vị trí mới nhất"><button class="btn" id="byIngest" type="button" aria-pressed="false">Lấy ping đến sau cùng</button><button class="btn" id="byEvent" type="button" aria-pressed="true">Lấy event_ts lớn nhất</button></div></div>
+      <div class="tw"><table>
+        <tr><th>thứ tự đến</th><th>event_ts</th><th class="num">cách nhà khách</th></tr>
+        <tr><td class="m">1</td><td class="m">08:04:15</td><td class="m num">34 m</td></tr>
+        <tr id="lateGood"><td class="m">2</td><td class="m">08:09:05</td><td class="m num">6 m</td></tr>
+        <tr id="lateBad"><td class="m">3 (gửi lại)</td><td class="m">08:02:05</td><td class="m num">1.328 m</td></tr>
+      </table></div>
+      <p class="res" id="lateRes"></p>
+    </div>
+    <ul class="pts">
+      <li><b>Trùng:</b> khử bằng khóa. GPS dùng <code>(vehicle_id, event_ts)</code>; CDC dùng <code>(khóa chính, source_lsn, op)</code>.</li>
+      <li><b>Trễ:</b> Flink chờ tối đa 30 giây (watermark). Trễ hơn nữa thì dbt sửa lại KPI ở lần chạy sau (phần 9).</li>
+    </ul>
+    <p class="key"><b>Điểm cần nhớ:</b> "mới nhất" phải tính theo <b>thời gian xảy ra</b>, không theo thứ tự đến.</p>
+  </section>
+
+  <section id="q8">
+    <h2><span class="n">8</span>Bronze, silver, gold khác nhau gì?</h2>
+    <p class="ans">Ba tầng làm sạch dần. Tầng sau luôn dựng lại được từ tầng trước.</p>
+    <div class="tw"><table>
+      <tr><th>Tầng</th><th>Lưu gì</th><th>ORD_001 trông thế nào</th><th>Trạng thái</th></tr>
+      <tr><td><b>bronze</b></td><td>Dữ liệu thô, đúng như nhận, kể cả bản trùng</td><td>4 dòng CDC: created, assigned, out_for_delivery, delivered</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td><b>silver</b></td><td>Đã khử trùng, đúng thứ tự</td><td>1 dòng trạng thái mới nhất + 4 dòng lịch sử</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td><b>gold</b></td><td>Số liệu nghiệp vụ cho KPI</td><td>1 dòng: đúng giờ, giao sớm 87 phút</td><td><span class="st plan">Dự kiến</span></td></tr>
+    </table></div>
+    <p class="key"><b>Điểm cần nhớ:</b> bronze không bao giờ sửa. Sai ở silver/gold thì xóa và dựng lại từ bronze.</p>
+  </section>
+
+  <section id="q9">
+    <h2><span class="n">9</span>Stream và batch chia việc thế nào?</h2>
+    <p class="ans"><b>Stream cho nhanh, batch cho đúng</b> (ADR 0006). Cả hai đọc cùng dữ liệu bronze/silver.</p>
+    <div class="tw"><table>
+      <tr><th>Việc</th><th>Ai làm</th><th>Nhanh cỡ nào</th></tr>
+      <tr><td>Cảnh báo đơn sắp trễ</td><td>Flink, theo từng event</td><td>p95 &lt; 10 giây</td></tr>
+      <tr><td>KPI trong ngày (tạm)</td><td>dbt mỗi 5 phút, tính lại 2 giờ gần nhất</td><td>≤ 5 phút</td></tr>
+      <tr><td>KPI chốt (<code>is_final</code>)</td><td>dbt chạy đêm, 01:00, tính lại cả ngày</td><td>sáng hôm sau</td></tr>
+    </table></div>
+    <p class="key"><b>Điểm cần nhớ:</b> event đến trễ 1 giờ có thể làm cảnh báo lỡ, nhưng <b>không làm sai KPI</b>, vì batch tính lại.</p>
+  </section>
+
+  <section id="q10">
+    <h2><span class="n">10</span>Tính ETA và cảnh báo trễ thế nào? <span class="st plan">Dự kiến</span></h2>
+    <p class="ans">Flink ghép <b>vị trí mới nhất</b> của xe với <b>đơn đang giao</b> của xe đó. ETA bản đầu là công thức đơn giản: khoảng cách ÷ tốc độ, cộng thời gian dừng ở các điểm giao trước. Cảnh báo phát khi ETA vượt hạn giao ≥ 1 phút.</p>
+    <div class="demo">
+      <div class="h"><b>Thử: ORD_001 lúc 08:02:05, hạn giao 09:36</b></div>
+      <div class="calc">
+        <label for="dist">Khoảng cách còn lại: <output id="distO"></output><input type="range" id="dist" min="0.5" max="25" step="0.1" value="1.3"></label>
+        <label for="spd">Tốc độ trung bình: <output id="spdO"></output><input type="range" id="spd" min="5" max="60" step="0.5" value="37.5"></label>
+        <label for="stops">Điểm giao còn trước ORD_001: <output id="stopsO"></output><input type="range" id="stops" min="0" max="12" step="1" value="0"></label>
+      </div>
+      <p class="res" id="etaRes"></p>
+      <p class="cap">Mỗi điểm giao trước tính 4 phút dừng. Thực tế còn tuyến đường và kẹt xe; ML để sau v1.</p>
+    </div>
+    <p class="key"><b>Điểm cần nhớ:</b> kết quả được <b>upsert</b> vào <code>order_eta</code> (mỗi đơn một dòng). Cảnh báo ghi vào <code>alerts</code>, mỗi đơn chỉ một lần.</p>
+  </section>
+
+  <section id="q11">
+    <h2><span class="n">11</span>Chạy ở đâu?</h2>
+    <p class="ans">Phát triển trên laptop với chi phí $0. Khi demo thì dựng bản AWS bằng Terraform rồi xóa ngay (dưới $5 mỗi lần). Khác biệt giữa hai môi trường chỉ nằm trong file cấu hình (ADR 0005).</p>
+    <div class="tw"><table>
+      <tr><th>Việc</th><th>Trên laptop</th><th>Trên AWS</th></tr>
+      <tr><td>Kafka</td><td>Redpanda</td><td>MSK Serverless</td></tr>
+      <tr><td>CDC</td><td>Postgres + Debezium</td><td>RDS PostgreSQL + MSK Connect</td></tr>
+      <tr><td>Xử lý stream</td><td>Flink 1.20</td><td>Managed Service for Apache Flink</td></tr>
+      <tr><td>Lưu trữ + catalog</td><td>MinIO + Iceberg REST</td><td>S3 + Glue Data Catalog</td></tr>
+      <tr><td>Truy vấn SQL</td><td>Trino</td><td>Athena</td></tr>
+      <tr><td>Dashboard</td><td>Grafana</td><td>Grafana trên ECS Fargate</td></tr>
+    </table></div>
+  </section>
+
+  <section id="sum">
+    <h2><span class="n">✓</span>Tóm lại: mỗi bảng một việc</h2>
+    <div class="tw"><table>
+      <tr><th>Bảng</th><th>Lưu gì</th><th>Cách thay đổi</th><th>Trạng thái</th></tr>
+      <tr><td class="m">orders (Postgres)</td><td>Trạng thái hiện tại của đơn</td><td>INSERT / UPDATE</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td class="m">bronze.gps_pings</td><td>Mọi ping GPS đã nhận</td><td>Append</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td class="m">bronze.orders_cdc</td><td>Mọi thay đổi của đơn</td><td>Append</td><td><span class="st ok">Đã chạy</span></td></tr>
+      <tr><td class="m">silver.*</td><td>Bản đã khử trùng</td><td>MERGE theo khóa</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td class="m">gold.fct_delivery</td><td>Mỗi đơn đã giao: đúng giờ hay trễ</td><td>dbt tính lại</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td class="m">vehicle_latest</td><td>Vị trí mới nhất mỗi xe</td><td>Upsert</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td class="m">order_eta, alerts</td><td>ETA và cảnh báo mỗi đơn</td><td>Upsert</td><td><span class="st plan">Dự kiến</span></td></tr>
+    </table></div>
+    <details>
+      <summary>13 điểm cần xem lại trong repo (Design review)</summary>
+      <ol id="drn"></ol>
+    </details>
+  </section>
+</main>
 
 <script>
-(() => {
-'use strict';
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const ST = { impl: ['impl', 'Implemented'], des: ['des', 'Designed'], prop: ['prop', 'Proposed'], ex: ['ex', 'Proposed example'] };
-const badge = k => `<span class="st ${ST[k][0]}">${ST[k][1]}</span>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-/* ============ 1. DATA: the running example (real values, local stack 2026-11-18) ============ */
-const DEPOT = [10.7760, 106.7000], DEST = [10.790626, 106.681708];
-const ROW0 = { order_id: 'ORD-20261118-00001', depot_id: 'DEP-01', van_id: null, stop_seq: null, status: 'created', promised_end: '02:36:11Z', assigned_at: null, out_for_delivery_at: null, delivered_at: null, updated_at: '19:57:55Z (17/11)' };
-const EV = [
-  { k: 'CREATED', t: '02:57:55', label: 'Đơn được tạo', set: {},
-    sql: "INSERT INTO orders (order_id, depot_id, dest_lat, dest_lon, promised_start,\n                    promised_end, status, created_at, updated_at)\nVALUES ('ORD-20261118-00001', 'DEP-01', 10.790626, 106.681708, '2026-11-18T00:36:11Z',\n        '2026-11-18T02:36:11Z', 'created', '2026-11-17T19:57:55Z', '2026-11-17T19:57:55Z')\nON CONFLICT (order_id) DO NOTHING;            -- INSERT 0 1",
-    cdc: { op: 'c', lsn: 27101288, tx: 1135, off: 126, bst: null, ast: 'created', commit: '03:25:34.672Z', cap: '03:25:35.038Z' },
-    pos: [10.776045, 106.700018], v: 0, dist: 2575, gps: null },
-  { k: 'ASSIGNED', t: '07:30:00', label: 'Phân công cho VAN-0001 (điểm dừng 1)',
-    set: { van_id: 'VAN-0001', stop_seq: 1, status: 'assigned', assigned_at: '00:30:00Z', updated_at: '00:30:00Z' },
-    sql: "UPDATE orders SET status = 'assigned', van_id = 'VAN-0001', stop_seq = 1,\n       assigned_at = '2026-11-18T00:30:00Z', updated_at = '2026-11-18T00:30:00Z'\nWHERE order_id = 'ORD-20261118-00001' AND status = 'created';   -- UPDATE 1",
-    cdc: { op: 'u', lsn: 27187680, tx: 1294, off: 180, bst: 'created', ast: 'assigned', commit: '03:25:34.885Z', cap: '03:25:35.082Z' },
-    pos: [10.775981, 106.700055], v: 0, dist: 2582, gps: null },
-  { k: 'OUT_FOR_DELIVERY', t: '08:00:00', label: 'Xe rời kho cùng 13 đơn',
-    set: { status: 'out_for_delivery', out_for_delivery_at: '01:00:00Z', updated_at: '01:00:00Z' },
-    sql: "UPDATE orders SET status = 'out_for_delivery', out_for_delivery_at = '2026-11-18T01:00:00Z',\n       updated_at = '2026-11-18T01:00:00Z'\nWHERE order_id = 'ORD-20261118-00001' AND status = 'assigned';  -- UPDATE 1",
-    cdc: { op: 'u', lsn: 27390824, tx: 1572, off: 279, bst: 'assigned', ast: 'out_for_delivery', commit: '03:25:35.398Z', cap: '03:25:35.747Z' },
-    pos: [10.775999, 106.699981], v: 0, dist: 2575, gps: { ts: '01:00:00Z', off: 4453, ing: '03:25:35.759Z', h: 0 } },
-  { k: 'ĐANG CHẠY', t: '08:02:05', label: 'Đang chạy tới điểm giao (37,5 km/h)', set: null, sql: null, cdc: null,
-    pos: [10.783058, 106.691112], v: 37.5, dist: 1328, gps: { ts: '01:02:05Z', off: 4703, ing: '03:25:35.771Z', h: 309.1 } },
-  { k: 'ĐẾN NƠI', t: '08:04:15', label: 'Xe đã đến nơi (cách 34 m)', set: null, sql: null, cdc: null,
-    pos: [10.790442, 106.681952], v: 36.3, dist: 34, gps: { ts: '01:04:15Z', off: 4963, ing: '03:25:35.788Z', h: 309.1 } },
-  { k: 'DELIVERED', t: '08:09:07', label: 'Giao xong, đúng hạn (còn dư 87 phút)',
-    set: { status: 'delivered', delivered_at: '01:09:07Z', updated_at: '01:09:07Z' },
-    sql: "UPDATE orders SET status = 'delivered', delivered_at = '2026-11-18T01:09:07Z',\n       updated_at = '2026-11-18T01:09:07Z'\nWHERE order_id = 'ORD-20261118-00001' AND status = 'out_for_delivery';  -- UPDATE 1",
-    cdc: { op: 'u', lsn: 27586392, tx: 1855, off: 381, bst: 'out_for_delivery', ast: 'delivered', commit: '03:25:35.857Z', cap: '03:25:35.860Z' },
-    pos: [10.790574, 106.681723], v: 0, dist: 6, gps: { ts: '01:09:05Z', off: 5543, ing: '03:25:35.856Z', h: 0 } },
-];
-function rowAt(c) { const r = Object.assign({}, ROW0); for (let i = 1; i <= c; i++) if (EV[i].set) Object.assign(r, EV[i].set); return r; }
-function prevRowAt(c) { let j = c; while (j > 0 && !EV[j].set) j--; return j > 0 ? rowAt(j - 1) : null; }
-
-/* ============ 2. COMPONENTS (real implementation status) ============ */
-const N = {
-  sim:     { c: 0, r: 0,  t: 'Simulator',        s: 'Python · seed 42',        st: 'impl', aws: 'ECS Fargate task' },
-  pg:      { c: 0, r: 3, t: 'PostgreSQL',       s: 'orders · vans',  st: 'impl', aws: 'Amazon RDS' },
-  dbz:     { c: 1, r: 3, t: 'Debezium',         s: 'WAL → CDC',               st: 'impl', aws: 'MSK Connect' },
-  rp:      { c: 2, r: 1,  t: 'Redpanda',         s: 'Kafka API',     st: 'impl', aws: 'MSK Serverless' },
-  flink:   { c: 3, r: 0,  t: 'Flink bronze',     s: '2 job bronze', st: 'impl', aws: 'Managed Flink' },
-  fct:     { c: 3, r: 3, t: 'Flink control tower', s: 'ETA · cảnh báo',       st: 'des',  aws: 'Managed Flink' },
-  ice:     { c: 4, r: 0,  t: 'Iceberg bronze',   s: 'MinIO · REST',    st: 'impl', aws: 'S3 + Glue Catalog' },
-  silver:  { c: 4, r: 1,  t: 'Iceberg silver',   s: 'khử trùng',  st: 'des',  aws: 'S3 + Glue Catalog' },
-  gold:    { c: 4, r: 2, t: 'Gold (dbt)',       s: 'KPI · chốt sổ đêm',       st: 'des',  aws: 'dbt trên ECS + Athena' },
-  serving: { c: 4, r: 3, t: 'Postgres serving', s: 'ETA · alerts', st: 'des',  aws: 'Amazon RDS' },
-  trino:   { c: 5, r: 0,  t: 'Trino',            s: 'SQL',                     st: 'impl', aws: 'Amazon Athena' },
-  sr:      { c: 2, r: 3, t: 'Schema Registry',  s: 'Avro · feature 3',      st: 'des',  aws: 'Glue Schema Registry' },
-  grafana: { c: 5, r: 2, t: 'Grafana',          s: 'bản đồ · KPI',            st: 'des',  aws: 'Grafana trên ECS' },
-};
-const COLW = 182, ROWH = 78, LAYERS = ['Nguồn', 'Ingest', 'Event log', 'Xử lý', 'Lưu trữ', 'Phục vụ'];
-Object.values(N).forEach(n => { n.x = 24 + n.c * COLW; n.y = 56 + n.r * ROWH; });
-const E = [['sr', 'rp', 'schema'], ['sim', 'pg', 'đơn hàng'], ['sim', 'rp', 'GPS'], ['pg', 'dbz', 'WAL'], ['dbz', 'rp', 'CDC'], ['rp', 'flink'], ['rp', 'fct'], ['flink', 'ice'], ['ice', 'silver'], ['silver', 'gold'], ['ice', 'trino'], ['gold', 'trino'], ['fct', 'serving'], ['serving', 'grafana'], ['trino', 'grafana']];
-
-/* ============ 3. STEPS ============ */
-const STAGES = ['Công ty đang gặp vấn đề gì?', 'Thiết kế database từ nghiệp vụ', 'Mô phỏng một ngày giao hàng', 'Vì sao cần CDC và streaming?', 'Flink nhận và xử lý thế nào?', 'Vì sao cần bronze, silver, gold?', 'Tươi, đúng và chịu tải', 'Chạy thật và lên AWS'];
-const S = [];
-const step = o => S.push(o);
-const ALL_LOCAL = ['pg', 'sim', 'dbz', 'rp', 'flink', 'ice', 'trino'];
-
-step({ g: 0, title: 'Một khách gọi hỏi: "Đơn ORD_001 của tôi khi nào tới?" Dispatcher cần gì để trả lời?',
-  ctx: 'Sáng 18/11 ở kho DEP-01. 08:00, VAN-0001 rời kho với 13 đơn. Màn hình của dispatcher chỉ có trạng thái từng đơn. Vị trí xe nằm ở thiết bị định vị trên xe, không ai ghép hai thứ này lại. KPI đúng giờ được tính bằng một job chạy ban đêm.',
-  panes: ['board'], intro: [], hot: [],
-  quiz: { q: 'Để trả lời "khi nào tới" và báo trước nếu sắp trễ, dispatcher cần dữ liệu gì?', opts: [
-    ['Trạng thái đơn trong database', 'Đã có sẵn.', false, 'Trạng thái chỉ cho biết "đang giao". Nó không nói xe ở đâu, còn bao xa, hay trước đơn này còn mấy điểm dừng.'],
-    ['Vị trí xe hiện tại, hạn giao của đơn, và thứ tự điểm dừng', 'Từ đó tính ETA (giờ dự kiến tới).', true, 'Đúng. ETA cần ba thứ cùng lúc: vị trí mới nhất (từ GPS), đơn nào xe đang chở và theo thứ tự nào (từ database đơn hàng), và hạn giao để so. Hai nguồn này hiện đang nằm tách rời.'],
-    ['Báo cáo KPI đúng giờ của hôm qua', 'Đã có, chạy mỗi đêm.', false, 'KPI hôm qua giúp đánh giá, không giúp cứu đơn đang giao hôm nay.'],
-  ] },
-  learn: `<p>Một hệ thống dữ liệu tốt bắt đầu từ một <b>quyết định</b> mà ai đó cần đưa ra. Ở đây là quyết định của dispatcher: có gọi khách hay đổi tuyến <i>trước khi</i> đơn bị trễ không.</p><p>Đặt câu hỏi theo thứ tự: <b>ai</b> cần dữ liệu, để <b>quyết định gì</b>, cần <b>những dữ liệu nào</b>, và cần <b>nhanh tới mức nào</b>. Chọn công cụ là bước cuối cùng.</p><div class="why"><b>Ba người dùng của project:</b> dispatcher (cần cảnh báo trong vài giây), ops manager (cần KPI theo kho và ngày, chính xác), data analyst (cần lịch sử để tìm nguyên nhân trễ).</div>`,
-  explore: () => `<h4>Điều dispatcher thấy và không thấy lúc 08:30</h4><table class="mt"><tr><th>Câu hỏi</th><th>Hệ thống hiện tại</th></tr><tr><td>Đơn ORD_001 đang ở trạng thái nào?</td><td>out_for_delivery</td></tr><tr><td>VAN-0001 đang ở đâu?</td><td>Không biết (thiết bị GPS là hệ thống khác)</td></tr><tr><td>Còn mấy điểm dừng trước ORD_001?</td><td>Không hiển thị</td></tr><tr><td>Đơn nào sắp trễ?</td><td>Chỉ biết khi đã trễ</td></tr><tr><td>Tỉ lệ đúng giờ hôm nay?</td><td>Sáng mai mới có</td></tr></table>`,
-  build: `<p>Chưa có gì để build. Kết quả của giai đoạn 1 là một tài liệu: <code>docs/intent.md</code> (vấn đề, người dùng, kết quả mong muốn, ngoài phạm vi, ràng buộc, cách đo thành công). Repo dùng quy trình intent → spec → plan → tasks: mỗi bước sinh ra một file mà bước sau đọc.</p>` });
-step({ g: 0, title: 'Cảnh báo phải đến trong bao lâu thì còn có ích?',
-  ctx: 'ORD_001 hẹn giao trước 09:36. Nếu xe kẹt xe lúc 08:40, ETA vượt hạn. Dispatcher cần biết đủ sớm để kịp gọi khách hoặc đổi thứ tự giao.',
-  panes: ['board'], intro: [], hot: [],
-  quiz: { q: 'Từ lúc xe gửi vị trí tới lúc cảnh báo hiện trên màn hình, độ trễ chấp nhận được là bao nhiêu?', opts: [
-    ['Sáng hôm sau, như KPI hiện tại', '', false, 'Đó chính là vấn đề đang cần giải quyết.'],
-    ['Mỗi giờ, chạy batch thường xuyên hơn', '', false, 'Một giờ trễ ăn hết thời gian còn lại của nhiều đơn. Yêu cầu là báo trước hạn ít nhất 15 phút.'],
-    ['Vài giây, p95 dưới 10 giây', '', true, 'Đúng (docs/intent.md). ETA thay đổi theo từng ping GPS. Mỗi giây chậm trễ là một giây ít hơn để dispatcher hành động. Nhưng KPI thì khác: chậm vài phút không sao, miễn là đúng. Hai yêu cầu này sẽ dẫn tới hai đường xử lý khác nhau.'],
-  ] },
-  learn: `<p>"Real-time" không phải một con số. Hãy tách từng nhu cầu ra:</p><ul><li><b>Cảnh báo</b>: vài giây, chấp nhận sai nhẹ. Gọi thừa một khách còn hơn không gọi.</li><li><b>KPI tạm tính</b>: vài phút.</li><li><b>KPI chính thức</b>: mỗi ngày, phải đúng tuyệt đối, kể cả khi dữ liệu đến trễ hay bị trùng.</li></ul><p>Hai yêu cầu <b>freshness</b> (độ tươi) và <b>correctness</b> (độ đúng) kéo ngược nhau: muốn nhanh thì phải chốt kết quả trước khi dữ liệu tới đủ. Thiết kế của project tách chúng ra hai đường (ADR 0006, giai đoạn 7).</p>`,
-  explore: () => `<h4>Ngân sách 10 giây chia cho các chặng <span class="st ex">ước tính</span></h4><table class="mt"><tr><th>Chặng</th><th>Ước tính</th></tr><tr><td>Producer gom batch (linger.ms)</td><td>20 ms</td></tr><tr><td>Kafka → Flink</td><td>~100 ms</td></tr><tr><td>Flink join + ETA</td><td>~500 ms</td></tr><tr><td>Ghi bảng serving</td><td>~1 s</td></tr><tr><td>Chu kỳ refresh dashboard</td><td>5 s</td></tr><tr><td><b>Tổng</b></td><td><b>~6,6 s</b></td></tr></table><p class="note">Riêng chu kỳ refresh dashboard đã ăn một nửa ngân sách. Vì vậy cảnh báo không thể đi qua Iceberg: Iceberg chỉ hiện dữ liệu sau mỗi checkpoint 30 s (giai đoạn 5). Sẽ đo thật ở feature 6.</p>`,
-  build: `<pre>docs/intent.md         <span class="c"># Success measures: alert p95 &lt; 10 s; late/duplicate events → same gold KPIs</span>
-docs/requirements.md   <span class="c"># Draft: BR-1..5, NFR-1..11 (NFR-1 freshness, NFR-2 correctness đã chốt)</span></pre>` });
-
-step({ g: 1, title: 'Bắt đầu chỉ với bảng orders. Khóa chính nên là gì?', erd: 1,
-  ctx: 'Mỗi đơn có mã do hệ thống bán hàng sinh ra (ORD-20261118-00001), một địa chỉ giao (tọa độ), một khung giờ hẹn và một trạng thái.',
-  panes: ['erd'], intro: ['pg'], hot: ['pg'],
-  quiz: { q: 'Chọn khóa chính cho orders:', opts: [
-    ['id SERIAL tự tăng', 'Phổ biến trong các tutorial.', false, 'Đơn đã có mã nghiệp vụ duy nhất. Thêm một ID tự tăng nghĩa là chạy lại simulator sẽ tạo đơn trùng với ID mới, và mọi hệ thống khác phải tra ngược ID nội bộ ra mã đơn.'],
-    ['order_id, chính là mã đơn nghiệp vụ', '', true, 'Đúng. Mã ổn định, duy nhất, ai cũng dùng. Nhờ nó, simulator dùng được INSERT … ON CONFLICT (order_id) DO NOTHING, nên chạy lại không tạo trùng (idempotent).'],
-    ['(dest_lat, dest_lon, created_at)', 'Ghép từ dữ liệu có sẵn.', false, 'Hai đơn tới cùng một địa chỉ trong cùng một giây là chuyện có thể xảy ra. Khóa ghép từ dữ liệu nghiệp vụ dễ đụng nhau, và đổi một cột là đổi luôn danh tính.'],
-  ] },
-  learn: `<p>Một bảng bắt đầu bằng câu hỏi <b>"một dòng đại diện cho cái gì?"</b>, gọi là <b>grain</b>. Ở đây: một dòng là một đơn, ở trạng thái <i>hiện tại</i>. Khóa chính là thứ làm cho "một đơn ↔ một dòng" luôn đúng.</p><p>ERD bên dưới chỉ hiện đầy đủ phần mới sau khi bạn bấm "Kiểm tra thiết kế".</p>`,
-  explore: () => erdExplain(1), build: () => ddl(1) });
-step({ g: 1, title: 'Đơn xuất phát từ kho nào? Lưu thông tin kho ở đâu?', erd: 2,
-  ctx: 'Có 4 kho trong thành phố. Mỗi đơn được nhận và xuất phát từ đúng một kho. Báo cáo cần tính theo kho, và cần tọa độ kho để biết xe đi từ đâu.',
-  panes: ['erd'], intro: ['pg'], hot: ['pg'],
-  quiz: { q: 'Thiết kế thông tin kho:', opts: [
-    ['Thêm cột depot_name (text) vào orders', '', false, 'Tên kho bị lặp ở hàng nghìn dòng, dễ sai chính tả ("D1 Hub" và "District 1 Hub"), và không có chỗ để lưu tọa độ kho.'],
-    ['Bảng depots, và orders.depot_id NOT NULL tham chiếu tới depots', '', true, 'Đúng. Kho là một entity có danh tính và thuộc tính riêng (tên, tọa độ). Khóa ngoại bảo đảm đơn luôn trỏ tới một kho có thật; NOT NULL vì không có đơn nào không thuộc kho.'],
-    ['Bảng depots, nhưng depot_id được NULL', '', false, 'Đơn luôn có kho ngay từ lúc tạo. Cho NULL là mở cửa cho dữ liệu không thể báo cáo theo kho.'],
-  ] },
-  learn: `<p>Quan hệ đầu tiên: <b>một kho có nhiều đơn, một đơn thuộc đúng một kho (1–N)</b>. Trên ERD, đường nối có hai vạch ở đầu kho ("đúng một") và chân chim ở đầu đơn ("nhiều").</p>`,
-  explore: () => erdExplain(2), build: () => ddl(2) });
-step({ g: 1, title: 'Một đơn chưa được phân xe. Vậy orders.van_id nên như thế nào?', erd: 3,
-  ctx: 'ORD_001 tạo lúc 02:57, nhưng 07:30 mới được chia cho VAN-0001. Trong khoảng đó, đơn có thật, có địa chỉ, có hạn giao, nhưng chưa có xe. Một xe giao nhiều đơn theo thứ tự điểm dừng.',
-  panes: ['erd'], intro: ['pg'], hot: ['pg'],
-  quiz: { q: 'Thiết kế orders.van_id:', opts: [
-    ['NOT NULL: mọi đơn đều phải có xe', '', false, 'Đơn mới tạo sẽ không có chỗ đứng. Ứng dụng buộc phải chờ phân xe mới được lưu đơn, hoặc tệ hơn, phải bịa ra một xe.'],
-    ['NULLABLE FK: chưa phân xe thì để NULL', '', true, 'Đúng. NULL nghĩa là "chưa xảy ra". Khi đã có giá trị, khóa ngoại bảo đảm xe có thật. Kèm theo là stop_seq (thứ tự điểm dừng), cũng NULL cho tới khi phân công. Một xe có nhiều đơn; một đơn có 0 hoặc 1 xe tại một thời điểm.'],
-    ['Gán một vehicle_id giả (VAN-0000) để giữ NOT NULL', '', false, 'Đây là dữ liệu rác điển hình. Mọi truy vấn về sau phải nhớ loại VAN-0000 ra, và chỉ cần một lần quên là số đơn mỗi xe bị sai.'],
-  ] },
-  learn: `<p>Quan hệ thứ hai: <b>một xe có nhiều đơn; một đơn có 0 hoặc 1 xe (0..1–N)</b>. Vòng tròn trên ERD nghĩa là "có thể không có".</p><p>Chi tiết quan trọng: <code>vans.van_id</code> được đặt trùng với <code>vehicle_id</code> mà thiết bị GPS gửi lên. Đây là cầu nối duy nhất giữa database đơn hàng và luồng GPS.</p><div class="review"><b class="t">Giới hạn của mô hình hiện tại.</b> Nếu đơn được chuyển sang xe khác, <code>van_id</code> bị ghi đè và lịch sử phân công mất khỏi bảng. Lịch sử đó chỉ còn trong CDC (giai đoạn 4). Muốn lưu lịch sử phân công ngay trong OLTP thì cần một bảng <code>assignments</code> (quan hệ N–N theo thời gian), hiện nằm ngoài phạm vi.</div>`,
-  explore: () => erdExplain(3), build: () => ddl(3) });
-step({ g: 1, title: 'Theo dõi vòng đời đơn thế nào?', erd: 4,
-  ctx: 'Một đơn đi qua: tạo → phân công → xuất kho → giao xong hoặc thất bại. KPI cần biết mỗi bước xảy ra lúc nào.',
-  panes: ['erd'], intro: ['pg'], hot: ['pg'],
-  quiz: { q: 'Lưu vòng đời đơn:', opts: [
-    ['Chỉ một cột status', '', false, 'Biết đơn đã giao, nhưng không biết giao lúc nào, nên không tính được đúng giờ hay không.'],
-    ['Cột status có CHECK, cộng một cột thời gian cho mỗi mốc', '', true, 'Đúng. CHECK chặn trạng thái lạ. assigned_at, out_for_delivery_at, delivered_at, failed_at để NULL cho tới khi xảy ra. Thêm failure_reason khi thất bại, updated_at cho mọi lần đổi.'],
-    ['Thêm bảng order_status_history ngay trong database này', 'Lưu mỗi lần đổi trạng thái một dòng.', false, 'Ở hệ thống thật thì hợp lý, nhưng ở đây ta không sở hữu ứng dụng đặt hàng: database này là của "đội khác". Lịch sử sẽ được dựng ở tầng silver từ CDC, mà không phải sửa ứng dụng nguồn.'],
-  ] },
-  learn: `<p>ERD đã đầy đủ: 3 bảng, 2 loại quan hệ, khớp đúng với <code>infra/local/postgres/init/001_schema.sql</code>. Bấm vào một bảng trên ERD để xem mục đích, grain, khóa, cột NULL, dữ liệu mẫu và DDL.</p><div class="review"><b class="t">Database không ép ba quy tắc (DRN-8).</b> Xe phải cùng kho với đơn; trạng thái phải đi đúng thứ tự; chỉ được giao khi xe ở gần địa chỉ. Quy tắc thứ hai được ép ở tầng ghi (giai đoạn 3); quy tắc thứ ba do simulator dựng sẵn.</div>`,
-  explore: () => erdExplain(4), build: () => ddl(4) });
-
-step({ g: 2, title: 'ORD_001 vừa được tạo. Database ghi nhận gì?', life: 0,
-  ctx: '02:57:55, khách đặt hàng. Đơn thuộc DEP-01, hẹn giao 07:36–09:36. Chưa có xe nào được phân.',
-  panes: ['biz', 'map', 'pgrow'], intro: ['pg', 'sim'], hot: ['sim', 'pg', 'sim>pg'],
-  learn: `<p>Từ đây, simulator đóng vai ứng dụng đặt hàng và thiết bị trên xe. Nó tính trước cả ngày giao hàng từ <b>seed 42</b>: tuyến đi, giờ tới, kết quả. Nhờ vậy mọi con số trên trang này luôn giống nhau mỗi lần bạn xem.</p><p>Câu INSERT có <code>ON CONFLICT (order_id) DO NOTHING</code>: chạy lại simulator không tạo đơn trùng.</p>`,
-  explore: () => sqlBox(), build: `<pre>uv run python -m simulator day --vans 20 --history-hours 3   <span class="c"># ghi đơn vào Postgres, gửi GPS vào Kafka</span>
-make psql
-SELECT order_id, status, van_id FROM orders WHERE order_id = 'ORD-20261118-00001';</pre><p class="note">Câu SQL lấy từ <code>simulator/orders_db.py</code>.</p>` });
-step({ g: 2, title: 'Đơn ORD_001 vừa được phân công cho xe VAN-0001. Hệ thống cần ghi nhận những gì?', life: 1,
-  ctx: '07:30, dispatcher chia 13 đơn cho VAN-0001. ORD_001 là điểm dừng số 1.',
-  panes: ['biz', 'map', 'pgrow'], intro: ['pg', 'sim'], hot: ['sim', 'pg', 'sim>pg'],
-  learn: `<div class="why"><b>Tại sao <code>van_id</code> nằm trong <code>orders</code>?</b> Vì một xe có thể giao nhiều đơn, còn một đơn chỉ có tối đa một xe đang được phân công trong mô hình hiện tại. Khi đơn chưa được phân công, <code>van_id</code> được phép NULL.</div><p>Câu UPDATE có điều kiện <code>AND status = 'created'</code>. Nếu đơn không ở đúng trạng thái liền trước, câu lệnh cập nhật 0 dòng. Đó là cách simulator ép thứ tự vòng đời, và cũng làm việc chạy lại trở nên idempotent.</p>`,
-  explore: () => sqlBox(), build: `<pre><span class="k">UPDATE</span> orders <span class="k">SET</span> status = 'assigned', ... <span class="k">WHERE</span> order_id = 'ORD-20261118-00001' <span class="k">AND</span> status = 'created';
-<span class="c">-- chạy lần thứ hai:  UPDATE 0   (không có gì thay đổi, không sinh sự kiện CDC)</span></pre>` });
-step({ g: 2, title: 'Xe rời kho và bắt đầu gửi vị trí mỗi 5 giây. GPS nên lưu ở đâu?', life: 2,
-  ctx: '08:00, VAN-0001 rời kho. Cả 13 đơn đợt sáng chuyển sang out_for_delivery gần như cùng một giây. Thiết bị trên xe gửi một ping mỗi 5 giây: 200 xe là 40 ping mỗi giây, khoảng 3,5 triệu ping mỗi ngày.',
-  panes: ['biz', 'map', 'pgrow', 'gps'], intro: ['pg', 'sim', 'gpsout'], hot: ['sim'],
-  quiz: { q: 'Lưu các ping GPS ở đâu?', opts: [
-    ['Bảng gps_pings trong PostgreSQL vận hành', '', false, '3,5 triệu dòng mỗi ngày đổ vào database của đội vận hành, chỉ để ghi thêm và không bao giờ sửa. Database OLTP sẽ chậm đi cho chính ứng dụng đặt hàng, và vẫn chưa ai được báo khi có ping mới.'],
-    ['Một luồng sự kiện riêng, tách khỏi database', 'Mỗi ping là một message.', true, 'Đúng. GPS là telemetry: tần suất cao, chỉ ghi thêm, đến từ thiết bị. Nó cần một event log (giai đoạn 4). Cái nối hai nguồn là vehicle_id = van_id.'],
-  ] },
-  learn: `<p>Từ thời điểm này có <b>hai nguồn dữ liệu chạy song song</b>: database đơn hàng (đổi trạng thái thỉnh thoảng) và luồng GPS (5 giây một lần). Cả hai cùng mô tả một sự thật: VAN-0001 đang chở ORD_001.</p><p>Trên sơ đồ kiến trúc, mũi tên GPS hiện chưa có nơi nhận. Giai đoạn 4 sẽ giải quyết.</p>`,
-  explore: () => gpsBox(), build: `<pre><span class="c"># simulator/producer.py — mỗi ping thành key + value</span>
-key   = b"VAN-0001"
-value = {"vehicle_id":"VAN-0001","event_ts":"2026-11-18T01:00:00.000Z","lat":10.775999,"lon":106.699981,"speed_kmh":0.0,"heading_deg":0.0}</pre>` });
-step({ g: 2, title: 'Xe đã đến nơi. Database có đổi gì không?', life: 4,
-  ctx: '08:04:15, ping GPS cho thấy VAN-0001 cách địa chỉ ORD_001 34 m. Tài xế dừng xe, mang hàng vào.',
-  panes: ['biz', 'map', 'pgrow', 'gps'], intro: ['pg', 'sim', 'gpsout'], hot: ['sim'],
-  learn: `<p><b>Không.</b> "Đến nơi" là một sự thật của GPS, không phải một sự kiện nghiệp vụ trong database: dòng <code>orders</code> vẫn là <code>out_for_delivery</code>. Đơn chỉ được đóng khi giao xong hoặc thất bại.</p><p>Simulator chỉ đóng đơn ở cuối thời gian dừng tại điểm giao, nên lúc đó xe luôn cách địa chỉ dưới 50 m. Database thì không kiểm tra khoảng cách: nếu ai đó UPDATE sang <code>delivered</code> khi xe còn cách 1 km, Postgres vẫn chấp nhận (DRN-8). Đây là lý do việc ghép GPS với đơn là nghiệp vụ của tầng xử lý, không phải của OLTP.</p>`,
-  explore: () => gpsBox(), build: `<p class="note">Bước này không có SQL nào chạy. Chỉ có các ping GPS tiếp tục được gửi đi.</p>` });
-step({ g: 2, title: 'Giao xong. Dòng dữ liệu cuối cùng trông thế nào?', life: 5,
-  ctx: '08:09:07, giao thành công. Hạn chót là 09:36:11, nên đơn đúng hạn và còn dư 87 phút. Ping gần nhất (08:09:05) cách địa chỉ 6 m, tốc độ 0.',
-  panes: ['biz', 'map', 'pgrow', 'gps'], intro: ['pg', 'sim', 'gpsout'], hot: ['sim', 'pg', 'sim>pg'],
-  learn: `<p>Bảng <code>orders</code> giờ chỉ còn <b>trạng thái cuối</b>. Ba trạng thái trước đó đã bị ghi đè. Nếu hỏi "ORD_001 được phân công lúc nào", ta vẫn trả lời được nhờ cột <code>assigned_at</code>. Nhưng nếu hỏi "trước khi đổi, đơn trông thế nào", database không còn biết.</p><p>Và chưa có hệ thống nào được <i>báo</i> rằng đơn vừa giao xong. Dashboard chỉ biết nếu tự đi hỏi database.</p>`,
-  explore: () => sqlBox(), build: `<pre>SELECT order_id, van_id, stop_seq, status, delivered_at, promised_end
-FROM orders WHERE order_id = 'ORD-20261118-00001';
-<span class="c">--  ORD-20261118-00001 | VAN-0001 | 1 | delivered | 2026-11-18 01:09:07+00 | 2026-11-18 02:36:11+00</span></pre>` });
-
-step({ g: 3, title: 'Database đã có dữ liệu, nhưng dashboard không biết khi nào có thay đổi. Lấy thay đổi ra bằng cách nào?', life: 5,
-  ctx: 'Trong lần chạy thật, simulator ghi 4 thay đổi của ORD_001 trong vòng 1,2 giây (commit lúc 03:25:34.672Z và 03:25:35.857Z).',
-  panes: ['pgrow'], intro: ['pg', 'sim', 'gpsout'], hot: ['pg'],
-  quiz: { q: 'Cách đưa thay đổi của orders ra ngoài:', opts: [
-    ['Polling: SELECT … WHERE updated_at > :lần_trước, mỗi 5 giây', '', false, 'Lần poll kế tiếp chỉ thấy dòng hiện tại là delivered: ba trạng thái trung gian biến mất, cùng với giá trị cũ. Mỗi lần poll cũng là một query lên database của đội khác; delete không thấy được; và không biết thứ tự commit thật.'],
-    ['Ghi kép: ứng dụng vừa UPDATE database vừa gửi Kafka', '', false, 'Không có giao dịch chung giữa hai hệ thống. Nếu UPDATE xong mà tiến trình chết trước khi gửi, database ghi delivered còn stream mãi mãi không biết. Nếu gửi trước rồi UPDATE bị rollback, stream có một sự kiện chưa từng xảy ra.'],
-    ['CDC: đọc thay đổi từ nhật ký giao dịch (WAL) của Postgres', '', true, 'Đúng (ADR 0004). Mọi thay đổi đã commit đều có trong WAL theo đúng thứ tự, kèm cả dòng trước và sau. Ứng dụng nguồn không phải sửa gì. Chi phí: phải vận hành một replication slot, và nếu nó bị bỏ rơi thì WAL tích tụ.'],
-  ] },
-  learn: `<p>Database UPDATE thì Kafka không tự biết. Cần một cơ chế <b>bắt thay đổi</b> (Change Data Capture). Có ba cách, và hai cách đầu hỏng theo những kiểu khó nhận ra.</p><p>Nếu ứng dụng nhất định phải tự phát event, mẫu đúng là <b>outbox</b>: ghi event vào một bảng trong <i>cùng giao dịch</i> với UPDATE, rồi dùng CDC đọc bảng đó. Outbox nằm ngoài phạm vi spec 002.</p>`,
-  explore: () => `<h4>Cùng 4 thay đổi, ba cách quan sát</h4><table class="mt"><tr><th>Thay đổi</th><th>CDC</th><th>Polling 5 s</th><th>Ghi kép (crash sau UPDATE thứ 4)</th></tr><tr><td>created</td><td>✓ lsn 27101288</td><td>✕</td><td>✓</td></tr><tr><td>assigned</td><td>✓ lsn 27187680</td><td>✕</td><td>✓</td></tr><tr><td>out_for_delivery</td><td>✓ lsn 27390824</td><td>✕</td><td>✓</td></tr><tr><td>delivered</td><td>✓ lsn 27586392</td><td>✓ (chỉ trạng thái cuối)</td><td>✕ database có, stream không</td></tr></table>`,
-  build: `<pre><span class="c"># docs/decisions/0004-cdc-postgres-debezium.md</span>
-Decision: The simulator writes orders to Postgres. Debezium (Kafka Connect, pgoutput logical
-replication) publishes changes to cdc.public.orders.</pre>` });
-step({ g: 3, title: 'UPDATE được ghi vào WAL. Debezium đọc nó thế nào?', life: 5,
-  ctx: 'Mỗi giao dịch commit được ghi vào WAL ở một vị trí gọi là LSN. Debezium giữ một replication slot để Postgres không xóa WAL trước khi nó đọc xong.',
-  panes: ['pgrow', 'cdc'], intro: ['pg', 'sim', 'gpsout', 'dbz'], hot: ['pg', 'dbz', 'pg>dbz'],
-  learn: `<ol><li><b>UPDATE</b> chạy trong giao dịch txid 1855.</li><li><b>Commit:</b> Postgres ghi thay đổi vào <b>WAL</b> (Write-Ahead Log), tại LSN 27586392. Nhờ <code>REPLICA IDENTITY FULL</code>, WAL chứa cả dòng cũ.</li><li><b>Replication slot</b> <code>ct_cdc_slot</code> là con trỏ bền: Postgres giữ WAL cho tới khi slot xác nhận đã đọc (giới hạn 1 GB).</li><li><b>Debezium</b> giải mã bằng <code>pgoutput</code> và dựng một <b>envelope</b>: <code>op</code>, <code>before</code>, <code>after</code>, <code>source</code> (lsn, txId, thời điểm commit).</li></ol><p>Chế độ Explore cho thấy envelope thật của sự kiện đang chọn ở cột trái.</p>`,
-  explore: () => envelopeBox(), build: () => compTab('dbz', 0) });
-step({ g: 3, title: 'Message cần một nơi để chờ người đọc. Key nên là gì?', life: 0,
-  ctx: 'Redpanda (nói giao thức Kafka) nhận cả hai luồng: GPS ở topic gps.pings.v1, CDC ở topic cdc.public.orders. Mỗi topic có 3 partition, giữ 7 ngày. Dùng nút "Sự kiện tiếp" ở cột trái để thấy mỗi thay đổi đi qua cả chuỗi.',
-  panes: ['biz', 'map', 'pgrow', 'cdc', 'rp'], intro: ['pg', 'sim', 'dbz', 'rp'], hot: ['rp', 'dbz>rp', 'sim>rp'],
-  quiz: { q: 'Message key của luồng GPS nên là:', opts: [
-    ['Không có key: chia đều cho các partition', '', false, 'Hai ping liên tiếp của một xe có thể rơi vào hai partition khác nhau và bị đọc ngược thứ tự. "Vị trí mới nhất" sẽ sai.'],
-    ['vehicle_id', '', true, 'Đúng. Mọi ping của VAN-0001 vào cùng một partition (thực tế: partition 0) và giữ đúng thứ tự. 200 xe chia vào 3 partition vẫn đều. Với CDC, Debezium tự dùng khóa chính {"order_id": …} làm key, cùng lý do.'],
-    ['order_id', '', false, 'Ping GPS không có order_id; một xe chở 13 đơn cùng lúc.'],
-  ] },
-  learn: `<p>Một <b>topic</b> là một luồng message có tên. Nó chia thành <b>partition</b>; thứ tự chỉ được đảm bảo trong một partition. Mỗi message có một <b>offset</b>, là số thứ tự trong partition đó.</p><p>Offset <b>không phải</b> ID nghiệp vụ: chạy lại pipeline thì offset đổi. Kafka giữ message 7 ngày, bất kể đã có ai đọc chưa, nên nhiều consumer đọc được độc lập, và đọc lại được.</p><div class="why"><b>Thử ngay:</b> bấm "Sự kiện tiếp" ở cột trái. Mỗi thay đổi của ORD_001 xuất hiện đồng thời ở PostgreSQL, ở CDC và ở Redpanda, với offset thật 126 → 180 → 279 → 381.</div>`,
-  explore: () => `<h4>Partition và offset thật</h4><table class="mt"><tr><th>Topic</th><th>Partition</th><th>Offset</th><th>Nội dung</th></tr>${EV.filter(e => e.cdc).map(e => `<tr><td>cdc.public.orders</td><td>0</td><td>${e.cdc.off}</td><td>op=${e.cdc.op} · ${e.cdc.ast}</td></tr>`).join('')}${EV.filter(e => e.gps).map(e => `<tr><td>gps.pings.v1</td><td>0</td><td>${e.gps.off}</td><td>VAN-0001 @ ${e.gps.ts}</td></tr>`).join('')}</table>`,
-  build: () => compTab('rp', 1) });
-
-step({ g: 4, title: 'Flink đã đọc message delivered. Nhưng Trino chưa thấy nó. Vì sao?', life: 5, commit: 4,
-  ctx: 'Flink đọc từ Redpanda và ghi vào bảng Iceberg. Thay đổi cuối cùng của ORD_001 đã nằm trong file Parquet, nhưng chưa được commit. Bấm "Chạy checkpoint" ở cột trái.',
-  panes: ['rp', 'flink', 'ice', 'trino'], intro: ALL_LOCAL, hot: ['flink', 'ice', 'rp>flink', 'flink>ice'],
-  learn: `<p>Một <b>Flink job</b> là một chương trình chạy liên tục. Project có hai job viết bằng Flink SQL: <code>bronze_gps</code> và <code>bronze_cdc</code>. Mỗi job là: một bảng nguồn đọc Kafka, một catalog Iceberg làm đích, và một câu <code>INSERT INTO … SELECT …</code>.</p><p>Writer ghi row vào file Parquet ngay, nhưng file chưa thuộc snapshot nào nên không ai đọc được. Mỗi 30 giây, <b>checkpoint</b> chụp lại offset đang đọc và trạng thái writer. Chỉ khi checkpoint thành công, <code>IcebergFilesCommitter</code> mới tạo snapshot mới, và dữ liệu hiện ra trong Trino. Nhờ đi cùng checkpoint nên không mất và không trùng (exactly-once từ Kafka vào Iceberg).</p><p><b>Event time và processing time:</b> <code>event_ts</code> là lúc thiết bị đo; processing time là lúc Flink xử lý. Trong lần chạy history, ping 01:02:05Z tới Kafka lúc 03:25:35.771Z.</p>`,
-  explore: () => opsBox(), build: () => compTab('flink', 0) });
-step({ g: 4, title: 'Đọc Flink Dashboard: mỗi operator đang làm gì?', life: 5,
-  ctx: 'Mở http://localhost:8081 → Running Jobs. Kế hoạch dưới đây lấy từ REST API của Flink trên stack thật.',
-  panes: ['flink', 'ice', 'trino'], intro: ALL_LOCAL, hot: ['flink', 'rp>flink', 'flink>ice'],
-  learn: `<ul><li><b>Sơ đồ</b> có 2 khối: Flink gộp (chain) Source → Calc → IcebergStreamWriter thành một khối chạy chung thread; IcebergFilesCommitter là khối riêng.</li><li>Bấm vào khối để xem <b>Records Received / Sent</b>.</li><li>Tab <b>Checkpoints</b>: số thật của <code>bronze_gps</code> là 126 thành công / 127 lần (1 lần fail); <code>bronze_cdc</code> 126/126.</li><li>Tab <b>BackPressure</b>: operator nào đang nghẽn. Khi chạy lại 100 triệu event (giai đoạn 7), đây là nơi đầu tiên cần nhìn.</li></ul><p><b>Watermark</b> (<code>event_ts − 30 s</code>) được khai báo ở mọi source, nhưng chỉ có tác dụng với operator theo event time (window, join theo thời gian). Job bronze không có operator nào như vậy, nên event đến trễ vẫn được ghi đủ.</p>`,
-  explore: () => opsBox(), build: `<pre>curl -s localhost:8081/jobs/overview
-<span class="c">#  bronze_gps RUNNING · bronze_cdc RUNNING</span>
-curl -s localhost:8081/jobs/&lt;jid&gt;/checkpoints
-<span class="c">#  {"counts": {"total": 127, "completed": 126, "failed": 1, ...}}</span></pre>` });
-
-step({ g: 5, title: 'Connector bị crash và gửi lại một thay đổi. Đếm số đơn đã giao còn đúng không?', life: 5, chaos: 'dup',
-  ctx: 'Debezium là at-least-once: sau khi crash, nó có thể gửi lại thay đổi cuối. Dòng màu đỏ trong Redpanda và bronze là proposed example: cùng LSN 27586392 nhưng offset mới 412.',
-  panes: ['rp', 'ice', 'trino'], intro: ALL_LOCAL, hot: ['ice', 'trino', 'ice>trino'],
-  quiz: { q: 'Khóa nào nhận ra đúng một thay đổi CDC, để khử trùng?', opts: [
-    ['kafka_offset', '', false, 'Bản gửi lại có offset mới (412 thay vì 381), nên trông như một thay đổi khác. Offset là vị trí trong log, không phải danh tính của thay đổi.'],
-    ['source_lsn', '', false, 'Gần đúng nhưng không đủ: mọi bản ghi snapshot dùng chung một LSN. Trên stack thật, cả 200 dòng snapshot của vans có cùng LSN 26780256 (DRN-7).'],
-    ['(order_id, source_lsn, op)', 'Khóa chính của dòng + vị trí WAL + loại thay đổi.', true, 'Đúng. Bản gửi lại có cùng bộ ba nên bị loại; 200 dòng snapshot có cùng LSN nhưng khác khóa chính nên vẫn được giữ.'],
-  ] },
-  learn: `<p>Bronze cố ý <b>giữ mọi thứ</b>, kể cả bản trùng: nó là bản ghi trung thực của những gì đã nhận, kèm metadata (offset, LSN, ingest_ts) để truy vết. Vì vậy câu <code>count(*) WHERE after.status = 'delivered'</code> trên bronze trả về <b>2</b> cho một đơn.</p><p>Tầng <b>silver</b> tồn tại để giải quyết đúng chuyện này: khử trùng theo khóa nghiệp vụ, và chỉ giữ bản mới nhất theo thứ tự LSN.</p>`,
-  explore: () => `<h4>Câu đếm ngây thơ trên bronze</h4><pre>SELECT count(*) FROM lakehouse.bronze.orders_cdc
-WHERE after.order_id = 'ORD-20261118-00001' AND after.status = 'delivered';
-<span class="c">-- 2   ← sai, chỉ có 1 lần giao</span></pre><h4>Sau khi khử trùng <span class="st ex">Proposed example</span></h4><pre>SELECT count(*) FROM (SELECT DISTINCT after.order_id, source_lsn, op
-  FROM lakehouse.bronze.orders_cdc
-  WHERE after.status = 'delivered' AND after.order_id = 'ORD-20261118-00001');
-<span class="c">-- 1</span></pre>`,
-  build: `<p>Silver chưa có code (feature 4). Quy tắc đã ghi ở <code>docs/requirements.md</code> mục 3: mọi bảng phải khai báo grain, khóa khử trùng và khóa thứ tự; offset không bao giờ là khóa.</p>` });
-step({ g: 5, title: 'Một ping đến sai thứ tự. Xe đang ở đâu?', life: 5, chaos: 'ooo',
-  ctx: 'Ping lúc 08:02:05 (xe còn cách 1,3 km) bị gửi lại và tới sau ping 08:09:05 (xe ở nhà khách). Nếu lấy "ping nhận được sau cùng" làm vị trí hiện tại thì sao?',
-  panes: ['map', 'silver'], intro: ALL_LOCAL.concat(['silver']), hot: ['silver', 'ice>silver'],
-  learn: `<p>"Sau cùng" có hai nghĩa: sau cùng <b>theo lúc nhận</b> (ingest_ts) và sau cùng <b>theo lúc đo</b> (event_ts). Lấy theo lúc nhận, xe "lùi" về chỗ cách 1,3 km, ngay sau khi đã giao xong. Phải lấy theo event_ts.</p><p>Silver GPS có grain "một ping duy nhất", khóa khử trùng <code>(vehicle_id, event_ts)</code>, partition <code>day(event_ts)</code> + <code>bucket(16, vehicle_id)</code>. Với CDC, thứ tự xác định bằng LSN, không phải thứ tự message tới.</p>`,
-  explore: () => `<pre><span class="c">-- sai: lấy theo lúc nhận</span>
-SELECT * FROM bronze.gps_pings WHERE vehicle_id = 'VAN-0001' ORDER BY ingest_ts DESC LIMIT 1;
-<span class="c">--  event_ts 01:02:05Z · cách 1.328 m   ← vị trí cũ</span>
-
-<span class="c">-- đúng: theo lúc đo, sau khi khử trùng (Proposed example)</span>
-SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY vehicle_id, event_ts ORDER BY ingest_ts) rn
-  FROM bronze.gps_pings) WHERE rn = 1 AND vehicle_id = 'VAN-0001' ORDER BY event_ts DESC LIMIT 1;
-<span class="c">--  event_ts 01:09:05Z · cách 6 m</span></pre>`,
-  build: `<p>Bảng serving <code>vehicle_latest</code> (feature 6) sẽ chỉ ghi đè khi ping mới hơn theo <code>event_ts</code>.</p>` });
-step({ g: 5, title: 'KPI cần một dòng cho mỗi cái gì?', life: 5,
-  ctx: 'Ops manager hỏi tỉ lệ đúng giờ theo kho và ngày. Hãy chọn grain cho bảng fact ở tầng gold.',
-  panes: ['silver', 'gold'], intro: ALL_LOCAL.concat(['silver', 'gold']), hot: ['gold', 'silver>gold'],
-  quiz: { q: 'Grain của gold.fct_delivery:', opts: [
-    ['Một dòng cho mỗi thay đổi CDC', '', false, 'ORD_001 sẽ có 4 dòng. Đếm số đơn thành đếm số thay đổi.'],
-    ['Một dòng cho mỗi đơn đã đóng (giao xong hoặc thất bại)', '', true, 'Đúng. Đơn đã đóng mới có kết quả đúng hay trễ. Các chỉ số (is_on_time, minutes_late, sai số ETA) gắn với đúng một đơn. Tổng hợp theo kho và ngày là một bảng khác (agg_depot_daily).'],
-    ['Một dòng cho mỗi xe mỗi ngày', '', false, 'Đó là một bảng tổng hợp. Nếu chọn làm fact thì mất chi tiết từng đơn, không trả lời được "đơn nào trễ".'],
-  ] },
-  learn: `<p>Ở mỗi tầng, ORD_001 có số dòng khác nhau:</p><table class="mt"><tr><th>Bảng</th><th>Một dòng là</th><th>Số dòng của ORD_001</th></tr><tr><td>orders (OLTP)</td><td>trạng thái hiện tại</td><td>1</td></tr><tr><td>bronze.orders_cdc</td><td>một thay đổi đã nhận</td><td>4 (có thể hơn nếu trùng)</td></tr><tr><td>silver.orders</td><td>trạng thái mới nhất hợp lệ</td><td>1</td></tr><tr><td>silver.order_status_history</td><td>một lần đổi trạng thái</td><td>4</td></tr><tr><td>gold.fct_delivery</td><td>một đơn đã đóng</td><td>1</td></tr></table><div class="review"><b class="t">Join sai grain.</b> <code>fct_delivery JOIN bronze.orders_cdc</code> cho ra 4 dòng cho mỗi đơn, nên số đơn đợt sáng của VAN-0001 thành 13 × 4 = 52. <code>gps_pings JOIN orders ON van_id</code> làm mỗi ping khớp với 25 đơn của xe trong ngày; ngay cả khi chỉ lấy đơn đang giao vẫn còn 13. Muốn biết đơn xe đang hướng tới, phải dùng ngữ cảnh phân công: đơn có stop_seq nhỏ nhất trong các đơn đang mở của xe tại thời điểm đó.</div>`,
-  explore: () => lineageBox(), build: `<pre><span class="c">-- Proposed example (feature 7): gold.fct_delivery từ silver.orders</span>
-SELECT order_id,
-       date(coalesce(delivered_at, failed_at) AT TIME ZONE 'Asia/Ho_Chi_Minh') AS local_date,
-       status = 'delivered' AND delivered_at &lt;= promised_end AS is_on_time,   <span class="c">-- BR-2: failed = không đúng giờ</span>
-       ...
-FROM silver.orders WHERE status IN ('delivered', 'failed');</pre><p class="note">Ngày tính theo giờ Việt Nam (BR-4): một đơn giao lúc 00:30 giờ VN có ngày UTC là hôm trước.</p>` });
-
-const FULL = ALL_LOCAL.concat(['silver', 'gold', 'fct', 'serving']);
-step({ g: 6, title: 'VAN-0009 mất sóng 5 giờ rồi gửi bù 3.600 ping. Hệ thống phản ứng thế nào?', life: 5, widget: 'offline',
-  ctx: 'Thiết bị vẫn đo và lưu đệm từ 09:00 tới 14:00; có sóng lại thì gửi hết. Đây là proposed example: simulator chưa có chế độ mất sóng (chaos mode là feature 4). Kéo đồng hồ trong chế độ Explore.',
-  panes: [], intro: FULL, hot: ['fct', 'gold', 'rp>fct'],
-  learn: `<p>Đây là chỗ freshness và correctness va nhau (ADR 0006):</p><ul><li><b>Cảnh báo (Flink control tower, designed):</b> cần trả lời trong vài giây. Ping cũ hơn alert horizon (10 phút, proposed) chỉ cập nhật vị trí, không bắn cảnh báo cho quá khứ.</li><li><b>Bronze:</b> ghi đủ cả 3.600 ping ở checkpoint kế tiếp.</li><li><b>KPI tạm tính (dbt mỗi 5 phút, nhìn lại 2 giờ):</b> không sửa được giờ 09:00–12:05.</li><li><b>Chốt sổ 01:00:</b> tính lại cả ngày, nên số chính thức đúng.</li></ul><p>Vì vậy cảnh báo dùng Flink (nhanh, chấp nhận sai nhẹ) còn KPI dùng dbt (chậm vài phút, nhưng đúng).</p>`,
-  explore: () => offlineBox(), build: `<p>Chưa có code: control tower là feature 6, dbt là feature 7. Quyết định nằm ở <code>docs/decisions/0006-stream-freshness-batch-correctness.md</code>; RPO/RTO và alert horizon là NFR-3/NFR-4 (proposed) trong <code>docs/requirements.md</code>.</p>` });
-step({ g: 6, title: '01:00 đêm: chốt sổ. Event đến sau đó thì sao?', life: 5, final: true,
-  ctx: 'dbt tính lại toàn bộ ngày 18/11 từ silver, đánh dấu is_final = true, ghi một dòng vào closed_days.',
-  panes: ['gold'], intro: FULL, hot: ['gold', 'silver>gold'],
-  learn: `<p><b>Batch reconciliation</b> (đối soát) đọc lại dữ liệu <i>đã nằm trong</i> silver để sửa KPI. Mục tiêu là độ đúng, và nó không đụng tới Kafka hay Flink.</p><p>Chạy lại cho cùng kết quả: job đêm <b>ghi đè cả partition</b> của ngày cần chốt. Event đến sau 01:00 vẫn được lưu ở bronze và silver, nhưng không tự đổi số đã chốt: chúng được đếm vào <code>late_after_close</code>. Chỉ lệnh <code>make reclose DAY=…</code> (restatement có dấu vết) mới sửa được số đã chốt.</p>`,
-  explore: () => `<table class="mt"><tr><th>Thời điểm</th><th>fct_delivery của ORD_001 <span class="st ex">Proposed example</span></th></tr><tr><td>08:10 (lần dbt đầu tiên)</td><td>is_on_time = true · is_final = false</td></tr><tr><td>01:00 ngày 19/11</td><td>is_on_time = true · is_final = <b>true</b></td></tr></table><p class="note">Dashboard phải cho người xem biết một con số là tạm tính hay đã chốt (câu hỏi mở số 3 trong requirements.md).</p>`,
-  build: `<p>Chưa có code (feature 7). Mô hình dữ liệu: <code>gold.closed_days</code> (local_date, closed_at, late_events_absorbed, late_after_close) trong <code>docs/requirements.md</code> mục 4.</p>` });
-step({ g: 6, title: 'Chạy lại 100 triệu event để chứng minh thiết kế chịu tải. Có khác gì đối soát không?', life: 5, widget: 'bench', final: true,
-  ctx: '200 xe × 1 ping / 5 giây là khoảng 3,5 triệu ping mỗi ngày; 30 ngày là khoảng 100 triệu. Luồng live chỉ 40 event/s, quá nhẹ để thử tải. Phép thử thật là đẩy lại lịch sử qua đúng đường Kafka → Flink.',
-  panes: [], intro: FULL, hot: ['rp', 'flink', 'sim>rp', 'rp>flink'],
-  learn: `<p><b>Replay benchmark</b> (ADR 0009, feature 5) khác hẳn đối soát:</p><table class="mt"><tr><th></th><th>Batch reconciliation</th><th>Replay benchmark</th></tr><tr><td>Mục tiêu</td><td>Độ đúng của KPI</td><td>Năng lực xử lý (throughput)</td></tr><tr><td>Đường dữ liệu</td><td>silver → dbt → gold</td><td>simulator → Kafka → Flink → Iceberg</td></tr><tr><td>Khi nào chạy</td><td>Mỗi đêm</td><td>Khi cần đo</td></tr></table><p>Khi replay, event time chạy nhanh hơn đồng hồ thật rất nhiều, nên watermark cũng tiến rất nhanh. Partition chậm hoặc rỗng có thể làm watermark đứng lại (cần cấu hình idleness). Cảnh báo cho event cũ phải bị chặn bằng alert horizon. Watermark không tự xử lý đúng mọi kiểu replay. Kafka đóng vai bộ đệm; consumer lag và tab BackPressure cho biết Flink có theo kịp không.</p>`,
-  explore: () => benchBox(), build: `<p>Chưa có code (feature 5): <code>make backfill DAYS=30</code> và <code>make bench</code> mới chỉ có trong README và ADR 0009.</p>` });
-
-step({ g: 7, title: 'Chạy toàn bộ trên máy bạn và kiểm chứng bằng SQL', life: 5,
-  ctx: 'Một lệnh dựng stack; simulator sinh dữ liệu; mỗi thành phần có cách kiểm tra riêng. Thứ tự khởi động do các điều kiện depends_on trong docker-compose lo; chạy riêng một câu SQL không làm cả hệ thống hoạt động.',
-  panes: ['pgrow', 'rp', 'ice', 'trino'], intro: ALL_LOCAL, hot: ['pg', 'dbz', 'rp', 'flink', 'ice', 'trino', 'pg>dbz', 'dbz>rp', 'rp>flink', 'flink>ice', 'ice>trino', 'sim>pg', 'sim>rp'],
-  learn: `<ol><li><code>docker login dhi.io</code> (một lần, để kéo image MinIO hardened).</li><li><code>make up</code>: dựng MinIO, Redpanda và topic, Iceberg catalog, Trino và DDL bronze, Postgres, Kafka Connect và connector, Flink và 2 job. Khoảng 1 phút nếu image đã có sẵn.</li><li><code>uv run python -m simulator day --vans 20 --history-hours 3</code></li><li>Kiểm tra từng chặng (chế độ Build).</li><li><code>make e2e</code>: 10 test nghiệm thu; <code>make e2e-restart</code>: test khởi động lại.</li></ol><p>Bấm vào từng thành phần trên sơ đồ để mở inspector: schema, code, cấu hình, metrics, ADR và test.</p>`,
-  explore: () => traceBox(), build: `<pre>make up
-make cdc-status                       <span class="c"># connector RUNNING · slot lag ~25 kB</span>
-docker compose -f infra/local/docker-compose.yml exec redpanda \\
-  rpk topic consume cdc.public.orders --offset start -f '%p %o %k\\n' | grep 00001
-curl -s localhost:8081/jobs/overview  <span class="c"># bronze_gps, bronze_cdc RUNNING</span>
-docker compose -f infra/local/docker-compose.yml exec trino trino
-  SELECT op, before.status, after.status, source_lsn, kafka_offset
-  FROM lakehouse.bronze.orders_cdc WHERE after.order_id = 'ORD-20261118-00001' ORDER BY source_lsn;
-make e2e                              <span class="c"># 10 passed</span></pre>` });
-step({ g: 7, title: 'Mỗi thành phần local tương ứng với dịch vụ AWS nào?', life: 5, target: true,
-  ctx: 'Sơ đồ chuyển sang Target Architecture: toàn bộ thiết kế, kèm tên dịch vụ AWS. Khối viền liền là đã chạy ở local; khối viền đứt mới nằm trong thiết kế.',
-  panes: [], intro: Object.keys(N), hot: [],
-  learn: `<p>Nguyên tắc của ADR 0005: <b>một codebase, khác biệt chỉ nằm trong cấu hình</b>. Câu SQL của Flink dùng các biến như <code>S3_ENDPOINT</code>, <code>ICEBERG_CATALOG_URI</code>, được <code>submit.sh</code> thay bằng biến môi trường, nên cùng một file chạy được ở cả local lẫn AWS.</p><p>Chi phí ước tính khoảng $4 cho mỗi lần demo 2 giờ (MSK Serverless chiếm phần lớn). Dựng bằng Terraform khi cần, xong thì destroy; có budget alert ở $20 và $50. Toàn bộ phần AWS là <b>Designed</b> (feature 9–10).</p>`,
-  explore: () => awsBox(), build: `<pre>make aws-plan      <span class="c"># terraform plan (chưa có code trong infra/aws)</span>
-make aws-up        <span class="c"># tốn tiền: luôn hỏi trước (CLAUDE.md)</span>
-make aws-down</pre>` });
-step({ g: 7, title: 'Nghiệm thu: theo dõi ORD_001 từ đầu tới cuối', life: 5,
-  ctx: 'Bấm "Về sự kiện đầu" ở cột trái, rồi "Sự kiện tiếp" và "Chạy checkpoint" để xem ORD_001 đi qua mọi thành phần cùng lúc. Sau đó, thử giải thích từng chặng mà không cần nhìn lại.',
-  panes: ['biz', 'map', 'pgrow', 'cdc', 'rp', 'flink', 'ice', 'trino'], intro: ALL_LOCAL, hot: ['pg>dbz', 'dbz>rp', 'rp>flink', 'flink>ice', 'ice>trino', 'sim>pg', 'sim>rp'],
-  learn: `<p>Nếu giải thích được cả 8 chặng dưới đây, bạn đã hiểu hệ thống:</p><ol><li><b>Đơn được lưu ở đâu:</b> PostgreSQL <code>orders</code>, một dòng ở trạng thái hiện tại.</li><li><b>Xe gửi GPS thế nào:</b> mỗi 5 giây một message JSON, key <code>vehicle_id</code>, vào <code>gps.pings.v1</code>.</li><li><b>Thay đổi được bắt ra sao:</b> commit → WAL (LSN) → replication slot → Debezium → envelope có before/after.</li><li><b>Redpanda giữ message thế nào:</b> theo partition, theo key, 7 ngày, đọc lại được từ offset.</li><li><b>Flink xử lý gì:</b> parse, thêm metadata, ghi file, commit khi checkpoint.</li><li><b>Iceberg lưu gì:</b> bronze chỉ ghi thêm, partition theo ngày, có snapshot.</li><li><b>Trino đọc được gì:</b> những gì đã được commit.</li><li><b>Vì sao cần từng thành phần:</b> mở Design review và tab ADR của từng khối trong inspector.</li></ol>`,
-  explore: () => traceBox(), build: `<h4>Tiêu chí nghiệm thu và test tương ứng</h4><table class="mt"><tr><th>Tiêu chí</th><th>Test</th></tr><tr><td>Gửi N ping thì có đúng N dòng</td><td>test_exactly_n_rows</td></tr><tr><td>Bronze hiện dữ liệu trong ≤ 60 s</td><td>test_freshness_under_60s</td></tr><tr><td>N thay đổi tạo ra N dòng, đúng thứ tự LSN</td><td>test_n_changes_n_rows_in_commit_order</td></tr><tr><td>Snapshot chỉ chụp một lần</td><td>test_seed_captured_once_as_snapshot</td></tr><tr><td>Tắt rồi bật connector không mất, không trùng</td><td>test_connector_restart_loses_and_duplicates_nothing</td></tr><tr><td>Dữ liệu còn sau khi khởi động lại</td><td>test_data_survives_restart</td></tr><tr><td>Stack dùng dưới 6 GB RAM</td><td>test_stack_memory_under_6gb</td></tr></table>` });
-
-/* ============ 4. STATE + rendering ============ */
-const state = { i: 0, cursor: 0, commit: -1, mode: 'learn', arch: 'current', answers: {}, ckpt: 126 };
-function introduced(i) { const s = new Set(); for (let k = 0; k <= i; k++) S[k].intro.forEach(x => s.add(x)); return s; }
-function enterStep(i) {
-  state.i = Math.max(0, Math.min(S.length - 1, i));
-  const st = S[state.i];
-  if (st.life !== undefined) state.cursor = st.life;
-  state.commit = st.commit !== undefined ? st.commit : (introduced(state.i).has('ice') ? state.cursor : -1);
-  state.arch = st.target ? 'target' : 'current';
-  try { history.replaceState(null, '', '#step-' + (state.i + 1)); } catch (e) { /* ignore */ }
-  renderArchSeg();
-  render(true);
-}
-const shortTitle = t => t.length > 54 ? t.slice(0, 52).replace(/\s+\S*$/, '') + '…' : t;
-function render(scrollTop) {
-  const st = S[state.i], intro = introduced(state.i);
-  const g = st.g, inStage = S.filter(x => x.g === g), idx = inStage.indexOf(st);
-  $('whereLbl').textContent = `Giai đoạn ${g + 1} / 8 · Bước ${idx + 1} / ${inStage.length}`;
-  $('whereStage').textContent = STAGES[g];
-  $('dots').innerHTML = STAGES.map((_, k) => `<i class="${k < g ? 'done' : k === g ? 'cur' : ''}" title="Giai đoạn ${k + 1}"></i>`).join('');
-  $('stages').innerHTML = STAGES.map((t, k) => `<li><button type="button" data-g="${k}" class="${k < g ? 'done' : ''}" ${k === g ? 'aria-current="true"' : ''}><span class="n">${k + 1}</span><span>${esc(t)}</span></button></li>`).join('');
-  $('stages').querySelectorAll('button').forEach(b => b.addEventListener('click', () => enterStep(S.findIndex(x => x.g === Number(b.dataset.g)))));
-  $('pTitle').textContent = st.title; $('pContext').textContent = st.ctx;
-  renderDecision(st);
-  renderReqs();
-  renderPanes(st, intro);
-  renderArch(st, intro);
-  renderPlayer(st, intro);
-  renderEvents();
-  renderModes(st);
-  $('prev').disabled = state.i === 0;
-  const nx = S[state.i + 1];
-  $('next').textContent = nx ? `Tiếp tục: ${shortTitle(nx.title)} →` : 'Đã hoàn thành 8 giai đoạn';
-  $('next').disabled = !nx;
-  if (scrollTop) window.scrollTo({ top: 0 });
-}
-function renderDecision(st) {
-  const d = $('decision');
-  if (!st.quiz) { d.hidden = true; d.innerHTML = ''; return; }
-  d.hidden = false;
-  const ans = state.answers[state.i], right = st.quiz.opts.find(o => o[2]);
-  d.innerHTML = `<span class="q">${esc(st.quiz.q)}</span><div class="opts">${st.quiz.opts.map((o, k) => {
-    const cls = ans === undefined ? '' : o[2] ? ' right' : (ans === k ? ' wrong' : '');
-    return `<label class="opt${cls}"><input type="radio" name="q${state.i}" value="${k}" ${ans === k ? 'checked' : ''} ${ans !== undefined ? 'disabled' : ''}><span><b>${esc(o[0])}</b>${o[1] ? `<span class="s">${esc(o[1])}</span>` : ''}</span></label>`;
-  }).join('')}</div>${ans === undefined ? '<div><button class="btn accent" id="checkBtn" type="button" disabled>Kiểm tra thiết kế</button></div>' : `<div class="fb ${st.quiz.opts[ans][2] ? 'ok' : 'no'}"><b>${st.quiz.opts[ans][2] ? 'Thiết kế đúng.' : 'Chưa ổn.'}</b> ${esc(st.quiz.opts[ans][3])}${st.quiz.opts[ans][2] ? '' : '<br><br><b>Phương án được chọn trong project:</b> ' + esc(right[0]) + '. ' + esc(right[3])}</div>`}`;
-  const btn = $('checkBtn');
-  d.querySelectorAll('input').forEach(r => r.addEventListener('change', () => { if (btn) btn.disabled = false; }));
-  if (btn) btn.addEventListener('click', () => { const v = d.querySelector('input:checked'); if (!v) return; state.answers[state.i] = Number(v.value); render(false); flash(); });
-}
-function flash() { $('panes').querySelectorAll('.pane').forEach(p => { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); }); }
-function renderReqs() {
-  const show = state.i > 1 || state.answers[1] !== undefined;
-  $('reqs').innerHTML = show ? ['<b>R1</b> Cảnh báo p95 &lt; 10 s', '<b>R2</b> KPI tạm tính ~5 phút, chốt đêm, đúng dù event trễ hoặc trùng', '<b>R3</b> Lịch sử GPS + đơn, truy vấn SQL', '<b>R4</b> $0 mỗi ngày, AWS khi demo'].map(r => `<span class="req">${r}</span>`).join('') : '';
-  $('reqs').hidden = !show;
-}
-
-/* ---- panes ---- */
-const short = v => v === null || v === undefined ? 'NULL' : String(v);
-function renderPanes(st, intro) {
-  const P = [], r = rowAt(state.cursor), pr = prevRowAt(state.cursor), e = EV[state.cursor];
-  const erdLevel = st.erd ? (state.answers[state.i] !== undefined ? st.erd : st.erd - 1) : 4;
-  for (const p of st.panes) {
-    if (p === 'board') P.push(`<div class="pane"><h3>Màn hình dispatcher hôm nay <small>08:30</small></h3><table class="mt"><tr><th>Đơn</th><th>Xe</th><th>Trạng thái</th><th>Hạn</th></tr><tr><td>ORD_001</td><td>VAN-0001</td><td>out_for_delivery</td><td>09:36</td></tr><tr><td>ORD_002</td><td>VAN-0001</td><td>out_for_delivery</td><td>08:33</td></tr><tr><td>ORD_003</td><td>VAN-0001</td><td>out_for_delivery</td><td>09:06</td></tr><tr><td colspan="4">… và 10 đơn khác của VAN-0001</td></tr></table><p class="note"><b>Vị trí VAN-0001:</b> không biết · <b>ETA:</b> không có · <b>KPI hôm nay:</b> sáng mai</p></div>`);
-    if (p === 'erd') P.push(`<div class="pane wide"><h3>ERD PostgreSQL <small>${['chưa có bảng nào', 'orders', 'orders + depots', 'orders + depots + vans', 'đầy đủ = 001_schema.sql'][erdLevel]}</small>${badge('impl')}<button class="insp-open" type="button" data-c="pg">Inspector →</button></h3>${erdLevel ? `<div class="erd">${erdSvg(erdLevel)}</div><p class="note">Dòng màu xanh là phần vừa thêm sau quyết định của bạn. Bấm vào một bảng để xem chi tiết.</p>` : '<p class="note">Chọn một phương án ở trên và bấm "Kiểm tra thiết kế" để bảng đầu tiên xuất hiện.</p>'}</div>`);
-    if (p === 'biz') P.push(`<div class="pane"><h3>Nghiệp vụ <small>${e.t} giờ VN</small></h3><dl class="kv"><dt>Kho</dt><dd>DEP-01 · District 1 Hub</dd><dt>Xe</dt><dd>${r.van_id ? 'VAN-0001 · 51C-101.37' : 'chưa phân công'}</dd><dt>Đơn</dt><dd>ORD_001 (ORD-20261118-00001)</dd><dt>Trạng thái</dt><dd class="chg">${r.status.toUpperCase()}</dd><dt>Vừa xảy ra</dt><dd>${esc(e.label)}</dd></dl></div>`);
-    if (p === 'map') P.push(mapPane(st));
-    if (p === 'pgrow') P.push(pgPane(r, pr, e));
-    if (p === 'gps') P.push(gpsPane(intro));
-    if (p === 'cdc') P.push(cdcPane(e));
-    if (p === 'rp') P.push(rpPane(st));
-    if (p === 'flink') P.push(flinkPane());
-    if (p === 'ice') P.push(icePane(st));
-    if (p === 'trino') P.push(trinoPane(st));
-    if (p === 'silver') P.push(silverPane(st));
-    if (p === 'gold') P.push(goldPane(st));
-  }
-  $('panes').innerHTML = P.join('');
-  $('panes').hidden = P.length === 0;
-  $('panes').querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => openComp(b.dataset.c)));
-  $('panes').querySelectorAll('.et').forEach(g => { const go = () => openTable(g.dataset.t); g.addEventListener('click', go); g.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } }); });
-}
-function pgPane(r, pr, e) {
-  const cols = ['order_id', 'depot_id', 'van_id', 'stop_seq', 'status', 'assigned_at', 'out_for_delivery_at', 'delivered_at', 'updated_at', 'promised_end'];
-  const changed = c => e.set !== null && (state.cursor === 0 || (pr && pr[c] !== r[c]));
-  return `<div class="pane"><h3>PostgreSQL · orders <small>1 dòng</small>${badge('impl')}<button class="insp-open" type="button" data-c="pg">Inspector →</button></h3><dl class="kv">${cols.map(c => `<dt>${c}</dt><dd class="${changed(c) ? 'chg' : ''}">${esc(short(r[c]))}</dd>`).join('')}</dl><p class="note">${e.sql ? 'Ô màu vàng vừa đổi do câu SQL của sự kiện này.' : 'Sự kiện này không có câu SQL nào: dòng giữ nguyên.'}</p></div>`;
-}
-function mapPane(st) {
-  const e = EV[state.cursor], wrong = st.chaos === 'ooo';
-  const pos = wrong ? EV[3].pos : e.pos;
-  const label = wrong ? 'lấy theo lúc nhận: 08:02:05, cách 1.328 m (SAI)' : `${e.t} · cách ${e.dist.toLocaleString('vi-VN')} m · ${e.v} km/h`;
-  const pts = [DEPOT, DEST, pos], lats = pts.map(p => p[0]), lons = pts.map(p => p[1]);
-  const span = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lons) - Math.min(...lons)) * 1.3;
-  const cla = (Math.max(...lats) + Math.min(...lats)) / 2, clo = (Math.max(...lons) + Math.min(...lons)) / 2;
-  const P = p => [190 + (p[1] - clo) / span * 280, 85 - (p[0] - cla) / span * 120];
-  const [dx, dy] = P(DEPOT), [tx, ty] = P(DEST), [vx, vy] = P(pos), ring = Math.max(5, 50 / (span * 111320) * 280);
-  return `<div class="pane map"><h3>Bản đồ <small>${esc(label)}</small></h3><svg viewBox="0 0 380 170" role="img" aria-label="Vị trí VAN-0001"><line class="road" x1="${dx}" y1="${dy}" x2="${tx}" y2="${ty}"/><circle class="ring" cx="${tx}" cy="${ty}" r="${ring.toFixed(1)}"/><rect class="dep" x="${dx - 6}" y="${dy - 6}" width="12" height="12" rx="2"/><text x="${dx}" y="${dy + 22}" text-anchor="middle">DEP-01</text><circle class="dst" cx="${tx}" cy="${ty}" r="6"/><text x="${tx}" y="${ty - 14}" text-anchor="middle">ORD_001 (bán kính 50 m)</text><circle class="van" cx="${vx}" cy="${vy}" r="7"${wrong ? ' style="fill:var(--bad)"' : ''}/><text x="${vx}" y="${vy + 24}" text-anchor="middle">VAN-0001</text></svg>${wrong ? '<p class="note">Vị trí đúng theo event_ts là 08:09:05, cách 6 m.</p>' : ''}</div>`;
-}
-function gpsPane(intro) {
-  const sent = EV.slice(0, state.cursor + 1).filter(e => e.gps);
-  const to = intro.has('rp') ? 'Redpanda · gps.pings.v1' : '<b>chưa có nơi nhận</b> (giai đoạn 4)';
-  return `<div class="pane"><h3>Luồng GPS của VAN-0001 <small>mỗi 5 giây</small></h3>${sent.length ? `<table class="mt"><tr><th>event_ts</th><th>lat, lon</th><th>km/h</th></tr>${sent.map((e, k) => `<tr class="${k === sent.length - 1 && EV[state.cursor] === e ? 'new' : ''}"><td>${e.gps.ts}</td><td>${e.pos[0]}, ${e.pos[1]}</td><td>${e.v}</td></tr>`).join('')}</table>` : '<p class="note">Chưa có ping mốc nào ở thời điểm này.</p>'}<p class="note">Đi tới: ${to}. Chỉ hiện các ping mốc; thực tế có một ping mỗi 5 giây.</p></div>`;
-}
-function cdcPane(e) {
-  if (!e.cdc) return `<div class="pane"><h3>CDC (Debezium)${badge('impl')}</h3><p class="note">Sự kiện "${esc(e.label)}" không đổi database, nên không có CDC event.</p></div>`;
-  const c = e.cdc;
-  return `<div class="pane"><h3>CDC event <small>op = ${c.op}</small>${badge('impl')}<button class="insp-open" type="button" data-c="dbz">Inspector →</button></h3><dl class="kv"><dt>op</dt><dd>${c.op}</dd><dt>before.status</dt><dd>${short(c.bst)}</dd><dt>after.status</dt><dd class="chg">${c.ast}</dd><dt>source.lsn</dt><dd>${c.lsn}</dd><dt>source.txId</dt><dd>${c.tx}</dd><dt>commit</dt><dd>${c.commit}</dd><dt>Debezium xử lý</dt><dd>${c.cap}</dd></dl></div>`;
-}
-function rpPane(st) {
-  const sent = EV.slice(0, state.cursor + 1), cdc = sent.filter(e => e.cdc), gps = sent.filter(e => e.gps), dup = st.chaos === 'dup';
-  return `<div class="pane"><h3>Redpanda <small>partition 0</small>${badge('impl')}<button class="insp-open" type="button" data-c="rp">Inspector →</button></h3><table class="mt"><tr><th>topic</th><th>offset</th><th>nội dung</th></tr>${cdc.map(e => `<tr class="${EV[state.cursor] === e ? 'new' : ''}"><td>cdc.public.orders</td><td>${e.cdc.off}</td><td>ORD_001 · ${e.cdc.ast}</td></tr>`).join('')}${dup ? '<tr class="dup"><td>cdc.public.orders</td><td>412</td><td>ORD_001 · delivered (gửi lại)</td></tr>' : ''}${gps.map(e => `<tr class="${EV[state.cursor] === e ? 'new' : ''}"><td>gps.pings.v1</td><td>${e.gps.off}</td><td>VAN-0001 · ${e.gps.ts}</td></tr>`).join('')}</table><p class="note">Giữ 7 ngày. Message của ORD_001 cùng partition vì cùng key.${dup ? ' Dòng đỏ là proposed example.' : ''}</p></div>`;
-}
-function flinkPane() {
-  const msgs = list => list.reduce((n, e) => n + (e.cdc ? 1 : 0) + (e.gps ? 1 : 0), 0);
-  const read = msgs(EV.slice(0, state.cursor + 1)), pend = msgs(EV.slice(state.commit + 1, state.cursor + 1));
-  return `<div class="pane"><h3>Flink <small>bronze_cdc · bronze_gps</small>${badge('impl')}<button class="insp-open" type="button" data-c="flink">Inspector →</button></h3><div class="status-line"><span class="pill">Đã đọc ${read} message</span>${pend ? `<span class="pill wait">${pend} message chờ checkpoint</span>` : '<span class="pill ok">Đã commit hết</span>'}</div><p class="note">Source → Calc → IcebergStreamWriter → IcebergFilesCommitter. Checkpoint mỗi 30 s, exactly-once. Checkpoint gần nhất: #${state.ckpt}.</p></div>`;
-}
-function bronzeRows(st) {
-  const done = EV.slice(0, state.commit + 1);
-  const rows = done.filter(e => e.cdc).map(e => ({ e, dup: false }));
-  if (st.chaos === 'dup' && state.commit >= 5) rows.push({ e: EV[5], dup: true });
-  return { cdc: rows, gps: done.filter(e => e.gps) };
-}
-function icePane(st) {
-  const b = bronzeRows(st);
-  return `<div class="pane"><h3>Iceberg · bronze <small>chỉ ghi thêm</small>${badge('impl')}<button class="insp-open" type="button" data-c="ice">Inspector →</button></h3>${b.cdc.length + b.gps.length ? `<table class="mt"><tr><th>bảng</th><th>op / event_ts</th><th>lsn / offset</th></tr>${b.cdc.map(x => `<tr class="${x.dup ? 'dup' : ''}"><td>orders_cdc</td><td>${x.e.cdc.op} · ${x.e.cdc.ast}</td><td>${x.e.cdc.lsn} / ${x.dup ? 412 : x.e.cdc.off}</td></tr>`).join('')}${b.gps.map(e => `<tr><td>gps_pings</td><td>${e.gps.ts}</td><td>— / ${e.gps.off}</td></tr>`).join('')}</table>` : '<p class="note">Chưa có dòng nào được commit.</p>'}<p class="note">${b.cdc.length + b.gps.length} dòng đã commit. Partition: day(commit_ts) và day(event_ts).</p></div>`;
-}
-function trinoPane(st) {
-  const b = bronzeRows(st);
-  const lines = b.cdc.map(x => ` ${x.e.cdc.op} | ${(x.e.cdc.bst || 'NULL').padEnd(16)} | ${x.e.cdc.ast.padEnd(16)} | ${x.e.cdc.lsn} | ${x.dup ? 412 : x.e.cdc.off}`);
-  return `<div class="pane wide"><h3>Trino <small>chỉ thấy những gì đã commit</small>${badge('impl')}<button class="insp-open" type="button" data-c="trino">Inspector →</button></h3><pre>SELECT op, before.status, after.status, source_lsn, kafka_offset
-FROM lakehouse.bronze.orders_cdc
-WHERE after.order_id = 'ORD-20261118-00001' ORDER BY source_lsn;
-${lines.length ? lines.join('\n') : ' (0 rows)'}
-(${lines.length} rows)</pre></div>`;
-}
-function silverPane(st) {
-  const why = st.chaos === 'dup' ? 'bản gửi lại offset 412 bị loại.' : st.chaos === 'ooo' ? 'ping 08:02:05 đến muộn không ghi đè vị trí mới hơn.' : 'mỗi thực thể một dòng.';
-  return `<div class="pane"><h3>Iceberg · silver ${badge('ex')}<button class="insp-open" type="button" data-c="silver">Inspector →</button></h3><table class="mt"><tr><th>bảng</th><th>dòng của ORD_001 / VAN-0001</th></tr><tr><td>silver.orders</td><td>1 · delivered · last_lsn 27586392</td></tr><tr><td>silver.order_status_history</td><td>4 · created → assigned → out → delivered</td></tr><tr><td>silver.gps_pings</td><td>mới nhất theo event_ts: 01:09:05Z</td></tr></table><p class="note">Khử trùng và sắp đúng thứ tự: ${why}</p></div>`;
-}
-function goldPane(st) {
-  const fin = !!st.final;
-  return `<div class="pane"><h3>Gold · fct_delivery ${badge('ex')}<button class="insp-open" type="button" data-c="gold">Inspector →</button></h3><dl class="kv"><dt>order_id</dt><dd>ORD-20261118-00001</dd><dt>local_date</dt><dd>2026-11-18</dd><dt>depot_id</dt><dd>DEP-01</dd><dt>is_on_time</dt><dd>true</dd><dt>minutes_late</dt><dd>0</dd><dt>dest_area</dt><dd>w3gv7s7 (geohash 7, ~150 m)</dd><dt>is_final</dt><dd class="${fin ? 'chg' : ''}">${fin ? 'true (sau 01:00)' : 'false'}</dd></dl></div>`;
-}
-
-/* ---- progressive ERD ---- */
-const ERD_T = {
-  orders: { x: 640, y: 14, w: 330, rows: [
-    [1, 'order_id', 'text', 'PK'], [2, 'depot_id', 'text', 'FK NN'], [3, 'van_id', 'text', 'FK'], [3, 'stop_seq', 'integer', ''], [1, 'dest_lat', 'double precision', 'NN'], [1, 'dest_lon', 'double precision', 'NN'],
-    [1, 'promised_start', 'timestamptz', 'NN'], [1, 'promised_end', 'timestamptz', 'NN CK'], [1, 'status', 'text', 'NN'], [4, 'CHECK status IN (5 giá trị)', '', 'CK'], [4, 'failure_reason', 'text', ''], [1, 'created_at', 'timestamptz', 'NN'],
-    [4, 'assigned_at', 'timestamptz', ''], [4, 'out_for_delivery_at', 'timestamptz', ''], [4, 'delivered_at', 'timestamptz', ''], [4, 'failed_at', 'timestamptz', ''], [4, 'updated_at', 'timestamptz', 'NN']] },
-  depots: { x: 20, y: 30, w: 270, from: 2, rows: [[2, 'depot_id', 'text', 'PK'], [2, 'name', 'text', 'NN'], [2, 'lat', 'double precision', 'NN'], [2, 'lon', 'double precision', 'NN'], [2, 'created_at', 'timestamptz', 'NN'], [2, 'updated_at', 'timestamptz', 'NN']] },
-  vans: { x: 320, y: 270, w: 280, from: 3, rows: [[3, 'van_id', 'text', 'PK'], [3, 'depot_id', 'text', 'FK NN'], [3, 'plate', 'text', 'UQ NN'], [3, 'capacity', 'integer', 'CK NN'], [3, 'created_at', 'timestamptz', 'NN'], [3, 'updated_at', 'timestamptz', 'NN']] },
-};
-const RH = 20, HD = 30;
-function erdSvg(level) {
-  const colsOf = t => ERD_T[t].rows.filter(c => c[0] <= level);
-  const yOf = (t, name) => ERD_T[t].y + HD + RH * colsOf(t).findIndex(c => c[1] === name) + RH / 2 + 4;
-  const h = level >= 3 ? 440 : 380;
-  let s = `<svg viewBox="0 0 990 ${h}" role="img" aria-label="ERD">`;
-  const crow = (x, y) => `<path class="rel" d="M${x - 14},${y} L${x},${y - 7} M${x - 14},${y} L${x},${y} M${x - 14},${y} L${x},${y + 7}"/>`;
-  const one = (x, y, opt) => `<path class="rel" d="M${x + 10},${y - 7} L${x + 10},${y + 7}"/>` + (opt ? `<circle class="rel-c" cx="${x + 22}" cy="${y}" r="5"/>` : `<path class="rel" d="M${x + 16},${y - 7} L${x + 16},${y + 7}"/>`);
-  if (level >= 2) { const a = yOf('depots', 'depot_id'), b = yOf('orders', 'depot_id'); s += `<path class="rel" d="M290,${a} L620,${a} L620,${b} L640,${b}"/>` + one(290, a, false) + crow(640, b) + `<text class="rel-l" x="400" y="${a - 8}">1 kho – N đơn</text>`; }
-  if (level >= 3) {
-    const a = yOf('depots', 'depot_id') + 6, b = yOf('vans', 'depot_id'); s += `<path class="rel" d="M290,${a} L305,${a} L305,${b} L320,${b}"/>` + crow(320, b) + `<text class="rel-l" x="200" y="${(a + b) / 2}">1 kho – N xe</text>`;
-    const c = yOf('vans', 'van_id'), d = yOf('orders', 'van_id'); s += `<path class="rel" d="M600,${c} L625,${c} L625,${d} L640,${d}"/>` + one(600, c, true) + crow(640, d) + `<text class="rel-l" x="512" y="262">0..1 xe – N đơn</text>`;
-  }
-  Object.entries(ERD_T).forEach(([name, T]) => {
-    if (T.from && level < T.from) return;
-    const cols = colsOf(name), hh = HD + RH * cols.length + 8;
-    s += `<g class="et" data-t="${name}" tabindex="0" role="button" aria-label="Bảng ${name}"><rect class="box" x="${T.x}" y="${T.y}" width="${T.w}" height="${hh}" rx="10"/><rect class="hd" x="${T.x + 1}" y="${T.y + 1}" width="${T.w - 2}" height="${HD - 2}" rx="9"/><text class="tn" x="${T.x + 12}" y="${T.y + 20}">${name}</text>`;
-    cols.forEach((c, k) => {
-      const yy = T.y + HD + RH * k;
-      if (c[0] === level) s += `<rect class="newrow" x="${T.x + 1}" y="${yy}" width="${T.w - 2}" height="${RH}"/>`;
-      const [t0, ...rest] = c[3] ? c[3].split(' ') : [''];
-      s += `<text class="tg${t0 === 'PK' ? ' pk' : ''}" x="${T.x + 10}" y="${yy + 14}">${t0}</text><text x="${T.x + 36}" y="${yy + 14}">${esc(c[1])}</text><text class="ty" x="${T.x + T.w - 10}" y="${yy + 14}" text-anchor="end">${c[2]}${rest.length ? ' · ' + rest.join(' ') : ''}</text>`;
-    });
-    s += '</g>';
-  });
-  return s + '</svg>';
-}
-const TABLES = {
-  orders: { p: 'Trạng thái hiện tại của từng đơn: thuộc kho nào, xe nào đang giao, giao tới đâu, hạn khi nào, các mốc vòng đời.', g: 'Một dòng là một đơn, ở trạng thái hiện tại. Mỗi UPDATE ghi đè dòng cũ, nên lịch sử chỉ còn ở CDC.', k: 'order_id là mã đơn nghiệp vụ; nhờ nó, INSERT … ON CONFLICT DO NOTHING làm việc chạy lại không tạo trùng.', f: 'depot_id → depots (NOT NULL): đơn luôn thuộc một kho. van_id → vans (được NULL): đơn mới chưa có xe. Database không kiểm tra xe có cùng kho với đơn (DRN-8).', n: 'van_id, stop_seq: NULL cho tới khi phân công. assigned_at … failed_at: NULL cho tới khi mốc đó xảy ra. failure_reason: chỉ có khi thất bại.', s: [['ORD-20261118-00001', 'VAN-0001', 'delivered', '01:09:07Z'], ['ORD-20261118-00002', 'VAN-0001', 'delivered', '01:19:29Z'], ['ORD-20261118-00125', 'NULL', 'created', 'NULL']], sh: ['order_id', 'van_id', 'status', 'delivered_at'] },
-  depots: { p: 'Danh mục kho: điểm neo để báo cáo theo khu vực và để biết xe xuất phát từ đâu.', g: 'Một dòng là một kho vật lý.', k: 'depot_id là mã nghiệp vụ ngắn, ổn định (DEP-01…).', f: 'Không trỏ tới bảng nào; là gốc của hai quan hệ 1–N.', n: 'Không cột nào được NULL: kho không có tọa độ thì không tính được quãng đường.', s: [['DEP-01', 'District 1 Hub', '10.776', '106.7'], ['DEP-02', 'Tan Binh Hub', '10.801', '106.652'], ['DEP-03', 'Thu Duc Hub', '10.849', '106.772'], ['DEP-04', 'District 7 Hub', '10.733', '106.722']], sh: ['depot_id', 'name', 'lat', 'lon'] },
-  vans: { p: 'Danh mục xe và kho hiện tại của xe. van_id trùng với vehicle_id của thiết bị GPS: cầu nối giữa hai nguồn.', g: 'Một dòng là một xe, theo kho hiện tại.', k: 'van_id = ID thiết bị GPS. Biển số UNIQUE nhưng không làm khóa vì có thể đổi biển.', f: 'depot_id → depots: xe luôn thuộc một kho có thật. Chuyển kho thì dòng bị ghi đè; lịch sử chỉ còn trong CDC (gold đề xuất SCD2).', n: 'Không cột nào được NULL; capacity > 0.', s: [['VAN-0001', 'DEP-01', '51C-101.37', '30'], ['VAN-0002', 'DEP-02', '51C-102.74', '30'], ['VAN-0005', 'DEP-01', '51C-105.85', '30']], sh: ['van_id', 'depot_id', 'plate', 'capacity'] },
-};
-const DDL = {
-  depots: "CREATE TABLE depots (\n    depot_id   TEXT PRIMARY KEY,\n    name       TEXT NOT NULL,\n    lat        DOUBLE PRECISION NOT NULL,\n    lon        DOUBLE PRECISION NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n);",
-  vans: "CREATE TABLE vans (\n    van_id     TEXT PRIMARY KEY,           -- equals the GPS vehicle_id\n    depot_id   TEXT NOT NULL REFERENCES depots,\n    plate      TEXT NOT NULL UNIQUE,\n    capacity   INTEGER NOT NULL CHECK (capacity > 0),\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n);",
-  orders: "CREATE TABLE orders (\n    order_id            TEXT PRIMARY KEY,\n    depot_id            TEXT NOT NULL REFERENCES depots,\n    van_id              TEXT REFERENCES vans,\n    stop_seq            INTEGER,\n    dest_lat            DOUBLE PRECISION NOT NULL,\n    dest_lon            DOUBLE PRECISION NOT NULL,\n    promised_start      TIMESTAMPTZ NOT NULL,\n    promised_end        TIMESTAMPTZ NOT NULL,\n    status              TEXT NOT NULL CHECK (status IN\n                          ('created', 'assigned', 'out_for_delivery', 'delivered', 'failed')),\n    failure_reason      TEXT,\n    created_at          TIMESTAMPTZ NOT NULL,   -- business (simulated) time\n    assigned_at         TIMESTAMPTZ,\n    out_for_delivery_at TIMESTAMPTZ,\n    delivered_at        TIMESTAMPTZ,\n    failed_at           TIMESTAMPTZ,\n    updated_at          TIMESTAMPTZ NOT NULL,\n    CHECK (promised_end > promised_start)\n);\nALTER TABLE orders REPLICA IDENTITY FULL;\nCREATE PUBLICATION ct_cdc FOR TABLE depots, vans, orders;",
-};
-function erdExplain(level) {
-  const parts = ['', '<p><b>orders</b> có grain "một đơn", khóa chính <code>order_id</code>. Các cột mô tả đơn: điểm giao (<code>dest_lat</code>, <code>dest_lon</code>), khung hẹn, trạng thái, thời điểm tạo.</p>',
-    '<p>Thêm <b>depots</b> và <code>orders.depot_id NOT NULL REFERENCES depots</code>. Kho là entity riêng vì có danh tính (DEP-01) và thuộc tính riêng (tên, tọa độ).</p>',
-    '<p>Thêm <b>vans</b> (<code>depot_id NOT NULL</code>: một kho có nhiều xe) và <code>orders.van_id REFERENCES vans</code> được NULL, cộng <code>stop_seq</code>. <code>vans.plate</code> là UNIQUE nhưng không làm khóa chính.</p>',
-    '<p>Thêm CHECK cho <code>status</code> (5 giá trị), các cột mốc vòng đời, <code>failure_reason</code>, <code>updated_at</code>, và <code>CHECK (promised_end &gt; promised_start)</code>. Cuối file schema: <code>REPLICA IDENTITY FULL</code> và publication <code>ct_cdc</code>, chuẩn bị cho CDC ở giai đoạn 4.</p>'];
-  return parts[level] + '<p class="note">Bấm vào một bảng trên ERD để mở inspector: mục đích, grain, khóa, khóa ngoại, cột NULL, dữ liệu mẫu, DDL.</p>';
-}
-function ddl(level) {
-  const t = level === 1 ? "CREATE TABLE orders (\n    order_id       TEXT PRIMARY KEY,\n    dest_lat       DOUBLE PRECISION NOT NULL,\n    dest_lon       DOUBLE PRECISION NOT NULL,\n    promised_start TIMESTAMPTZ NOT NULL,\n    promised_end   TIMESTAMPTZ NOT NULL,\n    status         TEXT NOT NULL,\n    created_at     TIMESTAMPTZ NOT NULL\n);"
-    : level === 2 ? DDL.depots + '\n\n-- orders thêm:\n    depot_id TEXT NOT NULL REFERENCES depots,'
-    : level === 3 ? DDL.vans + '\n\n-- orders thêm:\n    van_id   TEXT REFERENCES vans,      -- được NULL\n    stop_seq INTEGER,'
-    : DDL.orders;
-  return `<pre>${esc(t)}</pre><p class="note">${level === 4 ? 'Đúng nội dung infra/local/postgres/init/001_schema.sql.' : 'Trích từng phần của infra/local/postgres/init/001_schema.sql theo thứ tự quyết định.'}</p>`;
-}
-function openTable(t) {
-  const T = TABLES[t];
-  openInspector(t, 'Bảng PostgreSQL · infra/local/postgres/init/001_schema.sql', [
-    ['Ý nghĩa', `<h5>1. Bảng này để làm gì</h5><p>${T.p}</p><h5>2. Một dòng là gì (grain)</h5><p>${T.g}</p><h5>3. Vì sao chọn khóa chính này</h5><p>${T.k}</p><h5>4. Khóa ngoại để làm gì</h5><p>${T.f}</p><h5>5. Cột nào được NULL</h5><p>${T.n}</p>`],
-    ['Dữ liệu mẫu', `<table class="mt"><tr>${T.sh.map(h => `<th>${h}</th>`).join('')}</tr>${T.s.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table><p class="note">Dữ liệu thật từ seed và simulator (seed 42).</p>`],
-    ['DDL', `<pre>${esc(DDL[t])}</pre>`],
-  ], 'impl');
-}
-
-/* ---- architecture ---- */
-function renderArch(st, intro) {
-  const target = state.arch === 'target', show = id => target || intro.has(id), hot = new Set(st.hot), W = 150, H = 46;
-  $('archTitle').textContent = target ? 'Target Architecture: toàn bộ thiết kế, kèm dịch vụ AWS' : 'Current Architecture: chỉ những thành phần đã cần tới ở bước này';
-  const shownIds = Object.keys(N).filter(show);
-  const maxR = Math.max(0, ...shownIds.map(k => N[k].r)), vh = 56 + (maxR + 1) * ROWH + 8;
-  $('arch').hidden = shownIds.length === 0;
-  let s = `<svg viewBox="0 0 1110 ${vh}" role="img" aria-label="Sơ đồ kiến trúc theo tầng">`;
-  s += `<defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker><marker id="mkh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
-  LAYERS.forEach((l, c) => { s += `<rect class="band" x="${14 + c * COLW}" y="8" width="${COLW - 12}" height="${vh - 16}" rx="12"/><text class="bandl" x="${26 + c * COLW}" y="34">${l}</text>`; });
-  const port = (a, b) => { const ax = a.x + W / 2, ay = a.y + H / 2, bx = b.x + W / 2, by = b.y + H / 2, dx = bx - ax, dy = by - ay; return Math.abs(dx) > Math.abs(dy) * 1.1 ? [dx > 0 ? a.x + W : a.x, ay, dx > 0 ? b.x : b.x + W, by] : [ax, dy > 0 ? a.y + H : a.y, bx, dy > 0 ? b.y : b.y + H]; };
-  E.forEach(([a, b, l]) => {
-    if (!show(a) || !show(b)) return;
-    const [x1, y1, x2, y2] = port(N[a], N[b]), h = !target && hot.has(a + '>' + b), dash = N[a].st === 'des' || N[b].st === 'des';
-    s += `<path class="ae-halo" d="M${x1},${y1} L${x2},${y2}"/><path class="ae${h ? ' hot' : ''}${dash ? ' dash' : ''}" d="M${x1},${y1} L${x2},${y2}" marker-end="url(#${h ? 'mkh' : 'mk'})"/>`;
-    if (l) s += `<text class="ael${h ? ' hot' : ''}" x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 6}" text-anchor="middle">${l}</text>`;
-  });
-  if (!target && intro.has('gpsout') && !intro.has('rp')) { const a = N.sim; s += `<path class="ae hot" d="M${a.x + W},${a.y + H / 2} L${a.x + W + 120},${a.y + H / 2}" marker-end="url(#mkh)"/><text class="ael hot" x="${a.x + W + 8}" y="${a.y + H / 2 - 6}">GPS</text><text class="ael" x="${a.x + W + 126}" y="${a.y + H / 2 + 4}">? chưa có nơi nhận</text>`; }
-  Object.entries(N).forEach(([id, n]) => {
-    if (!show(id)) return;
-    const h = !target && hot.has(id);
-    s += `<g class="an ${n.st}${h ? ' hot' : ''}" data-c="${id}" tabindex="0" role="button" aria-label="${n.t}"><rect x="${n.x}" y="${n.y}" width="${W}" height="${H}" rx="9"/><text class="t" x="${n.x + 10}" y="${n.y + 19}">${n.t}</text><text class="s" x="${n.x + 10}" y="${n.y + 35}">${target ? n.aws : n.s}</text></g>`;
-  });
-  $('arch').innerHTML = s + '</svg>';
-  $('arch').querySelectorAll('.an').forEach(g => { const go = () => openComp(g.dataset.c); g.addEventListener('click', go); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }); });
-  const ids = Object.keys(N).filter(show), nImpl = ids.filter(k => N[k].st === 'impl').length, nDes = ids.length - nImpl;
-  $('archNote').textContent = ids.length ? `${nImpl} thành phần đã chạy, ${nDes} thành phần mới nằm trong thiết kế. Bấm vào một khối để xem schema, code, cấu hình, metrics, ADR và test.` : 'Chưa có thành phần nào: giai đoạn 1 chỉ làm rõ vấn đề và yêu cầu. Sơ đồ sẽ lớn dần theo từng quyết định của bạn.';
-}
-function segment(el, items, current, onPick) {
-  el.innerHTML = items.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === current}">${l}</button>`).join('');
-  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => onPick(b.dataset.k)));
-}
-function renderArchSeg() { segment($('archView'), [['current', 'Hiện tại'], ['target', 'Mục tiêu']], state.arch, k => { state.arch = k; renderArchSeg(); renderArch(S[state.i], introduced(state.i)); }); }
-
-/* ---- player + events ---- */
-function renderPlayer(st, intro) {
-  const pl = $('player');
-  if (st.g < 2) { pl.innerHTML = '<p>Hành trình của ORD_001 bắt đầu ở giai đoạn 3.</p>'; return; }
-  const free = intro.has('rp'), e = EV[state.cursor], nx = EV[state.cursor + 1], hasIce = intro.has('ice'), pend = hasIce && state.commit < state.cursor;
-  pl.innerHTML = `<h4 style="margin:0">ORD_001 lúc này</h4><p><b>${e.t}</b> · ${esc(e.label)}</p>${free ? `<div class="row"><button class="btn small" id="evFirst" type="button" ${state.cursor === 0 ? 'disabled' : ''}>Về sự kiện đầu</button><button class="btn small primary" id="evNext" type="button" ${nx ? '' : 'disabled'}>${nx ? 'Sự kiện tiếp: ' + esc(nx.label.split(' (')[0]) : 'Đã hết sự kiện'}</button>${hasIce ? `<button class="btn small accent" id="evCkpt" type="button" ${pend ? '' : 'disabled'}>Chạy checkpoint</button>` : ''}</div><p>Các khung ở giữa (bản đồ, PostgreSQL, CDC, Redpanda, Flink, Iceberg, Trino) cập nhật theo sự kiện này.</p>` : '<p>Ở giai đoạn này, mỗi bước là một sự kiện. Từ khi có Redpanda (giai đoạn 4), bạn tự điều khiển hành trình ở đây.</p>'}`;
-  if (!free) return;
-  const go = c => { state.cursor = c; render(false); flash(); };
-  $('evFirst').addEventListener('click', () => { if (hasIce) state.commit = -1; go(0); });
-  $('evNext').addEventListener('click', () => go(state.cursor + 1));
-  const ck = $('evCkpt'); if (ck) ck.addEventListener('click', () => { state.commit = state.cursor; state.ckpt += 1; render(false); flash(); });
-}
-function renderEvents() {
-  $('events').innerHTML = EV.map((e, k) => `<li class="${k === state.cursor ? 'now' : k > state.cursor ? 'future' : ''}"><time>${e.t}</time><span class="rl"></span><span class="t">${esc(e.label)}</span></li>`).join('');
-}
-
-/* ---- modes ---- */
-const MODES = [['learn', 'Learn', 'Giải thích và ví dụ'], ['explore', 'Explore', 'ERD, luồng dữ liệu, lineage'], ['build', 'Build', 'SQL, cấu hình, chạy và kiểm thử']];
-let opSel = 3, linField = 'order_id', envMode = 'diff';
-function renderModes(st) {
-  $('modeTabs').innerHTML = MODES.map(([k, l, s]) => `<button role="tab" type="button" data-m="${k}" aria-selected="${state.mode === k}">${l}<small>${s}</small></button>`).join('');
-  $('modeTabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { state.mode = b.dataset.m; renderModes(S[state.i]); }));
-  const c = st[state.mode];
-  $('modeBody').innerHTML = typeof c === 'function' ? c() : c;
-  if (state.mode === 'explore' && st.widget === 'offline') wireOffline();
-  if (state.mode === 'explore' && st.widget === 'bench') wireBench();
-  $('modeBody').querySelectorAll('.op').forEach(b => b.addEventListener('click', () => { opSel = Number(b.dataset.i); renderModes(S[state.i]); }));
-  $('modeBody').querySelectorAll('[data-lf]').forEach(b => b.addEventListener('click', () => { linField = b.dataset.lf; renderModes(S[state.i]); }));
-  $('modeBody').querySelectorAll('[data-env]').forEach(b => b.addEventListener('click', () => { envMode = b.dataset.env; renderModes(S[state.i]); }));
-  $('modeBody').querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => openComp(b.dataset.c)));
-}
-function sqlBox() { const e = EV[state.cursor]; return e.sql ? `<h4>Câu SQL của sự kiện "${esc(e.label)}"</h4><pre>${esc(e.sql)}</pre>` : `<p>Sự kiện "${esc(e.label)}" không có câu SQL nào.</p>`; }
-function gpsBox() {
-  const e = EV[state.cursor];
-  if (!e.gps) return '<p>Ở sự kiện này chưa có ping mốc nào được gửi vào Kafka.</p>';
-  return `<h4>Message GPS thật</h4><pre>topic     gps.pings.v1   partition 0   offset ${e.gps.off}
-key       VAN-0001
-value     {"vehicle_id":"VAN-0001","event_ts":"2026-11-18T${e.gps.ts.replace('Z', '.000Z')}","lat":${e.pos[0]},
-           "lon":${e.pos[1]},"speed_kmh":${e.v},"heading_deg":${e.gps.h}}
-ingest_ts ${e.gps.ing}   <span class="c">(lúc Kafka nhận; lần chạy history nên trễ hơn 2 giờ)</span></pre><p class="note">event_ts là lúc thiết bị đo; ingest_ts là lúc broker nhận. Hai trục thời gian này luôn được giữ riêng.</p>`;
-}
-function envelopeBox() {
-  const e = EV[state.cursor];
-  if (!e.cdc) return `<p>Sự kiện "${esc(e.label)}" không đổi database, nên không có envelope. Chọn một sự kiện khác ở cột trái.</p>`;
-  const r = rowAt(state.cursor), pr = prevRowAt(state.cursor), c = e.cdc;
-  const keys = ['order_id', 'van_id', 'stop_seq', 'status', 'assigned_at', 'out_for_delivery_at', 'delivered_at', 'updated_at'];
-  const row = (o, mark) => o ? '{ ' + keys.map(k => { const v = o[k] === null ? 'null' : typeof o[k] === 'number' ? o[k] : `"${o[k]}"`; const line = `"${k}": ${v}`; return mark && pr && pr[k] !== r[k] ? `<span class="d">${esc(line)}</span>` : esc(line); }).join(', ') + ', … }' : 'null';
-  return `<div class="seg"><button type="button" data-env="diff" aria-pressed="${envMode === 'diff'}">Khác biệt</button><button type="button" data-env="before" aria-pressed="${envMode === 'before'}">Before</button><button type="button" data-env="after" aria-pressed="${envMode === 'after'}">After</button></div>
-<div class="json">{
-  "op": "${c.op}",                 <span class="mu">// c = insert · u = update · d = delete · r = snapshot</span>
-  "before": ${envMode === 'after' ? '<span class="mu">{ … }</span>' : row(c.op === 'c' ? null : pr, envMode === 'diff')},
-  "after":  ${envMode === 'before' ? '<span class="mu">{ … }</span>' : row(r, envMode === 'diff')},
-  "source": { "lsn": ${c.lsn}, "txId": ${c.tx}, "ts_ms": <span class="mu">${c.commit} (commit)</span>, "snapshot": "false",
-              "db": "control_tower", "schema": "public", "table": "orders" },
-  "ts_ms": <span class="mu">${c.cap} (Debezium xử lý)</span>
-}</div><p class="note">Topic cdc.public.orders · partition 0 · offset ${c.off} · key {"order_id":"ORD-20261118-00001"}. Ô vàng là trường thay đổi. <b>source.lsn</b> là vị trí trong WAL, dùng để sắp thứ tự; không phải lúc nào cũng duy nhất (snapshot dùng chung LSN). <b>source.ts_ms</b> là lúc commit (thời gian hệ thống), khác thời gian nghiệp vụ trong after.</p>`;
-}
-const OPS = [
-  ['TableSourceScan', 'Kafka source', 'Bytes của message (cdc.public.orders, p0, offset 381)', 'Parse JSON thành cột có kiểu: op, before ROW, after ROW, source; thêm partition, offset, timestamp của Kafka; sinh watermark = commit_ts − 30 s', 'Row(u, before{…out_for_delivery}, after{…delivered}, lsn 27586392, txid 1855)'],
-  ['Calc', 'Chọn cột, ép kiểu', 'Row envelope', 'Đưa source.snapshot, source.lsn, source.txId thành cột phẳng; CAST timestamp lên micro giây cho khớp Iceberg', 'Row theo đúng schema bronze.orders_cdc'],
-  ['IcebergStreamWriter', 'Ghi file', 'Row đã đúng schema', 'Ghi vào file Parquet đang mở, partition commit_ts_day=2026-11-18. File chưa thuộc snapshot nào nên chưa ai đọc được', 'Khi tới checkpoint: danh sách file đã viết xong'],
-  ['IcebergFilesCommitter', 'Commit snapshot', 'Danh sách file của checkpoint vừa xong', 'Sau khi checkpoint thành công trên toàn job, tạo snapshot Iceberg mới qua REST catalog. Đi cùng checkpoint nên không mất và không trùng', 'Snapshot mới: Trino thấy dòng delivered (bronze.orders_cdc có 15 snapshot lúc chụp)'],
-];
-function opsBox() {
-  const o = OPS[opSel];
-  return `<h4>Chuỗi operator thật của bronze_cdc (REST API của Flink)</h4><div class="ops">${OPS.map((x, k) => `<button class="op" type="button" data-i="${k}" aria-pressed="${k === opSel}"><b>${x[0]}</b><span>${x[1]}</span></button>`).join('')}</div><div class="io"><div><b>Nhận</b>${esc(o[2])}</div><div><b>Làm</b>${esc(o[3])}</div><div><b>Gửi đi</b>${esc(o[4])}</div></div>`;
-}
-const LIN = {
-  order_id: [['OLTP', 'orders', '1 đơn (hiện tại)', 'PK order_id', 'ORD-…-00001 · delivered', 'impl'], ['Kafka', 'cdc.public.orders', '1 thay đổi', 'key {order_id}', 'offset 126, 180, 279, 381', 'impl'], ['Bronze', 'bronze.orders_cdc', '1 message', '— (append)', '4 dòng, lsn 27101288 → 27586392', 'impl'], ['Silver', 'silver.orders', '1 đơn (mới nhất hợp lệ)', 'order_id · thứ tự last_lsn', '1 dòng · delivered', 'ex'], ['Gold', 'gold.fct_delivery', '1 đơn đã đóng', 'order_id', 'is_on_time = true · local_date 2026-11-18', 'ex']],
-  vehicle_id: [['Nguồn', 'GPS ping', '1 lần đo', '—', 'VAN-0001 = vans.van_id', 'impl'], ['Kafka', 'gps.pings.v1', '1 ping', 'key vehicle_id', 'offset 4453, 4703, 4963, 5543', 'impl'], ['Bronze', 'bronze.gps_pings', '1 message', '— (append)', '4 ping mốc của VAN-0001', 'impl'], ['Silver', 'silver.gps_pings', '1 ping duy nhất', '(vehicle_id, event_ts)', 'mới nhất theo event_ts: 01:09:05Z', 'ex'], ['Serving', 'serving.vehicle_latest', '1 xe', 'van_id', 'ghi đè chỉ khi event_ts mới hơn', 'ex']],
-  event_ts: [['Nghiệp vụ', 'delivered_at / event_ts', '—', '—', '01:09:07Z / ping 01:09:05Z', 'impl'], ['Commit', 'source.ts_ms → commit_ts', '—', 'bronze CDC partition theo nó', '03:25:35.857Z', 'impl'], ['Capture', 'ts_ms → capture_ts', '—', '—', '03:25:35.860Z (+3 ms)', 'impl'], ['Ingest', 'Kafka timestamp → ingest_ts', '—', '—', '03:25:35.890Z (+30 ms)', 'impl'], ['Gold', 'local_date', '—', 'partition gold', '08:09 giờ VN → 2026-11-18', 'ex']],
-  status: [['OLTP', 'orders.status', '1 đơn', '—', 'chỉ còn delivered', 'impl'], ['Kafka', 'before/after.status', '1 thay đổi', '—', 'NULL→created … out→delivered', 'impl'], ['Bronze', 'bronze.orders_cdc', '1 message', '—', '4 dòng (có thể trùng)', 'impl'], ['Silver', 'order_status_history', '1 lần đổi', '(order_id, status)', '4 dòng, status_ts nghiệp vụ', 'ex'], ['Gold', 'fct_delivery.outcome', '1 đơn đã đóng', 'order_id', 'delivered · is_on_time', 'ex']],
-};
-function lineageBox() {
-  return `<h4>Một field qua các tầng</h4><div class="seg">${[['order_id', 'order_id'], ['vehicle_id', 'vehicle_id'], ['event_ts', 'các loại thời gian'], ['status', 'status']].map(([k, l]) => `<button type="button" data-lf="${k}" aria-pressed="${k === linField}">${l}</button>`).join('')}</div><div style="overflow-x:auto"><div class="lin">${LIN[linField].map(c => `<div class="lcard"><span class="ly"><span>${c[0]}</span>${badge(c[5])}</span><b>${esc(c[1])}</b><span>Grain: ${esc(c[2])}</span><span>Khóa: ${esc(c[3])}</span><span>${esc(c[4])}</span></div>`).join('')}</div></div><p class="note">Tầng silver và gold là proposed example theo docs/requirements.md; chưa có code.</p>`;
-}
-function offlineBox() {
-  return `<div class="tl-axis"><span></span><div><span style="left:0">08:00</span><span style="left:22.22%">12:00</span><span style="left:44.44%">16:00</span><span style="left:66.67%">20:00</span><span style="left:88.89%">00:00</span><span style="left:100%">02:00</span></div></div><div class="tl-rows" id="tlRows"></div><label class="note" for="tlSlider">Đồng hồ hệ thống: <b id="tlNow"></b></label><input id="tlSlider" type="range" min="480" max="1560" step="5" value="845"><div class="tl-state" id="tlState"></div>`;
-}
-function wireOffline() {
-  const T0 = 480, T1 = 1560, OFF0 = 540, OFF1 = 840, CLOSE = 1500;
-  const pct = m => ((m - T0) / (T1 - T0) * 100).toFixed(2) + '%';
-  const hm = m => { const d = ((m % 1440) + 1440) % 1440; return String(Math.floor(d / 60)).padStart(2, '0') + ':' + String(d % 60).padStart(2, '0'); };
-  const tr = (sp, now) => `<div class="track">${sp.map(([a, b, c]) => `<i style="left:${pct(a)};width:calc(${pct(b)} - ${pct(a)});background:${c}"></i>`).join('')}<i class="now" style="left:${pct(now)}"></i></div>`;
-  const draw = () => {
-    const now = Number($('tlSlider').value), arr = now >= OFF1;
-    $('tlNow').textContent = (now >= 1440 ? '19/11 ' : '18/11 ') + hm(now);
-    $('tlRows').innerHTML = [['Event time', 'lúc ping được đo', [[OFF0, OFF1, 'var(--accent)']]], ['Ingest time', 'lúc Kafka nhận', arr ? [[OFF1, OFF1 + 6, 'var(--teal)']] : []], ['Bronze', 'ghi ở checkpoint kế tiếp', arr ? [[OFF1 + 1, T1, 'var(--impl)']] : []], ['KPI tạm tính', 'dbt mỗi 5 phút, nhìn lại 2 giờ', arr ? [[720, OFF1, 'var(--des)']] : []], ['Chốt sổ', '01:00 hôm sau', now >= CLOSE ? [[CLOSE, T1, 'var(--impl)']] : []]].map(([n, s, sp]) => `<div class="tl-row"><span>${n}<small>${s}</small></span>${tr(sp, now)}</div>`).join('');
-    const box = (c, t, x) => `<div class="${c}"><b>${t}</b><span>${x}</span></div>`;
-    $('tlState').innerHTML = now < OFF0 ? box('', 'Bình thường', 'Ping tới đều đặn.')
-      : now < OFF1 ? box('w', 'Mất sóng', `Đã ${now - OFF0} phút không có ping. Bronze đúng là không có dòng mới. Vị trí mới nhất đứng yên ở 09:00, nên ETA không còn tin được; cần một cảnh báo "mất tín hiệu" (chưa có trong spec).`)
-      : now < CLOSE ? box('g', '14:00: 3.600 ping tới cùng lúc', 'Kafka hấp thụ; bronze ghi đủ (watermark không bỏ gì vì bronze không có operator theo event time).') + box('w', 'Cảnh báo', 'Ping cũ hơn alert horizon chỉ cập nhật vị trí, không bắn cảnh báo cho quá khứ (proposed).') + box('w', 'KPI tạm tính', 'Lần dbt 14:05 nhìn lại 12:05–14:05; giờ 09:00–12:05 vẫn thiếu.')
-      : box('g', 'Chốt sổ 01:00', 'dbt tính lại cả ngày từ silver: số chính thức đúng, is_final = true.') + box('', 'Ping tới sau 01:00', 'Vẫn vào bronze và silver; KPI đã chốt chỉ đổi qua make reclose.');
-  };
-  $('tlSlider').addEventListener('input', draw); draw();
-}
-function benchBox() {
-  return `<div class="calc"><label for="bRate">Tốc độ đẩy (event/s)<input id="bRate" type="number" min="1000" max="1000000" value="20000"></label><label for="bDays">Số ngày lịch sử<input id="bDays" type="number" min="1" max="90" value="30"></label><div class="out"><b id="bTotal"></b><span>event GPS (200 xe, 5 s/ping)</span></div><div class="out"><b id="bTime"></b><span>thời gian replay</span></div><div class="out"><b id="bRatio"></b><span>so với tốc độ live (40 event/s)</span></div></div><p class="note">Mục tiêu ban đầu trong ADR 0009: ≥ 20.000 event/s trên laptop, tức 100 triệu event trong dưới 90 phút. Sẽ đo thật ở feature 5.</p>`;
-}
-function wireBench() {
-  const draw = () => { const r = Math.max(1, Number($('bRate').value) || 1), d = Math.max(1, Number($('bDays').value) || 1), n = 200 / 5 * 86400 * d, s = n / r;
-    $('bTotal').textContent = (n / 1e6).toFixed(1) + ' triệu'; $('bTime').textContent = s >= 3600 ? (s / 3600).toFixed(1) + ' giờ' : Math.round(s / 60) + ' phút'; $('bRatio').textContent = '×' + Math.round(r / 40).toLocaleString('vi-VN'); };
-  ['bRate', 'bDays'].forEach(id => $(id).addEventListener('input', draw)); draw();
-}
-function awsBox() {
-  return `<table class="mt"><tr><th>Thành phần</th><th>AWS</th><th>Trạng thái</th></tr>${Object.keys(N).map(k => `<tr><td><button class="linkbtn" type="button" data-c="${k}">${N[k].t}</button></td><td>${N[k].aws}</td><td>${N[k].st === 'impl' ? badge('impl') + ' local · AWS designed' : badge('des')}</td></tr>`).join('')}</table>`;
-}
-function traceBox() {
-  const stops = [['PostgreSQL', 'pg', 'Một dòng orders: delivered, van_id VAN-0001, delivered_at 01:09:07Z'], ['WAL + slot', 'dbz', 'txid 1135, 1294, 1572, 1855 · LSN 27101288 → 27586392 · ct_cdc_slot'], ['Debezium', 'dbz', '4 envelope: c, u, u, u, có before/after'], ['Redpanda', 'rp', 'cdc.public.orders p0 offset 126/180/279/381 · GPS p0 offset 4453/4703/4963/5543'], ['Flink', 'flink', 'bronze_cdc: Source → Calc → Writer → Committer · 126/126 checkpoint'], ['Iceberg', 'ice', 'bronze.orders_cdc partition commit_ts_day=2026-11-18 · 15 snapshot'], ['Trino', 'trino', '4 dòng theo thứ tự LSN, khớp 4 câu SQL'], ['Silver + gold', 'silver', 'Proposed: 1 dòng silver.orders, 4 dòng history, 1 dòng fct_delivery']];
-  return `<div class="trace">${stops.map((s, k) => `<button type="button" data-c="${s[1]}"><span class="n">${k + 1}</span><span><b>${s[0]}</b><small>${esc(s[2])}</small></span>${badge(k === 7 ? 'ex' : 'impl')}</button>`).join('')}</div>`;
-}
-
-/* ---- component inspector ---- */
-const COMP = {
-  sim: { sub: 'simulator/ · Python 3.11', tabs: [
-    ['Vai trò', '<p>Đóng vai ứng dụng đặt hàng (ghi Postgres) và thiết bị GPS (gửi Kafka). Tính trước cả ngày từ seed: tuyến, giờ tới, kết quả, khung hẹn. 2 đợt mỗi ngày (08:00 và 14:00); khoảng 10% đơn trễ và 2% thất bại có chủ đích.</p>'],
-    ['Code', '<pre>simulator/world.py      # 4 kho, 200 xe (VAN-0001…), seed SQL\nsimulator/day.py        # mô phỏng ngày: đơn + GPS cùng một câu chuyện\nsimulator/orders_db.py  # 1 giao dịch / sự kiện, idempotent\nsimulator/producer.py   # JSON, key = vehicle_id, acks=all, idempotence\n\nuv run python -m simulator day --vans 20 --history-hours 3\nuv run python -m simulator seed-sql</pre>'],
-    ['Test', '<p>26 unit test: <code>test_day.py</code> (vòng đời, GPS khớp trạng thái trong 50 m, tỉ lệ trễ và thất bại), <code>test_fleet.py</code>, <code>test_world.py</code> (seed không lệch code), <code>test_producer.py</code>.</p>'],
-    ['ADR', '<p>ADR 0009: các mức dữ liệu. Spec 002: GPS và đơn dùng chung một mô phỏng.</p>']] },
-  pg: { sub: 'postgres:16.15 · cổng host 15432', tabs: [
-    ['Schema', () => `<pre>${esc(DDL.orders)}</pre>`],
-    ['Cấu hình', '<pre>command: postgres -c wal_level=logical -c max_replication_slots=4\n         -c max_wal_senders=4 -c max_slot_wal_keep_size=1GB\ninit:    infra/local/postgres/init/001_schema.sql, 002_seed.sql\n         (chỉ chạy khi volume rỗng)</pre>'],
-    ['Metrics', '<table class="mt"><tr><td>depots / vans</td><td>4 / 200</td></tr><tr><td>wal_level</td><td>logical</td></tr><tr><td>publication ct_cdc</td><td>3 bảng</td></tr><tr><td>slot lag (make cdc-status)</td><td>~25 kB</td></tr></table>'],
-    ['ADR', '<p>ADR 0004: Postgres + Debezium CDC. Không chọn AWS DMS (không cam kết độ trễ cố định) hay để simulator tự gửi Kafka (vấn đề ghi kép).</p>'],
-    ['Test', '<p><code>test_cdc_stack_healthy_and_seeded</code>: kho và xe khớp <code>world.py</code>. Lỗi thường gặp: cổng 5432 bị chiếm; sửa <code>001_schema.sql</code> cần <code>make clean</code>.</p>']] },
-  dbz: { sub: 'quay.io/debezium/connect:3.6.3.Final', tabs: [
-    ['Cấu hình', '<pre>"plugin.name": "pgoutput",\n"slot.name": "ct_cdc_slot",\n"publication.name": "ct_cdc",\n"publication.autocreate.mode": "disabled",\n"table.include.list": "public.depots,public.vans,public.orders",\n"topic.prefix": "cdc",\n"snapshot.mode": "initial",\n"database.password": "${env:POSTGRES_PASSWORD}",\n"value.converter.schemas.enable": "false",\n"heartbeat.interval.ms": "10000"</pre><p class="note">infra/local/connect/ct-orders.json · đăng ký bằng register.sh (PUT, idempotent).</p>'],
-    ['Metrics', '<pre>make cdc-status\n{"connector":{"state":"RUNNING"},"tasks":[{"id":0,"state":"RUNNING"}]}\n ct_cdc_slot | t | 25 kB</pre><p>Snapshot: 4 depots + 200 vans, op = r, dùng chung LSN 26780256.</p>'],
-    ['ADR', '<p>ADR 0004. Hệ quả: slot bị bỏ rơi làm WAL tích tụ, nên có giới hạn <code>max_slot_wal_keep_size = 1GB</code>. Vượt giới hạn thì slot bị vô hiệu và phải chụp snapshot lại.</p>'],
-    ['Test', '<p><code>test_n_changes_n_rows_in_commit_order</code>, <code>test_seed_captured_once_as_snapshot</code>, <code>test_connector_restart_loses_and_duplicates_nothing</code>, <code>test_cdc_status_shows_state_and_lag</code>.</p>']] },
-  rp: { sub: 'redpandadata/redpanda:v26.1.20', tabs: [
-    ['Topic', '<table class="mt"><tr><th>topic</th><th>partition</th><th>retention</th></tr><tr><td>gps.pings.v1</td><td>3</td><td>7 ngày</td></tr><tr><td>cdc.public.{depots,vans,orders}</td><td>3</td><td>7 ngày</td></tr><tr><td>__debezium-heartbeat.cdc</td><td>1</td><td>tự tạo (DRN-13)</td></tr><tr><td>_connect_configs / _offsets / _status</td><td>—</td><td>nội bộ Kafka Connect</td></tr></table>'],
-    ['Lệnh', '<pre>docker compose -f infra/local/docker-compose.yml exec redpanda rpk topic list\ndocker compose -f infra/local/docker-compose.yml exec redpanda \\\n  rpk topic consume cdc.public.orders -n 1 -f \'%p %o %k %v\\n\'</pre><p>Trong mạng Docker: <code>redpanda:9092</code>; từ host: <code>localhost:19092</code>.</p>'],
-    ['ADR', '<p>ADR 0001: Kafka API. Không chọn Kinesis (giả lập ở local kém, CDC phải qua DMS) hay Apache Kafka trong Docker (nặng hơn).</p>'],
-    ['Test', '<p><code>test_stack_healthy_topic_and_table_exist</code> (topic GPS có 3 partition), <code>test_cdc_stack_healthy_and_seeded</code>.</p>']] },
-  flink: { sub: 'flink:1.20.5-scala_2.12-java17 + 5 JAR', tabs: [
-    ['Code', '<pre>CREATE TEMPORARY TABLE gps_pings_source (\n  vehicle_id STRING, event_ts TIMESTAMP_LTZ(3), lat DOUBLE, lon DOUBLE, ...,\n  ingest_ts       TIMESTAMP_LTZ(3) METADATA FROM \'timestamp\' VIRTUAL,\n  kafka_partition INT METADATA FROM \'partition\' VIRTUAL,\n  kafka_offset    BIGINT METADATA FROM \'offset\' VIRTUAL,\n  WATERMARK FOR event_ts AS event_ts - INTERVAL \'30\' SECOND\n) WITH (\'connector\' = \'kafka\', \'topic\' = \'${GPS_TOPIC}\',\n        \'properties.group.id\' = \'flink-bronze-gps\',\n        \'scan.startup.mode\' = \'group-offsets\',\n        \'format\' = \'json\', \'json.ignore-parse-errors\' = \'false\');\n\nINSERT INTO lakehouse.bronze.gps_pings\nSELECT vehicle_id, CAST(event_ts AS TIMESTAMP_LTZ(6)), ..., kafka_partition, kafka_offset\nFROM gps_pings_source;</pre><p class="note">flink/jobs/bronze_gps.sql · bronze_cdc.sql dùng EXECUTE STATEMENT SET cho 3 bảng.</p>'],
-    ['Cấu hình', '<pre>-- flink/jobs/_init_catalog.sql (sql-client -i)\nSET \'execution.checkpointing.interval\' = \'${CHECKPOINT_INTERVAL}\';   -- 30 s\nSET \'execution.checkpointing.mode\' = \'EXACTLY_ONCE\';\nCREATE CATALOG lakehouse WITH (\'type\'=\'iceberg\', \'catalog-type\'=\'rest\', ...);</pre><p>submit.sh: chờ JobManager, bỏ qua nếu job đang RUNNING, envsubst, báo lỗi nếu còn biến chưa thay.</p>'],
-    ['Metrics', '<table class="mt"><tr><td>bronze_gps</td><td>RUNNING · checkpoint 126/127 (1 fail)</td></tr><tr><td>bronze_cdc</td><td>RUNNING · checkpoint 126/126</td></tr><tr><td>task slots</td><td>4 (2 đang dùng)</td></tr><tr><td>Dashboard</td><td>http://localhost:8081</td></tr></table>'],
-    ['ADR', '<p>ADR 0002: Flink SQL. Không chọn Spark Structured Streaming (micro-batch) hay consumer thuần / Lambda (tự viết state).</p><div class="drn"><div><b class="id">DRN-1</b>JSON hỏng làm dừng job: chưa có DLQ (feature 3).</div></div>'],
-    ['Test', '<p><code>test_exactly_n_rows</code>, <code>test_freshness_under_60s</code>, <code>test_bronze_schema_and_partitioning</code>, <code>test_data_survives_restart</code>.</p>']] },
-  ice: { sub: 'Iceberg 1.10.1 · REST catalog · MinIO (DHI)', tabs: [
-    ['Schema', '<pre>CREATE TABLE lakehouse.bronze.gps_pings (\n  vehicle_id VARCHAR, event_ts TIMESTAMP(6) WITH TIME ZONE, lat DOUBLE, lon DOUBLE,\n  speed_kmh DOUBLE, heading_deg DOUBLE, ingest_ts TIMESTAMP(6) WITH TIME ZONE,\n  kafka_partition INTEGER, kafka_offset BIGINT)\nWITH (format = \'PARQUET\', partitioning = ARRAY[\'day(event_ts)\']);</pre><p class="note">Tạo bằng Trino vì DDL của Flink không khai báo được hidden partition.</p>'],
-    ['File', '<pre>s3://warehouse/bronze/orders_cdc-f854f388eba146fdabdcb5e7b47b1f88/data/\n  commit_ts_day=2026-11-18/00000-0-4a7790a3-…-00003.parquet   (1160 dòng)</pre><p>Cạnh <code>data/</code> là <code>metadata/</code>: file JSON metadata và manifest Avro. Catalog (SQLite ở <code>/home/iceberg/catalog.db</code>) trỏ tên bảng tới metadata hiện tại.</p>'],
-    ['Metrics', '<pre>SELECT count(*) FROM lakehouse.bronze."orders_cdc$snapshots";   -- 15\nSELECT file_path, record_count FROM lakehouse.bronze."orders_cdc$files";</pre>'],
-    ['ADR', '<p>ADR 0003: Iceberg (Athena hỗ trợ tốt nhất). MinIO chỉ là kho object: không có bảng, SQL hay giao dịch; Iceberg thêm lớp metadata, Trino chạy SQL.</p>'],
-    ['Test', '<p><code>test_bronze_schema_and_partitioning</code>, <code>test_data_survives_restart</code>. Rủi ro: nhiều file nhỏ (2.880 commit mỗi ngày cho mỗi bảng), cần compaction (feature 5).</p>']] },
-  trino: { sub: 'trinodb/trino:484 · cổng 8080', tabs: [
-    ['Truy vấn', '<pre>SELECT op, before.status, after.status, source_lsn, kafka_offset\nFROM lakehouse.bronze.orders_cdc\nWHERE after.order_id = \'ORD-20261118-00001\' ORDER BY source_lsn;\n c | NULL             | created          | 27101288 | 126\n u | created          | assigned         | 27187680 | 180\n u | assigned         | out_for_delivery | 27390824 | 279\n u | out_for_delivery | delivered        | 27586392 | 381</pre>'],
-    ['Lỗi thường gặp', '<p>Lọc theo <code>commit_ts</code> để tìm đơn giao hôm nay: sai ở chế độ history (commit 03:25Z, giao 01:09Z). Dùng thời gian nghiệp vụ. Dùng <code>coalesce(after.order_id, before.order_id)</code> để không sót delete.</p>'],
-    ['ADR', '<p>ADR 0003: Trino ở local, Athena trên AWS; cùng bảng Iceberg.</p>']] },
-  silver: { sub: 'Designed (ADR 0006) · schema Proposed', tabs: [['Thiết kế', '<table class="mt"><tr><th>bảng</th><th>grain</th><th>khóa</th></tr><tr><td>silver.gps_pings</td><td>1 ping duy nhất</td><td>(vehicle_id, event_ts)</td></tr><tr><td>silver.orders</td><td>1 đơn, mới nhất</td><td>order_id · thứ tự last_lsn</td></tr><tr><td>silver.order_status_history</td><td>1 lần đổi trạng thái</td><td>(order_id, status)</td></tr></table><div class="drn"><div><b class="id">DRN-12</b>Khóa (order_id, status) chỉ đúng khi mỗi trạng thái xảy ra một lần.</div></div>']] },
-  gold: { sub: 'Designed (ADR 0006, feature 7) · schema Proposed', tabs: [['Thiết kế', '<p>Star schema: <code>fct_delivery</code> (1 đơn đã đóng), <code>dim_van</code> (SCD2), <code>dim_depot</code>, <code>dim_date</code>, <code>agg_depot_daily</code>, <code>closed_days</code>. Partition theo <code>local_date</code>. dbt chạy mỗi 5 phút (nhìn lại 2 giờ) và chốt sổ lúc 01:00.</p>']] },
-  fct: { sub: 'Designed (feature 6)', tabs: [['Thiết kế', '<p>Join vị trí mới nhất của xe với các đơn đang mở của xe đó (theo stop_seq), tính ETA, phát SLA_RISK khi ETA vượt promised_end. Có state theo xe và watermark. Ping cũ hơn alert horizon không bắn cảnh báo.</p>']] },
-  serving: { sub: 'Designed (ADR 0007)', tabs: [['Thiết kế', '<p>Bảng Postgres được upsert tại chỗ: <code>vehicle_latest</code>, <code>order_eta</code>, <code>alerts</code>. Màn hình đọc từ đây để tươi trong vài giây mà không phải query lakehouse.</p>']] },
-  sr: { sub: 'Proposed (ADR 0008) · feature 3', tabs: [['Thiết kế', '<p>Avro schema trong <code>schemas/</code> là hợp đồng giữa producer và consumer; registry ép tương thích BACKWARD (chỉ thêm field có default). Message lỗi vào DLQ thay vì làm dừng job (DRN-1). Local: Schema Registry có sẵn trong Redpanda (cổng 18081). AWS: Glue Schema Registry.</p><div class="drn"><div><b class="id">ADR 0008</b>Vẫn là Proposed: định dạng Confluent (local) và Glue (AWS) khác nhau; nếu quá tốn công thì tự chạy registry tương thích Confluent trên Fargate.</div></div>']] },
-  grafana: { sub: 'Designed (feature 8)', tabs: [['Thiết kế', '<p>Bản đồ xe, danh sách cảnh báo, KPI (tạm tính hoặc đã chốt), sức khỏe pipeline (consumer lag, checkpoint, slot lag).</p>']] },
-};
-function compTab(id, k) { const t = COMP[id].tabs[k][1]; return typeof t === 'function' ? t() : t; }
-function openComp(id) { const c = COMP[id]; if (!c) return; openInspector(N[id] ? N[id].t : id, c.sub, c.tabs, N[id] ? (N[id].st === 'impl' ? 'impl' : 'des') : null); }
-const DRN = [['DRN-1', 'Spec vẽ đường DLQ nhưng chưa có; JSON hỏng làm dừng job Flink.'], ['DRN-2', 'Profile Compose khác ADR 0005 (ADR: core/cdc/ui; thực tế: cdc, jobs).'], ['DRN-3', 'ADR 0001/0002/0008 nhắc "feature 8" là AWS; giờ là feature 10.'], ['DRN-4', 'Job e2e trên CI chưa từng chạy (thiếu secret Docker Hub).'], ['DRN-5', 'requirements.md vẫn Draft sau khi merge PR #3.'], ['DRN-6', 'CLAUDE.md ghi timestamp(3); bronze lưu timestamp(6).'], ['DRN-7', 'LSN không luôn duy nhất: 200 dòng snapshot vans chung LSN 26780256. Khóa khử trùng: (khóa chính, source_lsn, op).'], ['DRN-8', 'Database không ép: xe cùng kho với đơn, thứ tự trạng thái, giao khi ở gần.'], ['DRN-9', 'OLTP không lưu lịch sử phân công; chỉ CDC còn giữ.'], ['DRN-10', 'bronze.orders_cdc partition theo ngày commit; KPI phải dùng ngày nghiệp vụ.'], ['DRN-11', 'Ở chế độ history, commit_ts muộn hơn thời gian nghiệp vụ hàng giờ.'], ['DRN-12', 'Khóa (order_id, status) cho history giả định mỗi trạng thái chỉ một lần.'], ['DRN-13', 'Topic heartbeat Debezium được tự tạo; trên MSK cần tạo trước.']];
-$('drnBtn').addEventListener('click', () => openInspector('Design review', '13 chỗ lệch hoặc điểm yếu, chờ chủ project quyết định', [['Notes', `<div class="drn">${DRN.map(d => `<div><b class="id">${d[0]}</b>${esc(d[1])}</div>`).join('')}</div>`]]));
-
-/* ---- inspector ---- */
-let lastFocus = null;
-function openInspector(title, sub, tabs, status) {
-  lastFocus = document.activeElement;
-  $('iTitle').innerHTML = esc(title) + (status ? ' ' + badge(status) : '');
-  $('iSub').textContent = sub || '';
-  let cur = 0;
-  const draw = () => {
-    $('iTabs').innerHTML = tabs.map((t, k) => `<button role="tab" type="button" data-k="${k}" aria-selected="${k === cur}">${t[0]}</button>`).join('');
-    $('iTabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { cur = Number(b.dataset.k); draw(); }));
-    const c = tabs[cur][1]; $('iBody').innerHTML = typeof c === 'function' ? c() : c;
-  };
-  draw();
-  $('insp').classList.add('open'); $('insp').setAttribute('aria-hidden', 'false'); document.body.classList.add('insp-on');
-  $('iClose').focus({ preventScroll: true });
-}
-function closeInspector() { $('insp').classList.remove('open'); $('insp').setAttribute('aria-hidden', 'true'); document.body.classList.remove('insp-on'); if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true }); }
-$('iClose').addEventListener('click', closeInspector);
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('insp').classList.contains('open')) { closeInspector(); return; }
-  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-  if (e.key === 'ArrowRight' && e.altKey) enterStep(state.i + 1);
-  if (e.key === 'ArrowLeft' && e.altKey) enterStep(state.i - 1);
-});
-
-/* ---- theme toggle (follows the OS until the reader picks one) ---- */
+/* theme */
 const root = document.documentElement;
-const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-function paintThemeBtn() { $('themeBtn').textContent = isDark() ? 'Giao diện sáng' : 'Giao diện tối'; }
-try { const saved = localStorage.getItem('ct-theme'); if (saved === 'dark' || saved === 'light') root.dataset.theme = saved; } catch (e) { /* storage unavailable */ }
-$('themeBtn').addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('ct-theme', root.dataset.theme); } catch (e) { /* ignore */ } paintThemeBtn(); });
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintThemeBtn);
-paintThemeBtn();
+function curTheme() { return root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+function paintTheme() { $('theme').textContent = curTheme() === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'; }
+try { const t = localStorage.getItem('ct-theme'); if (t) root.dataset.theme = t; } catch (e) { /* storage blocked */ }
+$('theme').addEventListener('click', () => { const t = curTheme() === 'dark' ? 'light' : 'dark'; root.dataset.theme = t; try { localStorage.setItem('ct-theme', t); } catch (e) { /* storage blocked */ } paintTheme(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTheme);
+paintTheme();
 
-/* ---- wiring ---- */
-$('prev').addEventListener('click', () => enterStep(state.i - 1));
-$('next').addEventListener('click', () => enterStep(state.i + 1));
-$('tlToggle').addEventListener('click', () => { const on = $('tl').classList.toggle('show-all'); $('tlToggle').setAttribute('aria-expanded', String(on)); });
-const m = /^#step-(\d+)$/.exec(location.hash);
-enterStep(m ? Number(m[1]) - 1 : 0);
-})();
+/* table of contents from section headings */
+$('toc').innerHTML = [...document.querySelectorAll('section')].map(s => { const h = s.querySelector('h2'); const n = h.querySelector('.n').textContent; const t = [...h.childNodes].filter(x => x.nodeType === 3).map(x => x.textContent).join('').trim(); return `<li><a href="#${s.id}"><span>${n}</span>${esc(t)}</a></li>`; }).join('');
+
+/* 3. CDC: real values from the ORD_001 run (local times, UTC+7) */
+const CDC = [
+  { sql: "INSERT INTO orders (order_id, status, …)\nVALUES ('ORD_001', 'created', …);", op: 'c', b: null, a: 'created', lsn: 27101288, cap: '02:57:55 · đơn được tạo. op = c (create), chưa có trạng thái trước.' },
+  { sql: "UPDATE orders\nSET status = 'assigned', van_id = 'VAN-0001'\nWHERE order_id = 'ORD_001';", op: 'u', b: 'created', a: 'assigned', lsn: 27187680, cap: '07:30:00 · phân công cho VAN-0001.' },
+  { sql: "UPDATE orders\nSET status = 'out_for_delivery'\nWHERE order_id = 'ORD_001';", op: 'u', b: 'assigned', a: 'out_for_delivery', lsn: 27390824, cap: '08:00:00 · xe rời kho cùng 13 đơn.' },
+  { sql: "UPDATE orders\nSET status = 'delivered'\nWHERE order_id = 'ORD_001';", op: 'u', b: 'out_for_delivery', a: 'delivered', lsn: 27586392, cap: '08:09:07 · giao xong, sớm 87 phút so với hạn. Bảng orders giờ chỉ còn "delivered", nhưng CDC đã giữ đủ 4 bước.' },
+];
+let ci = 0;
+function drawCdc() {
+  const e = CDC[ci];
+  $('cdcSql').textContent = e.sql;
+  $('cdcMsg').textContent = `{\n  "op": "${e.op}",\n  "before": ${e.b ? `{ "status": "${e.b}" }` : 'null'},\n  "after":  { "status": "${e.a}" },\n  "source": { "lsn": ${e.lsn} }\n}`;
+  $('cdcCap').textContent = `Thay đổi ${ci + 1}/4 · ${e.cap}`;
+  $('cdcNext').disabled = ci === CDC.length - 1;
+}
+$('cdcNext').addEventListener('click', () => { ci = Math.min(ci + 1, CDC.length - 1); drawCdc(); });
+$('cdcReset').addEventListener('click', () => { ci = 0; drawCdc(); });
+drawCdc();
+
+/* 5. checkpoint */
+const MSG = [['orders_cdc', 'ORD_001 created'], ['orders_cdc', 'ORD_001 assigned'], ['gps_pings', 'VAN-0001 08:00:00'], ['orders_cdc', 'ORD_001 out_for_delivery'], ['gps_pings', 'VAN-0001 08:02:05'], ['gps_pings', 'VAN-0001 08:04:15'], ['gps_pings', 'VAN-0001 08:09:05'], ['orders_cdc', 'ORD_001 delivered']];
+let ckRead = 0, ckDone = 0, ckN = 0;
+function tbl(rows, empty) { return rows.length ? `<tr><th>bảng</th><th>message</th></tr>` + rows.map(([t, m]) => `<tr><td class="m">${t}</td><td class="m">${m}</td></tr>`).join('') : `<tr><td>${empty}</td></tr>`; }
+function drawCk() {
+  $('ckPend').innerHTML = tbl(MSG.slice(ckDone, ckRead), 'Không có');
+  $('ckDone').innerHTML = tbl(MSG.slice(0, ckDone), 'Chưa có dòng nào');
+  $('ckCap').textContent = `Trino đếm được ${ckDone} dòng. ${ckRead > ckDone ? `${ckRead - ckDone} message Flink đã đọc nhưng Trino chưa thấy.` : ''}${ckN ? ` Checkpoint gần nhất: #${ckN}.` : ''}`;
+  $('ckSend').disabled = ckRead === MSG.length; $('ckRun').disabled = ckRead === ckDone;
+}
+$('ckSend').addEventListener('click', () => { ckRead = Math.min(ckRead + 1, MSG.length); drawCk(); });
+$('ckRun').addEventListener('click', () => { ckDone = ckRead; ckN++; drawCk(); });
+$('ckReset').addEventListener('click', () => { ckRead = ckDone = ckN = 0; drawCk(); });
+drawCk();
+
+/* 6. history vs latest (real positions of VAN-0001) */
+const GPS = [['08:00:00', 10.775999, 106.699981], ['08:02:05', 10.783058, 106.691112], ['08:04:15', 10.790442, 106.681952], ['08:09:05', 10.790574, 106.681723]];
+let gi = 0;
+function drawGps() {
+  const head = '<tr><th>vehicle_id</th><th>event_ts</th><th class="num">lat</th><th class="num">lon</th></tr>';
+  const row = (g, cls) => `<tr class="${cls}"><td class="m">VAN-0001</td><td class="m">${g[0]}</td><td class="m num">${g[1].toFixed(4)}</td><td class="m num">${g[2].toFixed(4)}</td></tr>`;
+  $('gpsHist').innerHTML = head + GPS.slice(0, gi + 1).map((g, k) => row(g, k === gi && gi ? 'new' : '')).join('');
+  $('gpsLatest').innerHTML = head + row(GPS[gi], gi ? 'hl' : '');
+  $('gpsNext').disabled = gi === GPS.length - 1;
+}
+$('gpsNext').addEventListener('click', () => { gi = Math.min(gi + 1, GPS.length - 1); drawGps(); });
+$('gpsReset').addEventListener('click', () => { gi = 0; drawGps(); });
+drawGps();
+
+/* 7. late event */
+function drawLate(byEvent) {
+  $('byEvent').setAttribute('aria-pressed', byEvent); $('byIngest').setAttribute('aria-pressed', !byEvent);
+  $('byEvent').classList.toggle('pri', byEvent); $('byIngest').classList.toggle('pri', !byEvent);
+  $('lateGood').className = byEvent ? 'new' : ''; $('lateBad').className = byEvent ? '' : 'bad';
+  const r = $('lateRes'); r.className = 'res ' + (byEvent ? 'ok' : 'bad');
+  r.innerHTML = byEvent ? '<b>Đúng:</b> xe đang ở nhà khách (cách 6 m), vừa giao xong.' : '<b>Sai:</b> dashboard báo xe "lùi" về chỗ cách khách 1,3 km, ngay sau khi đã giao xong.';
+}
+$('byEvent').addEventListener('click', () => drawLate(true));
+$('byIngest').addEventListener('click', () => drawLate(false));
+drawLate(true);
+
+/* 10. ETA */
+const NOW = 8 * 60 + 2 + 5 / 60, DUE = 9 * 60 + 36 + 11 / 60;
+const hhmm = m => { const t = Math.round(m * 60), h = Math.floor(t / 3600) % 24, mi = Math.floor(t / 60) % 60, s = t % 60; return [h, mi, s].map(x => String(x).padStart(2, '0')).join(':'); };
+function drawEta() {
+  const d = +$('dist').value, v = +$('spd').value, n = +$('stops').value;
+  $('distO').textContent = d.toFixed(1).replace('.', ',') + ' km'; $('spdO').textContent = String(v).replace('.', ',') + ' km/h'; $('stopsO').textContent = n;
+  const eta = NOW + d / v * 60 + n * 4, late = eta - DUE, r = $('etaRes');
+  if (late >= 1) { r.className = 'res bad'; r.innerHTML = `<b class="big">ETA ${hhmm(eta)}</b>Trễ ${Math.round(late)} phút so với hạn 09:36. <b>Cảnh báo SLA_RISK phát ngay lúc 08:02:05</b>, sớm ${Math.round(DUE - NOW)} phút trước khi trễ thật.`; }
+  else { r.className = 'res ok'; r.innerHTML = `<b class="big">ETA ${hhmm(eta)}</b>Còn dư ${Math.round(-late)} phút so với hạn 09:36. Không cảnh báo.`; }
+}
+['dist', 'spd', 'stops'].forEach(id => $(id).addEventListener('input', drawEta));
+drawEta();
+
+/* design review notes */
+const DRN = ['Spec có đường DLQ nhưng chưa làm; một message JSON hỏng làm dừng job Flink.', 'Profile Docker Compose khác ADR 0005 (ADR: core/cdc/ui; thực tế: cdc, jobs).', 'ADR 0001/0002/0008 còn ghi "feature 8" là AWS; giờ là feature 10.', 'Job e2e trên CI chưa từng chạy (thiếu secret Docker Hub).', 'requirements.md từng ghi Draft sau khi merge (đã sửa ở PR #5).', 'CLAUDE.md ghi timestamp(3); bronze lưu timestamp(6).', 'LSN không luôn duy nhất: 200 dòng snapshot vans chung một LSN. Khóa khử trùng: (khóa chính, source_lsn, op).', 'Database không ép: xe cùng kho với đơn, thứ tự trạng thái, giao khi ở gần.', 'OLTP không lưu lịch sử phân công; chỉ CDC còn giữ.', 'bronze.orders_cdc chia partition theo ngày commit; KPI phải dùng ngày nghiệp vụ.', 'Ở chế độ history, commit_ts muộn hơn thời gian nghiệp vụ hàng giờ.', 'Khóa (order_id, status) giả định mỗi trạng thái chỉ xảy ra một lần.', 'Topic heartbeat của Debezium được tự tạo; trên MSK phải tạo trước.'];
+$('drn').innerHTML = DRN.map(t => `<li>${esc(t)}</li>`).join('');
 </script>
 </body>
 </html>
