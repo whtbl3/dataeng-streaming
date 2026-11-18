@@ -15,6 +15,7 @@ from pyflink.common import Row
 from pyflink.table import DataTypes
 from pyflink.table.udf import ScalarFunction, udf
 
+from contracts.cdc import TABLES, TS, decode_cdc
 from contracts.decode import decode_gps
 from contracts.registry import Registry
 
@@ -70,3 +71,57 @@ class DecodeGps(ScalarFunction):
 
 
 decode_gps_udf = udf(DecodeGps(), result_type=GPS_RESULT)
+
+
+# ---- CDC (Debezium) -------------------------------------------------------------------
+_FLINK_TYPES = {
+    "STRING": DataTypes.STRING,
+    "DOUBLE": DataTypes.DOUBLE,
+    "INT": DataTypes.INT,
+    TS: lambda: DataTypes.TIMESTAMP_LTZ(6),
+}
+CDC_FIELDS = ["op", "before", "after", "snapshot", "lsn", "tx_id", "commit_ts", "capture_ts"]
+
+
+def _image_type(table: str):
+    return DataTypes.ROW([DataTypes.FIELD(n, _FLINK_TYPES[t]()) for n, t in TABLES[table]])
+
+
+def cdc_result(table: str):
+    return DataTypes.ROW(
+        [
+            DataTypes.FIELD("op", DataTypes.STRING()),
+            DataTypes.FIELD("before", _image_type(table)),
+            DataTypes.FIELD("after", _image_type(table)),
+            DataTypes.FIELD("snapshot", DataTypes.STRING()),
+            DataTypes.FIELD("lsn", DataTypes.BIGINT()),
+            DataTypes.FIELD("tx_id", DataTypes.BIGINT()),
+            DataTypes.FIELD("commit_ts", DataTypes.TIMESTAMP_LTZ(3)),
+            DataTypes.FIELD("capture_ts", DataTypes.TIMESTAMP_LTZ(3)),
+            *TAIL_FIELDS,
+        ]
+    )
+
+
+class DecodeCdc(ScalarFunction):
+    def __init__(self, table: str) -> None:
+        self.table = table
+
+    def open(self, function_context) -> None:
+        self.registries = _Registries()
+
+    def eval(
+        self, raw: bytes, ingest_ts: datetime, partition: int, offset: int, registry_url: str
+    ) -> Row:
+        row, err = decode_cdc(raw, self.table, self.registries.get(registry_url))
+        meta = (ingest_ts, partition, offset)
+        if err:
+            return Row(*([None] * len(CDC_FIELDS)), err[0], err[1], err[2], raw, *meta)
+        image = lambda d: None if d is None else Row(*d.values())  # noqa: E731
+        values = [image(row[f]) if f in ("before", "after") else row[f] for f in CDC_FIELDS]
+        return Row(*values, None, None, None, None, *meta)
+
+
+decode_depots_cdc_udf = udf(DecodeCdc("depots"), result_type=cdc_result("depots"))
+decode_vans_cdc_udf = udf(DecodeCdc("vans"), result_type=cdc_result("vans"))
+decode_orders_cdc_udf = udf(DecodeCdc("orders"), result_type=cdc_result("orders"))

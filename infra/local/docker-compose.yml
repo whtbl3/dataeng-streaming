@@ -117,7 +117,8 @@ services:
 
   # ---- CDC: Kafka Connect + Debezium (ADR 0004) -----------------------------------
   connect:
-    image: quay.io/debezium/connect:3.6.3.Final
+    build: ./connect # Debezium 3.6.3 + Confluent Avro converter
+    image: control-tower/connect:3.6.3
     profiles: ["cdc"]
     depends_on:
       redpanda-init: { condition: service_completed_successfully }
