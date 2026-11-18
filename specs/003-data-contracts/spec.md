@@ -1,5 +1,5 @@
 # Spec 003: Data contracts (Avro + Schema Registry, invalid events → DLQ)
-Status: Draft · Intent: roadmap item 3 · Author: project owner + Claude
+Status: Approved (2026-11-18) · Intent: roadmap item 3 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -42,9 +42,9 @@ A GPS ping with an impossible position or a missing vehicle id is stored like an
 - Specs 001 and 002 (out of scope "JSON for now"): topics move from JSON to registry-encoded Avro. Topic names keep `.v1`; a breaking change would need a new `.v2` topic.
 - Local data written as JSON before this feature is not migrated; the dev stack is reset once.
 
-## Open questions
-1. **Which topics get Avro?** Recommended: **both GPS and CDC**. The contract matters most at the boundary to "another team's" database, and the DLQ fix (DRN-1) is needed in both jobs.
-2. **Where does the DLQ live?** Recommended: **one Kafka topic per source** (`dlq.<source topic>`, 7-day retention like the others) **plus one Iceberg table** `bronze.dlq_events` so analysts can query rejects with SQL.
-3. **What counts as invalid?** Recommended: **not decodable**, or **breaks a rule in AC4**. Late or duplicate events are valid and are handled in feature 4.
-4. **Is the registry the only compatibility check?** Recommended: **no. Also check in CI**, offline against the last committed schema, so a bad change fails before merge (AC5).
-5. **Add a demo of schema evolution?** Recommended: **yes, a small one**: an optional `battery_pct` field on GPS pings (AC6), not yet stored in bronze.
+## Resolved questions (approved 2026-11-18)
+1. Avro for **both GPS and CDC** topics.
+2. DLQ: **one Kafka topic per source** (`dlq.<source topic>`, 7-day retention) **plus** the Iceberg table `bronze.dlq_events`.
+3. Invalid = **not decodable**, or **breaks a rule in AC4**. Late and duplicate events are valid (feature 4).
+4. Compatibility is checked by the registry **and offline in CI** against the last committed schema.
+5. Schema-evolution demo: optional `battery_pct` on GPS pings, not yet stored in bronze.
