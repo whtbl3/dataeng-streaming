@@ -1,0 +1,184 @@
+# Local core stack (ADR 0005): Redpanda → Flink → Iceberg (REST catalog, S3 on MinIO) → Trino.
+# Every setting has a default, so no .env is needed; override via env or a .env file.
+name: control-tower
+
+x-s3-env: &s3-env
+  S3_ENDPOINT: ${S3_ENDPOINT_INTERNAL:-http://minio:9000}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:-ct-local}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:-ct-local-secret}
+  AWS_REGION: ${LOCAL_S3_REGION:-us-east-1}
+  WAREHOUSE: ${WAREHOUSE:-s3://warehouse/}
+  ICEBERG_CATALOG_URI: http://iceberg-rest:8181
+
+x-flink-props: &flink-props |
+  jobmanager.rpc.address: jobmanager
+  rest.address: jobmanager
+  parallelism.default: 1
+  taskmanager.numberOfTaskSlots: 2
+  state.backend.type: hashmap
+  execution.checkpointing.dir: file:///opt/flink/checkpoints
+  execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+  jobmanager.memory.process.size: 900m
+  taskmanager.memory.process.size: 1400m
+
+services:
+  # ---- Object storage (S3 API) -------------------------------------------------
+  minio:
+    image: ${S3_IMAGE:-dhi.io/minio:RELEASE.2025-09-07T16-13-09Z-debian13}
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-ct-local}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-ct-local-secret}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["s3-data:/data"]
+    mem_limit: 512m
+
+  minio-init: # creates the warehouse bucket; doubles as MinIO's readiness gate (image has no shell)
+    image: amazon/aws-cli:2.39.4
+    depends_on: [minio]
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-ct-local}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-ct-local-secret}
+      AWS_DEFAULT_REGION: ${LOCAL_S3_REGION:-us-east-1}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for i in $$(seq 1 60); do
+          aws --endpoint-url http://minio:9000 s3api list-buckets >/dev/null 2>&1 && break
+          sleep 1
+        done
+        aws --endpoint-url http://minio:9000 s3api head-bucket --bucket warehouse 2>/dev/null \
+          || aws --endpoint-url http://minio:9000 s3 mb s3://warehouse
+
+  # ---- Kafka API ------------------------------------------------------------------
+  redpanda:
+    image: redpandadata/redpanda:v26.1.20
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=640M
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --schema-registry-addr=internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+    ports: ["19092:19092", "18081:18081", "19644:9644"]
+    volumes: ["redpanda-data:/var/lib/redpanda/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    mem_limit: 1g
+
+  redpanda-init:
+    image: redpandadata/redpanda:v26.1.20
+    depends_on:
+      redpanda: { condition: service_healthy }
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        rpk topic describe ${GPS_TOPIC:-gps.pings.v1} -X brokers=redpanda:9092 >/dev/null 2>&1 \
+          || rpk topic create ${GPS_TOPIC:-gps.pings.v1} -p 3 -r 1 \
+               -c retention.ms=604800000 -X brokers=redpanda:9092
+
+  # ---- Iceberg catalog ------------------------------------------------------------
+  iceberg-rest:
+    image: apache/iceberg-rest-fixture:1.10.1
+    depends_on:
+      minio-init: { condition: service_completed_successfully }
+    environment:
+      CATALOG_WAREHOUSE: ${WAREHOUSE:-s3://warehouse/}
+      CATALOG_URI: jdbc:sqlite:file:/home/iceberg/catalog.db
+      CATALOG_JDBC_USER: iceberg
+      CATALOG_JDBC_PASSWORD: iceberg
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: ${S3_ENDPOINT_INTERNAL:-http://minio:9000}
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-ct-local}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-ct-local-secret}
+      AWS_REGION: ${LOCAL_S3_REGION:-us-east-1}
+    ports: ["8181:8181"]
+    volumes: ["iceberg-catalog:/home/iceberg"]
+    mem_limit: 512m
+
+  # ---- SQL ------------------------------------------------------------------------
+  trino:
+    image: trinodb/trino:484
+    depends_on: [iceberg-rest]
+    environment: *s3-env
+    ports: ["8080:8080"]
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog:ro # default jvm.config sizes heap to 80% of mem_limit
+    healthcheck:
+      test: ["CMD", "/usr/lib/trino/bin/health-check"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    mem_limit: 1536m
+
+  trino-init:
+    image: trinodb/trino:484
+    depends_on:
+      trino: { condition: service_healthy }
+    volumes: ["./trino/init:/init:ro"]
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        for f in /init/*.sql; do
+          echo "applying $$f"
+          trino --server http://trino:8080 --file "$$f" || exit 1
+        done
+
+  # ---- Flink ----------------------------------------------------------------------
+  jobmanager:
+    build: ./flink
+    image: control-tower/flink:1.20.5
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: *flink-props
+    ports: ["8081:8081"]
+    volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/overview"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    mem_limit: 1g
+
+  taskmanager:
+    image: control-tower/flink:1.20.5
+    depends_on:
+      jobmanager: { condition: service_healthy }
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: *flink-props
+    volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
+    mem_limit: 1536m
+
+  flink-submit: # one-shot, idempotent; run by `make up` via `docker compose run`
+    image: control-tower/flink:1.20.5
+    profiles: ["jobs"]
+    depends_on:
+      taskmanager: { condition: service_started }
+      jobmanager: { condition: service_healthy }
+      redpanda-init: { condition: service_completed_successfully }
+      trino-init: { condition: service_completed_successfully }
+    environment:
+      <<: *s3-env
+      FLINK_PROPERTIES: *flink-props
+      KAFKA_BOOTSTRAP: redpanda:9092
+      GPS_TOPIC: ${GPS_TOPIC:-gps.pings.v1}
+      CHECKPOINT_INTERVAL: ${CHECKPOINT_INTERVAL:-30 s}
+    volumes: ["../../flink/jobs:/opt/flink/jobs:ro"]
+    entrypoint: ["/opt/flink/bin/submit.sh", "/opt/flink/jobs/bronze_gps.sql", "bronze_gps"]
+
+volumes:
+  s3-data:
+  redpanda-data:
+  iceberg-catalog:
+  flink-checkpoints:

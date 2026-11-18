@@ -2,7 +2,7 @@
 COMPOSE := docker compose -f infra/local/docker-compose.yml
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -26,20 +26,27 @@ check: lint test
 	@echo "check: all green"
 
 ## ---- Local stack ($0) -------------------------------------------------
-up:
-	$(COMPOSE) up -d --wait
+up:               # start services; `run` waits for every depends_on condition, then submits jobs
+	$(COMPOSE) up -d --build --remove-orphans
+	$(COMPOSE) run --rm flink-submit
 
 down:
-	$(COMPOSE) down
+	$(COMPOSE) --profile jobs down
 
 clean:            # also deletes local data volumes
-	$(COMPOSE) down -v
+	$(COMPOSE) --profile jobs down -v
 
-demo:
-	uv run python -m simulator
+demo:             # live simulator at dev size (20 vans, 1 ping / 5 s); Ctrl-C to stop
+	uv run python -m simulator --realtime --vans 20 --interval 5
 
-e2e:
-	uv run pytest -q tests/integration
+e2e:              # needs `make up`
+	uv run pytest -q tests/integration -m "e2e and not restart"
+
+e2e-restart:      # restarts the stack (slow)
+	uv run pytest -q tests/integration -m restart
+
+stack-mem:
+	@docker stats --no-stream --format '{{.Name}}\t{{.MemUsage}}' $$($(COMPOSE) ps -q)
 
 ## ---- AWS (costs money: destroy after each demo, ADR 0005) -------------
 aws-plan:
