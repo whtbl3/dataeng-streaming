@@ -13,15 +13,35 @@
    centre workspace: problem → decision → synchronized panes → architecture → Learn/Explore/Build.
    Inspector drawer on the right opens only for a selected component. */
 :root {
-  --bg: #f4f7fd; --paper: #ffffff; --sunk: #edf2fb; --ink: #0f2350; --soft: #40507a; --faint: #7887a8; --line: #d5e1f5;
-  --accent: #2f6fde; --accent-ink: #1e4fb8; --accent-bg: #e5eeff; --on-accent: #ffffff; --teal: #1890d8; --teal-bg: #e0f1fc;
-  --impl: #1f8a50; --impl-bg: #e3f4ea; --des: #5d6b8a; --des-bg: #e9edf5; --bad: #c43a35; --bad-bg: #fce7e5; --warn: #9a5b00; --warn-bg: #fbeedb;
-  --code: #f6f9ff; --chg: #fff2bf; --new: #e2f5ea; --hero-mid: #dce8ff; --hero-end: #8db1f4; --depth: #9dbdf6; --band: rgba(255,255,255,.34); --blue-deep: #2c55b9; --blue-mid: #3f6fd6; color-scheme: light;
+  --bg: #FDFEFD; --paper: #FFFFFE; --sunk: #E6F0FC; --ink: #1E2F4F; --soft: #4A5875; --faint: #66718A; --line: #D3E1F5;
+  --accent: #4572B9; --accent-ink: #345A98; --accent-bg: #E6F0FC; --on-accent: #FFFFFE; --teal: #4572B9; --teal-bg: #E6F0FC;
+  --impl: #1f8a50; --impl-bg: #e3f4ea; --des: #7D879A; --des-bg: #EEF1F6; --bad: #c43a35; --bad-bg: #fce7e5; --warn: #9a5b00; --warn-bg: #fbeedb;
+  --code: #F6F9FE; --chg: #fff2bf; --new: #e2f5ea;
+  --hero-a: #FFFFFE; --hero-b: #E6F0FC; --hero-c: #9FB9E0; --hero-d: #4572B9; --dot: rgba(255,255,254,.55);
+  --node: #FFFFFE; --node-stroke: #4572B9; --depth: #B9CDEC; --halo: rgba(255,255,254,.9); --band: rgba(255,255,254,.42); --band-stroke: rgba(255,255,254,.65);
+  --legend-bg: rgba(255,255,254,.9); --bandl-on: #FFFFFE; --page-a: #FFFFFE; --page-b: #FDFEFD; --page-c: #E6F0FC; --decor: #99A2B2;
+  color-scheme: light;
   --f-d: "Lexend", "Segoe UI", system-ui, sans-serif; --f-b: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0E1522; --paper: #151F31; --sunk: #1C2940; --ink: #E6F0FC; --soft: #B7C2D4; --faint: #99A2B2; --line: #26354F;
+  --accent: #6F95D3; --accent-ink: #A9C3EC; --accent-bg: #1D2F52; --on-accent: #0E1522; --teal: #8FB0E3; --teal-bg: #1D2F52;
+  --impl: #5fcb8c; --impl-bg: #13301f; --des: #99A2B2; --des-bg: #1F2738; --bad: #f08a82; --bad-bg: #3b1d1c; --warn: #e9b562; --warn-bg: #332710;
+  --code: #111A2A; --chg: #4a3c0c; --new: #13301f;
+  --hero-a: #151F31; --hero-b: #1B2A45; --hero-c: #2D4A7D; --hero-d: #4572B9; --dot: rgba(230,240,252,.22);
+  --node: #151F31; --node-stroke: #6F95D3; --depth: #0A0F19; --halo: rgba(14,21,34,.85); --band: rgba(230,240,252,.05); --band-stroke: rgba(230,240,252,.12);
+  --legend-bg: rgba(21,31,49,.92); --bandl-on: #E6F0FC; --page-a: #0E1522; --page-b: #101A2B; --page-c: #16243C; --decor: #99A2B2;
+  color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0E1522; --paper: #151F31; --sunk: #1C2940; --ink: #E6F0FC; --soft: #B7C2D4; --faint: #99A2B2; --line: #26354F;
+  --accent: #6F95D3; --accent-ink: #A9C3EC; --accent-bg: #1D2F52; --on-accent: #0E1522; --teal: #8FB0E3; --teal-bg: #1D2F52;
+  --impl: #5fcb8c; --impl-bg: #13301f; --des: #99A2B2; --des-bg: #1F2738; --bad: #f08a82; --bad-bg: #3b1d1c; --warn: #e9b562; --warn-bg: #332710;
+  --code: #111A2A; --chg: #4a3c0c; --new: #13301f;
+  --hero-a: #151F31; --hero-b: #1B2A45; --hero-c: #2D4A7D; --hero-d: #4572B9; --dot: rgba(230,240,252,.22);
+  --node: #151F31; --node-stroke: #6F95D3; --depth: #0A0F19; --halo: rgba(14,21,34,.85); --band: rgba(230,240,252,.05); --band-stroke: rgba(230,240,252,.12);
+  --legend-bg: rgba(21,31,49,.92); --bandl-on: #E6F0FC; --page-a: #0E1522; --page-b: #101A2B; --page-c: #16243C; --decor: #99A2B2;
+  color-scheme: dark; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: linear-gradient(115deg, #ffffff 0%, #f6f9ff 48%, #e6efff 72%, #cfdffc 100%) fixed var(--bg); color: var(--ink); font: 15px/1.6 var(--f-b); }
+body { margin: 0; background: linear-gradient(115deg, var(--page-a) 0%, var(--page-b) 50%, var(--page-c) 100%) fixed var(--bg); color: var(--ink); font: 15px/1.6 var(--f-b); }
 h1, h2, h3, h4 { font-family: var(--f-d); margin: 0; line-height: 1.2; text-wrap: balance; }
 p { margin: 0; }
 code { font: 500 .86em var(--f-m); background: var(--sunk); border-radius: 5px; padding: 1px 5px; overflow-wrap: anywhere; }
@@ -39,14 +59,14 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .where .lbl { font: 600 11px var(--f-b); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
 .where .stg { font: 700 15px var(--f-d); }
 .dots { display: flex; gap: 4px; } .dots i { width: 22px; height: 5px; border-radius: 3px; background: var(--line); }
-.dots i.done { background: #9cbcf6; } .dots i.cur { background: var(--accent); }
+.dots i.done { background: var(--hero-c); } .dots i.cur { background: var(--accent); }
 .seg { display: inline-flex; flex-wrap: wrap; gap: 3px; background: var(--sunk); border-radius: 10px; padding: 3px; }
 .seg button { border: 0; background: transparent; border-radius: 8px; padding: 6px 11px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--soft); }
 .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
 .seg-lbl { font-size: 11px; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; margin-right: 4px; }
 .ctrl { display: flex; align-items: center; gap: 4px; }
 .btn { border: 1px solid var(--line); background: var(--paper); border-radius: 9px; padding: 8px 14px; cursor: pointer; font-size: 14px; font-weight: 600; }
-.btn.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .btn.accent { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .btn.small { padding: 5px 10px; font-size: 13px; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
@@ -60,7 +80,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .stages button { width: 100%; text-align: left; border: 0; background: none; border-radius: 8px; padding: 6px 8px; cursor: pointer; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 4px; font-size: 13.5px; line-height: 1.35; color: var(--soft); }
 .stages button .n { font: 600 12px/1.6 var(--f-m); color: var(--faint); }
 .stages button.done .n { color: var(--teal); }
-.stages button[aria-current="true"] { background: var(--accent); color: #ffffff; } .stages button[aria-current="true"] .n { color: #dbe7ff; }
+.stages button[aria-current="true"] { background: var(--accent); color: var(--on-accent); } .stages button[aria-current="true"] .n { color: var(--on-accent); opacity: .75; }
 .events { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .events li { display: grid; grid-template-columns: 4.2em 14px minmax(0, 1fr); gap: 6px; font-size: 13px; line-height: 1.4; }
 .events time { font: 500 11.5px/1.5 var(--f-m); color: var(--faint); text-align: right; }
@@ -76,12 +96,12 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 
 /* problem + decision */
 .problem { display: grid; gap: 8px; padding: 24px 28px 26px; border-radius: 18px; border: 1px solid var(--line); position: relative; overflow: hidden;
-  background: linear-gradient(112deg, #ffffff 0 47%, #dbe7ff 57%, #9cbcf6 70%, var(--blue-mid) 84%, var(--blue-deep) 100%); }
+  background: linear-gradient(112deg, var(--hero-a) 0 47%, var(--hero-b) 57%, var(--hero-c) 72%, var(--hero-d) 100%); }
 .problem > * { position: relative; z-index: 1; }
 .problem::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 34%; z-index: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,.55) 1.3px, transparent 1.7px); background-size: 16px 16px;
+  background-image: radial-gradient(circle, var(--dot) 1.3px, transparent 1.7px); background-size: 16px 16px;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%); mask-image: linear-gradient(90deg, transparent, #000 40%); }
-@media (max-width: 700px) { .problem { background: linear-gradient(160deg, #ffffff 0 62%, #dbe7ff 78%, #9cbcf6 100%); } .problem::after { display: none; } }
+@media (max-width: 700px) { .problem { background: linear-gradient(160deg, var(--hero-a) 0 62%, var(--hero-b) 80%, var(--hero-c) 100%); } .problem::after { display: none; } }
 .problem .k { font: 600 11.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
 .problem h2 { font-size: clamp(22px, 2.6vw, 31px); font-weight: 700; letter-spacing: -.015em; max-width: 30ch; color: var(--ink); }
 .problem p { color: var(--soft); max-width: 62ch; font-size: 15.5px; }
@@ -137,22 +157,22 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .rel-l { fill: var(--soft); font: 500 11px var(--f-b); }
 
 /* architecture */
-.arch { background: linear-gradient(112deg, #ffffff 0 22%, #e2ecff 40%, #a7c4f7 62%, var(--blue-mid) 82%, var(--blue-deep) 100%); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.arch { background: linear-gradient(112deg, var(--hero-a) 0 22%, var(--hero-b) 42%, var(--hero-c) 66%, var(--hero-d) 100%); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .arch-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; }
 .arch-head h3 { font: 700 13.5px var(--f-b); }
 .arch-svg { overflow-x: auto; } .arch-svg svg { display: block; width: 100%; min-width: 820px; height: auto; }
-.band { fill: var(--band); stroke: rgba(255,255,255,.55); } .bandl { fill: var(--ink); font: 600 10.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; } .bandl.on { fill: #ffffff; }
-.an rect { fill: #ffffff; stroke: var(--blue-mid); stroke-width: 1.6; filter: drop-shadow(0 5px 0 var(--depth)); }
-.an.impl rect { stroke: var(--blue-mid); } .an.des rect { fill: rgba(255,255,255,.82); stroke: var(--blue-mid); stroke-dasharray: 5 4; filter: none; }
+.band { fill: var(--band); stroke: var(--band-stroke); } .bandl { fill: var(--ink); font: 600 10.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; } .bandl.on { fill: var(--bandl-on); }
+.an rect { fill: var(--node); stroke: var(--node-stroke); stroke-width: 1.6; filter: drop-shadow(0 5px 0 var(--depth)); }
+.an.impl rect { stroke: var(--node-stroke); } .an.des rect { fill: var(--node); fill-opacity: .85; stroke: var(--decor); stroke-dasharray: 5 4; filter: none; }
 .an.hot rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: none; filter: drop-shadow(0 5px 0 var(--accent)); }
 .an text.t { fill: var(--ink); font: 700 12.5px var(--f-b); } .an text.s { fill: var(--soft); font: 500 10.5px var(--f-m); }
 .an { cursor: pointer; } .an:focus { outline: none; } .an:hover rect, .an:focus rect { fill: var(--teal-bg); }
-.ae-halo { stroke: rgba(255,255,255,.85); stroke-width: 4.5; fill: none; } .ae { stroke: var(--blue-deep); stroke-width: 1.6; fill: none; } .ae.hot { stroke: var(--accent); stroke-width: 2.6; }
+.ae-halo { stroke: var(--halo); stroke-width: 4.5; fill: none; } .ae { stroke: var(--node-stroke); stroke-width: 1.6; fill: none; } .ae.hot { stroke: var(--accent); stroke-width: 2.6; }
 .ae.dash { stroke-dasharray: 5 4; }
-.ael { fill: var(--ink); font: 500 10.5px var(--f-m); paint-order: stroke; stroke: #ffffff; stroke-width: 3px; } .ael.hot { fill: var(--accent-ink); font-weight: 600; }
-#mk path { fill: var(--blue-deep); } #mkh path { fill: var(--accent); }
+.ael { fill: var(--ink); font: 500 10.5px var(--f-m); paint-order: stroke; stroke: var(--halo); stroke-width: 3px; } .ael.hot { fill: var(--accent-ink); font-weight: 600; }
+#mk path { fill: var(--node-stroke); } #mkh path { fill: var(--accent); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--soft); }
-.arch .legend { background: rgba(255,255,255,.9); padding: 4px 12px; border-radius: 999px; color: var(--ink); }
+.arch .legend { background: var(--legend-bg); padding: 4px 12px; border-radius: 999px; color: var(--ink); }
 .legend i { display: inline-block; width: 18px; height: 10px; border-radius: 3px; border: 1.5px solid; margin-right: 5px; vertical-align: -1px; }
 
 /* modes */
@@ -237,6 +257,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   <div class="brand"><b>Delivery Control Tower — Design Lab</b><span>Bạn là Data Engineer. Hãy thiết kế hệ thống cảnh báo đơn sắp trễ.</span></div>
   <div class="where"><span class="lbl" id="whereLbl"></span><span class="stg" id="whereStage"></span><div class="dots" id="dots"></div></div>
   <div class="ctrl"><span class="seg-lbl">Kiến trúc</span><div class="seg" id="archView" role="group" aria-label="Xem kiến trúc"></div></div>
+  <button class="btn small" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối"></button>
   <button class="btn small" id="drnBtn" type="button">Design review</button>
 </header>
 
@@ -792,7 +813,7 @@ function renderArch(st, intro) {
   const shownIds = Object.keys(N).filter(show);
   let s = `<svg viewBox="0 0 1110 368" role="img" aria-label="Sơ đồ kiến trúc theo tầng">`;
   s += `<defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker><marker id="mkh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
-  LAYERS.forEach((l, c) => { s += `<rect class="band" x="${14 + c * COLW}" y="8" width="${COLW - 12}" height="352" rx="12"/><text class="bandl${c >= 4 ? ' on' : ''}" x="${26 + c * COLW}" y="34">${l}</text>`; });
+  LAYERS.forEach((l, c) => { s += `<rect class="band" x="${14 + c * COLW}" y="8" width="${COLW - 12}" height="352" rx="12"/><text class="bandl${c >= 5 ? ' on' : ''}" x="${26 + c * COLW}" y="34">${l}</text>`; });
   const port = (a, b) => { const ax = a.x + W / 2, ay = a.y + H / 2, bx = b.x + W / 2, by = b.y + H / 2, dx = bx - ax, dy = by - ay; return Math.abs(dx) > Math.abs(dy) * 1.1 ? [dx > 0 ? a.x + W : a.x, ay, dx > 0 ? b.x : b.x + W, by] : [ax, dy > 0 ? a.y + H : a.y, bx, dy > 0 ? b.y : b.y + H]; };
   E.forEach(([a, b, l]) => {
     if (!show(a) || !show(b)) return;
@@ -1005,6 +1026,15 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && e.altKey) enterStep(state.i + 1);
   if (e.key === 'ArrowLeft' && e.altKey) enterStep(state.i - 1);
 });
+
+/* ---- theme toggle (follows the OS until the reader picks one) ---- */
+const root = document.documentElement;
+const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+function paintThemeBtn() { $('themeBtn').textContent = isDark() ? 'Giao diện sáng' : 'Giao diện tối'; }
+try { const saved = localStorage.getItem('ct-theme'); if (saved === 'dark' || saved === 'light') root.dataset.theme = saved; } catch (e) { /* storage unavailable */ }
+$('themeBtn').addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('ct-theme', root.dataset.theme); } catch (e) { /* ignore */ } paintThemeBtn(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintThemeBtn);
+paintThemeBtn();
 
 /* ---- wiring ---- */
 $('prev').addEventListener('click', () => enterStep(state.i - 1));
