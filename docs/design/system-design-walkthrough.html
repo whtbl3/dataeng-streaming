@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thiết kế Control Tower</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one step at a time. Sticky 5-step rail, then a master list (questions) beside a detail pane; tools full-width under it. */
+:root {
+  --bg: #eef2f6; --surface: #ffffff; --raised: #f7f9fb; --ink: #0f1b2a; --soft: #4c5b6e; --faint: #8593a5; --line: #e1e7ee;
+  --accent: #e08a00; --accent-ink: #8a5200; --accent-bg: #fff3df;
+  --route: #0b7b86; --route-bg: #e2f4f5;
+  --ok: #1a8a4a; --ok-bg: #e3f5ea; --part: #2b63c9; --part-bg: #e6eefc; --gap: #c7372f; --gap-bg: #fde8e6;
+  --shadow: 0 1px 2px rgba(15,27,42,.05), 0 8px 24px rgba(15,27,42,.06);
+  --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b1118; --surface: #131c26; --raised: #18232f; --ink: #e8eef5; --soft: #a6b3c3; --faint: #6f7e90; --line: #223040;
+  --accent: #f5a524; --accent-ink: #f8c46d; --accent-bg: #33260f; --route: #4cc3cd; --route-bg: #10303a;
+  --ok: #5ccb8a; --ok-bg: #132c1e; --part: #7fa9ff; --part-bg: #172644; --gap: #f4807a; --gap-bg: #3a1b1a;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b1118; --surface: #131c26; --raised: #18232f; --ink: #e8eef5; --soft: #a6b3c3; --faint: #6f7e90; --line: #223040;
+  --accent: #f5a524; --accent-ink: #f8c46d; --accent-bg: #33260f; --route: #4cc3cd; --route-bg: #10303a;
+  --ok: #5ccb8a; --ok-bg: #132c1e; --part: #7fa9ff; --part-bg: #172644; --gap: #f4807a; --gap-bg: #3a1b1a;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15.5px/1.65 var(--f-body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 80px; }
+.wrap { max-width: 1080px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; line-height: 1.12; }
+p { margin: 0; }
+code { font: 500 .84em var(--f-mono); background: var(--raised); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+button { font: inherit; color: inherit; }
+
+/* header */
+.hero { padding-block: 40px 28px; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; align-items: end; }
+.kicker { font: 600 12px/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
+.hero h1 { font-size: clamp(32px, 5.2vw, 54px); font-weight: 800; letter-spacing: -.02em; margin-top: 12px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p.lead { margin-top: 14px; color: var(--soft); font-size: 17px; max-width: 54ch; }
+.tally { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); display: grid; gap: 2px; }
+.tile .v { font: 800 34px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.tile .l { font-size: 12.5px; color: var(--soft); }
+.tile.ok .v { color: var(--ok); } .tile.part .v { color: var(--part); } .tile.gap .v { color: var(--gap); }
+@media (max-width: 820px) { .hero { grid-template-columns: 1fr; padding-top: 28px; } }
+
+/* step rail */
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); padding-block: 10px; margin-bottom: 26px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.rail button { width: 100%; text-align: left; border: 0; cursor: pointer; background: var(--surface); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.rail button::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: transparent; }
+.rail button .n { font: 600 11px/1 var(--f-mono); color: var(--faint); }
+.rail button .t { font: 700 14.5px/1.2 var(--f-display); }
+.rail button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.rail button[aria-selected="true"] .n { color: var(--accent); }
+.rail button .g { position: absolute; top: 9px; right: 10px; font: 600 11px/1 var(--f-mono); color: var(--gap); }
+.rail button[aria-selected="true"] .g { color: var(--accent); }
+@media (max-width: 680px) { .rail ol { grid-template-columns: repeat(6, minmax(64px, 1fr)); overflow-x: auto; } .rail button .t { font-size: 12.5px; } .rail button .g { display: none; } }
+
+/* step */
+.step { display: grid; gap: 28px; }
+.step[hidden] { display: none !important; }
+.step-intro { display: grid; gap: 10px; max-width: 74ch; }
+.step-intro h2 { font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; letter-spacing: -.01em; }
+.step-intro p { color: var(--soft); font-size: 16px; }
+
+/* master-detail */
+.md { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr); gap: 18px; align-items: start; }
+@media (max-width: 820px) { .md { grid-template-columns: 1fr; } }
+.qlist { display: grid; gap: 6px; }
+.qbtn { width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer; border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px; align-items: start; }
+.qbtn:hover { background: var(--surface); }
+.qbtn[aria-selected="true"] { background: var(--surface); box-shadow: var(--shadow); }
+.dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; }
+.dot.ok { background: var(--ok); } .dot.part { background: var(--part); } .dot.gap { background: var(--gap); box-shadow: 0 0 0 4px var(--gap-bg); }
+.qbtn .qt { font-weight: 600; font-size: 15px; line-height: 1.4; }
+.qbtn .qs { font-size: 13px; color: var(--faint); }
+.filter { display: flex; gap: 6px; margin-bottom: 6px; }
+.filter button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.filter button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.detail { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 24px; display: grid; gap: 18px; position: sticky; top: 92px; }
+@media (max-width: 820px) { .detail { position: static; } }
+.badge { justify-self: start; font: 600 12px/1 var(--f-body); padding: 6px 10px; border-radius: 999px; }
+.badge.ok { color: var(--ok); background: var(--ok-bg); } .badge.part { color: var(--part); background: var(--part-bg); } .badge.gap { color: var(--gap); background: var(--gap-bg); }
+.detail h3 { font-size: 22px; font-weight: 700; }
+.answer { font-size: 17px; line-height: 1.55; }
+.facts { display: grid; gap: 14px; }
+.fact { display: grid; gap: 4px; }
+.fact .k { font: 600 11.5px/1 var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.fact .x { color: var(--ink); }
+.propose { background: var(--accent-bg); border-radius: 12px; padding: 14px 16px; display: grid; gap: 4px; }
+.propose .k { color: var(--accent-ink); }
+
+/* cards and tools */
+.card { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 22px; display: grid; gap: 16px; }
+.card h3 { font-size: 19px; font-weight: 700; }
+.card .sub { color: var(--soft); font-size: 14.5px; }
+.sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.src { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 20px; display: grid; gap: 12px; align-content: start; }
+.src .type { font: 600 12px/1 var(--f-body); color: var(--route); letter-spacing: .06em; text-transform: uppercase; }
+.src h3 { font-size: 20px; }
+.src dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; font-size: 14px; }
+.src dt { color: var(--faint); }
+.src dd { margin: 0; font-weight: 500; }
+.calc { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 22px; }
+@media (max-width: 820px) { .calc { grid-template-columns: 1fr; } }
+.inputs { display: grid; gap: 12px; align-content: start; }
+.inp { display: grid; grid-template-columns: minmax(0, 1fr) 8em; gap: 10px; align-items: center; font-size: 14px; }
+.inp input { width: 100%; font: 500 15px var(--f-mono); padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--raised); color: var(--ink); text-align: right; }
+.inp small { grid-column: 1 / -1; color: var(--faint); font-size: 12px; margin-top: -6px; }
+.big { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-content: start; }
+.big div { background: var(--raised); border-radius: 14px; padding: 14px; display: grid; gap: 4px; }
+.big b { font: 700 24px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.big span { font-size: 12.5px; color: var(--soft); }
+.big div.hot { background: var(--accent-bg); } .big div.hot b { color: var(--accent-ink); }
+.insight { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 16px; }
+.insight::before { content: ""; background: var(--accent); border-radius: 4px; }
+.insight p { color: var(--ink); max-width: 76ch; }
+
+/* latency */
+.stack { display: flex; height: 44px; border-radius: 12px; overflow: hidden; background: var(--raised); position: relative; }
+.stack span { height: 100%; display: flex; align-items: center; justify-content: center; font: 600 11px var(--f-mono); color: #fff; white-space: nowrap; overflow: hidden; }
+.stack .sla { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--ink); }
+.stack .sla::after { content: "SLA 10 s"; position: absolute; top: -18px; left: 6px; font: 600 11px var(--f-mono); color: var(--ink); white-space: nowrap; }
+.axis { display: flex; justify-content: space-between; font: 500 11px var(--f-mono); color: var(--faint); margin-top: -8px; }
+.total { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.total b { font: 800 30px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.total .ok { color: var(--ok); } .total .bad { color: var(--gap); }
+.hops { display: grid; gap: 12px; }
+.hop { display: grid; grid-template-columns: 14px minmax(0, 14em) minmax(0, 1fr) 5em; gap: 12px; align-items: center; font-size: 14px; }
+.hop i { width: 12px; height: 12px; border-radius: 3px; }
+.hop output { font: 500 13px var(--f-mono); text-align: right; }
+.hop input { width: 100%; accent-color: var(--route); }
+@media (max-width: 600px) { .hop { grid-template-columns: 14px minmax(0, 1fr) 5em; } .hop input { grid-column: 1 / -1; } }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.slider-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; }
+.slider-row input { grid-column: 1 / -1; width: 100%; accent-color: var(--route); }
+.slider-row output { font: 700 20px var(--f-display); }
+
+/* late data */
+.late-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.late-top output { font: 800 30px/1 var(--f-display); color: var(--accent-ink); }
+#late { width: 100%; accent-color: var(--accent); height: 28px; }
+.ticks { display: flex; justify-content: space-between; font: 500 11px var(--f-mono); color: var(--faint); margin-top: -10px; }
+.lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.lane { border-radius: 14px; padding: 14px; display: grid; gap: 6px; background: var(--raised); align-content: start; }
+.lane .st { font: 700 13px var(--f-body); }
+.lane.yes { background: var(--ok-bg); } .lane.yes .st { color: var(--ok); }
+.lane.no { background: var(--gap-bg); } .lane.no .st { color: var(--gap); }
+.lane b { font-size: 14.5px; }
+.lane span { font-size: 13.5px; color: var(--soft); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pchip { background: var(--surface); box-shadow: var(--shadow); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; flex: 1 1 200px; }
+.pchip b { font-size: 14px; } .pchip span { font-size: 13px; color: var(--soft); }
+.pchip em { font-style: normal; font: 600 11px var(--f-mono); color: var(--part); }
+.pchip em.ok { color: var(--ok); }
+
+/* map */
+.mapwrap { overflow-x: auto; }
+.mapwrap svg { display: block; min-width: 900px; width: 100%; height: auto; }
+.band { fill: var(--raised); }
+.bandlabel { fill: var(--faint); font: 600 11px var(--f-body); letter-spacing: .1em; text-transform: uppercase; }
+.node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.node.ok rect { stroke: var(--ok); } .node.part rect { stroke: var(--part); } .node.plan rect { stroke: var(--faint); stroke-dasharray: 5 4; }
+.node .nt { fill: var(--ink); font: 700 14px var(--f-body); } .node .ns { fill: var(--soft); font: 500 11px var(--f-mono); }
+.node { cursor: pointer; } .node:focus { outline: none; }
+.node:hover rect, .node:focus rect { fill: var(--route-bg); }
+.node.sel rect { fill: var(--ink); stroke: var(--ink); } .node.sel .nt, .node.sel .ns { fill: var(--bg); }
+.edge { stroke: var(--faint); stroke-width: 1.5; fill: none; } .edge.dash { stroke-dasharray: 4 4; }
+.elabel { fill: var(--soft); font: 500 11px var(--f-mono); }
+#arrow path { fill: var(--faint); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--soft); }
+.legend i { display: inline-block; width: 22px; height: 12px; border-radius: 4px; border: 1.5px solid; margin-right: 6px; vertical-align: -2px; }
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.dec { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 20px; display: grid; gap: 10px; align-content: start; }
+.dec .need { font-size: 13.5px; color: var(--soft); }
+.dec .pick { font: 700 18px/1.25 var(--f-display); }
+.dec .not { font-size: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.dec .not b { color: var(--gap); font-weight: 600; }
+.dec .adr { font: 500 12px var(--f-mono); color: var(--route); }
+
+/* next */
+.nav-next { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
+.nav-next button { border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; font-weight: 600; background: var(--surface); box-shadow: var(--shadow); }
+.nav-next button.primary { background: var(--ink); color: var(--bg); }
+.nav-next button[hidden] { display: none; }
+.todo { display: grid; gap: 8px; }
+.todo div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 12px; padding: 12px 14px; background: var(--raised); border-radius: 12px; font-size: 14px; align-items: baseline; }
+.todo b { font-weight: 600; } .todo span { color: var(--soft); } .todo code { white-space: nowrap; }
+@media (max-width: 640px) { .todo div { grid-template-columns: 1fr; gap: 2px; } }
+/* schema */
+.layerbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.layerbar button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: inline-flex; gap: 8px; align-items: center; }
+.layerbar button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.layerbar .lst { font: 600 10.5px var(--f-mono); padding: 2px 6px; border-radius: 6px; }
+.lst.ok { background: var(--ok-bg); color: var(--ok); } .lst.plan { background: var(--accent-bg); color: var(--accent-ink); }
+.layer-note { color: var(--soft); font-size: 14px; }
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.tcard { background: var(--raised); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.tcard h4 { margin: 0; font: 700 15px var(--f-mono); overflow-wrap: anywhere; }
+.tmeta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; }
+.tmeta dt { color: var(--faint); } .tmeta dd { margin: 0; }
+.cols { display: grid; gap: 2px; }
+.col { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 6px 8px; border-radius: 8px; font-size: 13px; }
+.col .cn { font: 500 12.5px var(--f-mono); overflow-wrap: anywhere; }
+.col .ct { font: 500 11.5px var(--f-mono); color: var(--faint); text-align: right; }
+.col .cx { grid-column: 1 / -1; color: var(--soft); font-size: 12.5px; }
+.col.hl { background: var(--accent-bg); box-shadow: inset 3px 0 0 var(--accent); }
+.tags { display: inline-flex; gap: 4px; margin-left: 6px; }
+.tag { font: 600 9.5px/1 var(--f-mono); padding: 3px 5px; border-radius: 4px; letter-spacing: .04em; vertical-align: 1px; }
+.tag.k { background: var(--route-bg); color: var(--route); } .tag.p { background: var(--part-bg); color: var(--part); }
+.tag.d { background: var(--ok-bg); color: var(--ok); } .tag.pii { background: var(--gap-bg); color: var(--gap); }
+.lineage-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.lineage-pick button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; cursor: pointer; font: 500 13px var(--f-mono); }
+.lineage-pick button[aria-pressed="true"] { background: var(--accent); color: #1b1200; border-color: var(--accent); }
+.chain { display: grid; gap: 0; }
+.hopx { display: grid; grid-template-columns: 7.5em 18px minmax(0, 1fr); gap: 12px; align-items: start; }
+.hopx .lay { font: 600 12px var(--f-body); color: var(--faint); text-transform: uppercase; letter-spacing: .06em; padding-top: 3px; text-align: right; }
+.hopx .rail2 { position: relative; height: 100%; min-height: 54px; }
+.hopx .rail2::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--line); }
+.hopx:first-child .rail2::before { top: 10px; } .hopx:last-child .rail2::before { bottom: calc(100% - 10px); }
+.hopx .rail2::after { content: ""; position: absolute; left: 3px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.hopx .what { padding-bottom: 14px; }
+.hopx .what b { font: 600 13.5px var(--f-mono); } .hopx .what span { display: block; color: var(--soft); font-size: 13.5px; }
+.erd { overflow-x: auto; } .erd svg { display: block; min-width: 720px; width: 100%; height: auto; }
+.ebox rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; } .ebox.fact rect { stroke: var(--accent); stroke-width: 2; }
+.ebox .eh { fill: var(--ink); font: 700 13px var(--f-mono); } .ebox .ec { fill: var(--soft); font: 500 11.5px var(--f-mono); }
+.erel { stroke: var(--faint); stroke-width: 1.5; fill: none; } .erel.dash { stroke-dasharray: 5 4; }
+.erl { fill: var(--faint); font: 500 11px var(--f-mono); }
+/* batch vs stream */
+.vs-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.vs-top output { font: 800 30px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+#clock { width: 100%; accent-color: var(--accent); height: 28px; }
+.vs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .vs { grid-template-columns: 1fr; } }
+.vcol { background: var(--raised); border-radius: 14px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.vcol h4 { margin: 0; font: 700 16px var(--f-display); }
+.vcol .how { font-size: 13px; color: var(--soft); }
+.state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 13.5px; background: var(--surface); border-radius: 10px; padding: 12px; }
+.state dt { color: var(--faint); } .state dd { margin: 0; font-weight: 500; }
+.state dd.alert { color: var(--gap); } .state dd.good { color: var(--ok); } .state dd.none { color: var(--faint); font-weight: 400; }
+.log { display: grid; gap: 4px; }
+.log div { display: grid; grid-template-columns: 3.6em minmax(0, 1fr); gap: 10px; font-size: 13px; padding: 5px 8px; border-radius: 8px; }
+.log div.new { background: var(--accent-bg); }
+.log time { font: 500 12px var(--f-mono); color: var(--faint); }
+.log .empty { color: var(--faint); font-size: 13px; display: block; padding: 5px 8px; }
+.cmp { display: grid; gap: 6px; }
+.cmp div { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--raised); font-size: 13.5px; }
+.cmp div.h { background: transparent; font: 600 11.5px var(--f-body); color: var(--faint); letter-spacing: .08em; text-transform: uppercase; padding-block: 0; }
+.cmp b { font-weight: 600; } .cmp span:nth-child(2) { color: var(--soft); }
+@media (max-width: 640px) { .cmp div { grid-template-columns: 1fr; gap: 2px; } .cmp div.h { display: none; } }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.rule { background: var(--raised); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.rule .rn { font: 700 22px/1 var(--f-display); color: var(--accent); }
+.rule b { font-size: 14.5px; } .rule span { font-size: 13.5px; color: var(--soft); }
+footer { margin-top: 48px; color: var(--faint); font-size: 13px; max-width: 80ch; }
+@media (prefers-reduced-motion: no-preference) { .stack span { transition: width .25s ease; } .detail { animation: fade .2s ease; } }
+@keyframes fade { from { opacity: .4; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <span class="kicker">Delivery Control Tower</span>
+      <h1>Thiết kế từ <em>yêu cầu</em>,<br>không phải từ công cụ</h1>
+      <p class="lead">Sáu bước một Data Engineer đi qua trước khi chọn Kafka hay Flink, áp vào chính project này. Chấm đỏ là những câu mình đã bỏ qua.</p>
+    </div>
+    <div class="tally" id="tally"></div>
+  </header>
+
+  <nav class="rail" aria-label="Các bước"><ol role="tablist" id="rail"></ol></nav>
+
+  <!-- 1 BUSINESS -->
+  <section class="step" id="s-business" data-step="business" role="tabpanel">
+    <div class="step-intro">
+      <h2>Câu hỏi đầu tiên: "real-time" là bao nhiêu giây?</h2>
+      <p>Đề bài: dispatcher chỉ biết đơn trễ khi đã quá giờ hẹn, quản lý nhận KPI chậm một ngày. Trước khi vẽ kiến trúc, phải hỏi business những câu này.</p>
+    </div>
+    <div class="md" data-md="business"></div>
+    <div class="card">
+      <h3>Kết quả: technical requirements</h3>
+      <div class="todo" id="techreq"></div>
+    </div>
+  </section>
+
+  <!-- 2 DATA -->
+  <section class="step" id="s-data" data-step="data" role="tabpanel" hidden>
+    <div class="step-intro">
+      <h2>Dữ liệu từ đâu, bao nhiêu, và đỉnh tải trông ra sao</h2>
+      <p>Mỗi nguồn có tính chất riêng, và tính chất đó quyết định cách ingest, không phải sở thích công cụ.</p>
+    </div>
+    <div class="sources">
+      <div class="src"><span class="type">Event stream</span><h3>GPS xe</h3><dl><dt>Kích thước</dt><dd>~140 B JSON (đã đo)</dd><dt>Tần suất</dt><dd>1 ping / 5 s / xe, 24 giờ</dd><dt>Khóa</dt><dd><code>vehicle_id</code></dd><dt>Thứ tự</dt><dd>trong từng xe</dd></dl></div>
+      <div class="src"><span class="type">CDC từ OLTP</span><h3>Đơn hàng</h3><dl><dt>Kích thước</dt><dd>~1,5 KB envelope (ước tính)</dd><dt>Tần suất</dt><dd>~4 thay đổi / đơn, dồn cục 08:00 và 14:00</dd><dt>Khóa</dt><dd><code>order_id</code></dd><dt>Thứ tự</dt><dd>trong từng đơn (LSN)</dd></dl></div>
+      <div class="src"><span class="type">Dimension</span><h3>Kho và xe</h3><dl><dt>Kích thước</dt><dd>vài trăm byte</dd><dt>Tần suất</dt><dd>hiếm khi đổi</dd><dt>Cách lấy</dt><dd>snapshot ban đầu + CDC</dd><dt>Số lượng</dt><dd>4 kho, 200 xe</dd></dl></div>
+    </div>
+    <div class="md" data-md="data"></div>
+    <div class="card">
+      <h3>Máy tính khối lượng</h3>
+      <p class="sub">Sửa số bên trái; kiến trúc phải chịu được các con số bên phải.</p>
+      <div class="calc">
+        <div class="inputs">
+          <label class="inp" for="vans">Số xe<input id="vans" type="number" min="1" max="100000" value="200"></label>
+          <label class="inp" for="interval">Ping mỗi (giây)<input id="interval" type="number" min="1" max="600" value="5"></label>
+          <label class="inp" for="gpsB">Byte / ping<input id="gpsB" type="number" min="20" max="10000" value="140"></label>
+          <label class="inp" for="orders">Đơn / ngày<input id="orders" type="number" min="0" max="10000000" value="5000"></label>
+          <label class="inp" for="cdcB">Byte / event CDC<input id="cdcB" type="number" min="50" max="20000" value="1500"><small>ước tính, chưa đo</small></label>
+          <label class="inp" for="ret">Kafka giữ (ngày)<input id="ret" type="number" min="1" max="365" value="7"></label>
+          <label class="inp" for="rate">Backfill (event/s)<input id="rate" type="number" min="100" max="10000000" value="20000"></label>
+        </div>
+        <div class="big">
+          <div><b id="o-eps">–</b><span>GPS event/s</span></div>
+          <div><b id="o-day">–</b><span>ping / ngày</span></div>
+          <div><b id="o-gb">–</b><span>dữ liệu thô / ngày</span></div>
+          <div><b id="o-kafka">–</b><span>Kafka cần chứa</span></div>
+          <div><b id="o-pq">–</b><span>Parquet / ngày (nén ~5×)</span></div>
+          <div class="hot"><b id="o-burst">–</b><span>update CDC dồn trong ~1 s lúc xe xuất kho</span></div>
+          <div><b id="o-100m">–</b><span>ngày GPS = 100 triệu event</span></div>
+          <div class="hot"><b id="o-bf">–</b><span>để backfill 100 triệu event</span></div>
+        </div>
+      </div>
+      <div class="insight"><p><b>Đỉnh tải thật không đến từ GPS.</b> Xe đỗ vẫn ping, nên luồng GPS gần như phẳng: khoảng 40 event/s là rất nhẹ. Đỉnh thật đến từ hai chỗ: lúc <b>replay/backfill</b> lịch sử, và lúc <b>08:00 hoặc 14:00</b>, khi hàng nghìn đơn cùng chuyển sang "đang giao". Thiết kế theo mức trung bình sẽ vỡ đúng ở hai lúc này.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 SCHEMA -->
+  <section class="step" id="s-schema" data-step="schema" role="tabpanel" hidden>
+    <div class="step-intro">
+      <h2>Mỗi bảng phải trả lời: một dòng là gì, khóa là gì, chia theo gì</h2>
+      <p>Trước khi viết job, phải chốt mô hình dữ liệu cho từng tầng. Grain (một dòng đại diện cho cái gì) quyết định cách khử trùng, cách join và cách tính KPI. Bronze đã chạy; silver, gold và serving dưới đây là <b>đề xuất</b> chờ bạn duyệt.</p>
+    </div>
+    <div class="md" data-md="schema"></div>
+    <div class="card">
+      <h3>Schema theo từng tầng</h3>
+      <div class="layerbar" id="layerbar"></div>
+      <p class="layer-note" id="layerNote"></p>
+      <div class="tables" id="tables"></div>
+      <div class="legend"><span><span class="tag k">KEY</span> khóa / khóa message</span><span><span class="tag d">DEDUP</span> khóa khử trùng</span><span><span class="tag p">PART</span> partition</span><span><span class="tag pii">PII</span> dữ liệu cá nhân</span></div>
+    </div>
+    <div class="card">
+      <h3>Một field đi qua các tầng như thế nào</h3>
+      <p class="sub">Chọn một field để xem nó được sinh ra ở đâu, biến đổi ra sao, và cuối cùng thành chỉ số nào. Các cột liên quan cũng được tô sáng trong phần "Schema theo từng tầng" ở trên.</p>
+      <div class="lineage-pick" id="linPick"></div>
+      <div class="chain" id="chain"></div>
+    </div>
+    <div class="card">
+      <h3>Tầng gold: star schema (đề xuất)</h3>
+      <p class="sub">Bảng fact có grain là một đơn đã đóng (giao xong hoặc thất bại). Các dimension bao quanh nó. <code>agg_depot_daily</code> được tổng hợp từ fact, nên đường nối là nét đứt.</p>
+      <div class="erd" id="erd"></div>
+    </div>
+    <div class="card">
+      <div class="vs-top"><h3>Cùng một đơn, hai cách mô hình hóa</h3><output id="clockOut"></output></div>
+      <p class="sub">Đơn tạo lúc 06:00, phải giao xong trước 09:00, thực tế giao lúc 09:12 (trễ 12 phút). Kéo đồng hồ để xem tại mỗi thời điểm, mỗi hệ thống biết những gì. Thử dừng ở <b>08:45</b>: stream đã cảnh báo để dispatcher kịp gọi khách, còn batch chưa biết gì cho tới 00:30 đêm đó.</p>
+      <input id="clock" type="range" min="300" max="1620" step="1" value="525" aria-label="Thời điểm trong ngày">
+      <div class="ticks"><span>05:00</span><span>10:30</span><span>16:00</span><span>21:30</span><span>03:00 hôm sau</span></div>
+      <div class="vs">
+        <div class="vcol"><h4>Batch thuần</h4><span class="how">Chụp bảng orders lúc 00:00, job xong lúc 00:30.</span><dl class="state" id="bState"></dl><div class="log" id="bLog"></div></div>
+        <div class="vcol"><h4>Stream + batch (project này)</h4><span class="how">Mỗi thay đổi là một event; trạng thái và KPI được suy ra từ log.</span><dl class="state" id="sState"></dl><div class="log" id="sLog"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Khác nhau ở đâu khi mô hình hóa</h3>
+      <div class="cmp" id="cmp"></div>
+    </div>
+    <div class="card">
+      <h3>5 nguyên tắc cho silver và gold</h3>
+      <p class="sub">Ghi chính thức trong <code>docs/requirements.md</code> mục 3 (bản nháp chờ duyệt).</p>
+      <div class="rules" id="rules"></div>
+    </div>
+  </section>
+
+  <!-- 4 SLA -->
+  <section class="step" id="s-sla" data-step="sla" role="tabpanel" hidden>
+    <div class="step-intro">
+      <h2>Chia SLA thành ngân sách cho từng chặng</h2>
+      <p>"Cảnh báo dưới 10 giây" là tổng của nhiều chặng. Kéo thanh trượt để thấy chặng nào ăn nhiều ngân sách nhất. Số mặc định là ước tính thiết kế; sẽ đo thật ở feature 6.</p>
+    </div>
+    <div class="card">
+      <div class="total"><h3>GPS event → cảnh báo trên màn hình</h3><b id="totalOut"></b></div>
+      <div class="stack" id="stack"><i class="sla" id="slaMark"></i></div>
+      <div class="axis"><span>0</span><span>5 s</span><span>10 s</span><span>15 s</span></div>
+      <div class="hops" id="hops"></div>
+      <div class="insight"><p><b>Dashboard refresh 5 giây không có nghĩa dữ liệu chỉ trễ tối đa 5 giây.</b> Người xem có thể vừa lỡ một lần refresh, nên một mình chặng cuối đã ăn một nửa ngân sách. Vì thế cảnh báo đi qua bảng serving trong Postgres, không qua Iceberg: Iceberg chỉ commit dữ liệu sau mỗi checkpoint 30 giây.</p></div>
+    </div>
+    <div class="two">
+      <div class="card"><div class="slider-row"><h3>Bronze: checkpoint mỗi</h3><output id="ckptOut"></output><input id="ckpt" type="range" min="5" max="120" step="5" value="30" aria-label="Checkpoint interval"></div><p class="sub" id="ckptNote"></p></div>
+      <div class="card"><div class="slider-row"><h3>KPI: dbt chạy mỗi</h3><output id="dbtOut"></output><input id="dbt" type="range" min="1" max="60" value="5" aria-label="dbt schedule"></div><p class="sub" id="dbtNote"></p></div>
+    </div>
+    <div class="card">
+      <div class="late-top"><h3>Một ping lúc 10:00 đến trễ thì đi về đâu?</h3><output id="lateOut"></output></div>
+      <input id="late" type="range" min="0" max="100" value="18" aria-label="Độ trễ của ping">
+      <div class="ticks"><span>đúng giờ</span><span>1 phút</span><span>1 giờ</span><span>1 ngày</span></div>
+      <div class="lanes" id="lanes"></div>
+      <p class="sub">Ping thuộc phút 10:00 theo <b>event time</b>, bất kể đến lúc nào. Mỗi đường xử lý trả lời khác nhau cho câu "có tính lại không": cảnh báo bỏ qua event quá cũ, KPI tạm tính sửa lại số, còn sau giờ chốt sổ thì phải chủ động chạy restatement.</p>
+    </div>
+    <div class="card">
+      <h3>Những phép xử lý hệ thống phải làm</h3>
+      <div class="chips" id="proc"></div>
+    </div>
+  </section>
+
+  <!-- 4 ARCH -->
+  <section class="step" id="s-arch" data-step="arch" role="tabpanel" hidden>
+    <div class="step-intro">
+      <h2>Mỗi khối phải trả lời được "yêu cầu nào cần tôi?"</h2>
+      <p>Bấm vào một khối để xem nó giải quyết yêu cầu nào và tương đương dịch vụ AWS nào.</p>
+    </div>
+    <div class="card">
+      <div class="mapwrap" id="map"></div>
+      <div class="legend"><span><i style="border-color:var(--ok)"></i>Đã chạy</span><span><i style="border-color:var(--part)"></i>Một phần</span><span><i style="border-color:var(--faint);border-style:dashed"></i>Feature sau</span></div>
+    </div>
+    <div class="detail" id="nodeDetail" aria-live="polite" style="position:static"></div>
+    <h3 style="font-size:20px">Yêu cầu → dịch vụ, và vì sao không chọn cái kia</h3>
+    <div class="decisions" id="decisions"></div>
+  </section>
+
+  <!-- 5 OPS -->
+  <section class="step" id="s-ops" data-step="ops" role="tabpanel" hidden>
+    <div class="step-intro">
+      <h2>POC chạy được mới là một nửa; nửa còn lại là khi nó hỏng</h2>
+      <p>Checklist vận hành trong bài, đối chiếu với project.</p>
+    </div>
+    <div class="md" data-md="ops"></div>
+    <div class="card">
+      <h3>Việc nên làm trước feature 3</h3>
+      <p class="sub">Các lỗ hổng đã được gom vào <code>docs/requirements.md</code> (bản nháp, mỗi mục có ID như BR-2, NFR-4). Duyệt xong thì các spec sau tham chiếu theo ID.</p>
+      <div class="todo">
+        <div><b>On-time % với đơn thất bại</b><span>Đơn thất bại tính là không đúng giờ</span><code>feature 7</code></div>
+        <div><b>RPO / RTO</b><span>RPO 0, RTO cảnh báo 15 phút, có alert horizon</span><code>feature 6, 11</code></div>
+        <div><b>Retention</b><span>Bronze 90 ngày, silver 1 năm, gold 2 năm, dọn snapshot</span><code>feature 5, 7</code></div>
+        <div><b>PII tọa độ khách</b><span>Làm tròn ở gold; IAM, KMS trên AWS</span><code>feature 7, 10</code></div>
+        <div><b>Kích thước event CDC</b><span>Đo thật thay vì ước tính 1,5 KB</span><code>feature 5</code></div>
+        <div><b>Schema silver và gold</b><span>Duyệt grain, khóa, partition theo local_date, dim_van SCD2 (bước 3)</span><code>feature 4, 7</code></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="nav-next"><button id="prev" type="button">← Bước trước</button><button id="next" class="primary" type="button">Bước tiếp →</button></div>
+
+  <footer>Nguồn: <code>docs/intent.md</code>, <code>docs/project-spec.md</code>, <code>docs/decisions/0001–0009</code>, <code>specs/001</code>, <code>specs/002</code>. Số đo thật: ping ~140 B, stack ~3,1 GiB, bronze ≤ 60 s. Các số khác là ước tính thiết kế và được ghi rõ là ước tính.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const STEPS = [
+    { id: 'business', n: '01', t: 'Business' }, { id: 'data', n: '02', t: 'Data' }, { id: 'schema', n: '03', t: 'Schema' },
+    { id: 'sla', n: '04', t: 'SLA & xử lý' }, { id: 'arch', n: '05', t: 'Kiến trúc' }, { id: 'ops', n: '06', t: 'Vận hành' },
+  ];
+  const LABEL = { ok: 'Đã có câu trả lời', part: 'Một phần / để feature sau', gap: 'Lỗ hổng' };
+
+  const Q = {
+    business: [
+      { st: 'ok', q: 'Ai dùng dữ liệu này?', s: '3 nhóm người dùng', a: 'Dispatcher (thời gian thực), Ops manager (theo giờ/ngày), Data analyst (SQL lịch sử).', why: '3 kiểu truy cập khác nhau nên cần 3 đường phục vụ: bảng serving cho cảnh báo, tầng gold cho KPI, Iceberg + Trino/Athena cho truy vấn tự do. Không có kho nào phục vụ tốt cả ba.', where: 'docs/intent.md · Users' },
+      { st: 'ok', q: 'Họ ra quyết định gì?', s: 'Hành động trước khi trễ', a: 'Dispatcher gọi khách hoặc đổi tuyến trước khi đơn trễ; manager đánh giá kho và tài xế.', why: 'Báo sau khi trễ là vô dụng, vì đó chính là vấn đề hiện tại. Phải dự đoán ETA từ GPS mới nhất và báo sớm ít nhất 15 phút, nên phải join GPS với đơn theo thời gian thực, tức là cần xử lý stream có state.', where: 'docs/intent.md · Desired outcome' },
+      { st: 'ok', q: '"Real-time" là bao nhiêu giây?', s: '3 mức SLA', a: 'Cảnh báo p95 dưới 10 giây. KPI tạm tính khoảng 5 phút. KPI chính thức chốt mỗi đêm.', why: 'Ba SLA khác nhau, nên không ép tất cả vào một engine: phần cần vài giây chạy Flink, phần cần đúng tuyệt đối chạy dbt. Đây là quyết định lớn nhất của kiến trúc, và nó đến từ một câu hỏi business.', where: 'ADR 0006' },
+      { st: 'part', q: '"Trễ" và "sắp trễ" là gì?', s: 'Thiếu ngưỡng cảnh báo', a: 'Trễ là giao xong sau promised_end. Sắp trễ là ETA dự đoán vượt promised_end.', why: 'Còn thiếu: vượt bao nhiêu phút thì báo? ETA dao động lên xuống thì có báo lại không? Đo độ chính xác cảnh báo thế nào (precision/recall)?', where: 'Chốt trong spec feature 6' },
+      { st: 'gap', q: 'Đơn thất bại có tính vào on-time % không?', s: 'Chưa quyết', a: 'Chưa ai trả lời. Đây là phiên bản giao hàng của câu "doanh thu tính lúc đặt hay lúc thanh toán".', why: 'Cùng một dữ liệu cho ra 2 con số on-time % khác nhau. Không chốt thì dashboard và báo cáo lệch nhau, và người dùng mất niềm tin vào số liệu.', prop: 'On-time % = đơn giao đúng hạn / (đã giao + thất bại). Báo cáo thêm tỉ lệ thất bại riêng.' },
+      { st: 'ok', q: 'Dữ liệu đến trễ có sửa lại số không?', s: 'Tạm tính và chốt sổ', a: 'Có. Số tạm tính cập nhật mỗi 5 phút (nhìn lại 2 giờ); số chính thức chốt mỗi đêm; sửa sau giờ chốt phải chạy restatement có dấu vết.', why: 'Mỗi số KPI phải biết mình là tạm tính hay đã chốt (cột is_final); bảng closed_days ghi lại các lần chốt. Thử mô phỏng ở bước 3.', where: 'ADR 0006' },
+      { st: 'gap', q: 'Pipeline ngừng 15 phút có chấp nhận không?', s: 'Chưa có RPO/RTO', a: 'Chưa hỏi. RTO là ngừng bao lâu thì chấp nhận được; RPO là mất bao nhiêu dữ liệu thì chấp nhận được.', why: 'Quyết định Kafka giữ dữ liệu bao lâu, có cần chạy nhiều bản không, và khi phục hồi thì xử lý các cảnh báo cũ ra sao.', prop: 'RPO = 0 (Kafka giữ 7 ngày, Postgres giữ WAL qua replication slot). RTO cho đường cảnh báo = 15 phút. Khi chạy bù, không bắn lại cảnh báo cho event cũ.' },
+      { st: 'gap', q: 'Giữ lịch sử bao lâu?', s: 'Iceberg chưa có chính sách', a: 'Kafka đã đặt 7 ngày. Iceberg chưa có chính sách giữ và dọn dữ liệu.', why: 'GPS sinh khoảng 3,5 triệu dòng mỗi ngày. Không có chính sách thì chi phí S3 và số snapshot cứ tăng mãi.', prop: 'Bronze GPS 90 ngày, silver 1 năm, gold 2 năm. Dọn snapshot Iceberg cũ hơn 7 ngày theo lịch.' },
+    ],
+    data: [
+      { st: 'ok', q: 'CDC được không, hay chỉ được query database?', s: 'Logical replication', a: 'CDC qua logical replication (pgoutput). Không query database của đội khác.', why: 'Query định kỳ bỏ sót thay đổi trung gian, làm nặng database nguồn và không biết thứ tự commit. CDC đọc thẳng transaction log.', where: 'ADR 0004 · spec 002' },
+      { st: 'ok', q: 'Có cần lịch sử ban đầu (snapshot)?', s: 'Chụp đúng một lần', a: 'Có. Snapshot 4 kho và 200 xe đúng một lần, sau đó chỉ đọc thay đổi.', why: 'Nếu snapshot chạy lại mỗi lần restart thì bronze bị nhân đôi dữ liệu.', where: 'test_seed_captured_once_as_snapshot' },
+      { st: 'ok', q: 'Có cần giữ thứ tự cập nhật của một đơn?', s: 'Key theo khóa chính', a: 'Có. Key message theo order_id nên một đơn luôn nằm trong một partition; bronze giữ source_lsn.', why: 'Nếu "delivered" đến trước "out_for_delivery" thì trạng thái hiện tại sai.', where: 'test_n_changes_n_rows_in_commit_order' },
+      { st: 'part', q: 'Kích thước event thật là bao nhiêu?', s: 'GPS đã đo, CDC chưa', a: 'GPS khoảng 140 byte (đã đo). Envelope CDC có before/after mới ước tính khoảng 1,5 KB.', why: 'Kích thước quyết định dung lượng Kafka, băng thông và chi phí MSK.', prop: 'Đo thật trong benchmark ở feature 5.' },
+    ],
+    schema: [
+      { st: 'part', q: 'Một dòng trong mỗi bảng đại diện cho cái gì (grain)?', s: 'Bronze đã chốt, silver/gold đề xuất', a: 'Bronze: một dòng cho mỗi message nhận được, có thể trùng. Silver: một dòng cho mỗi ping (vehicle_id, event_ts), mỗi đơn (trạng thái hiện tại), mỗi lần đổi trạng thái. Gold: một dòng cho mỗi đơn đã đóng.', why: 'Grain sai là nguồn lỗi số liệu phổ biến nhất: join một bảng mỗi-đơn với một bảng mỗi-thay-đổi sẽ nhân đôi dòng và đếm trùng.', where: 'docs/project-spec.md · Key data entities', prop: 'Ghi grain vào đầu mỗi file DDL/model; dbt test unique trên đúng khóa của grain.' },
+      { st: 'part', q: 'Khóa chính và khóa khử trùng là gì?', s: 'Khóa tự nhiên', a: 'GPS: (vehicle_id, event_ts). CDC: source_lsn cho mỗi thay đổi, order_id cho trạng thái hiện tại. Gold dùng khóa tự nhiên order_id; dimension có SCD2 dùng surrogate key.', why: 'Khóa khử trùng phải ổn định khi gửi lại: kafka_offset đổi khi replay, nên không được dùng nó làm khóa.', where: 'Feature 4 (silver)' },
+      { st: 'part', q: '"Ngày" trong KPI là ngày theo giờ nào?', s: 'UTC hay giờ Việt Nam', a: 'Mọi timestamp lưu theo UTC. Nhưng "ngày giao hàng", lúc chốt sổ 01:00 và báo cáo theo ngày đều theo giờ Asia/Ho_Chi_Minh (UTC+7).', why: 'Nếu partition và group theo ngày UTC, đơn giao lúc 06:30 sáng giờ Việt Nam bị tính vào hôm trước. Lỗi này thường chỉ lộ ra khi đối chiếu với báo cáo vận hành.', prop: 'Gold có thêm cột local_date (ngày theo giờ Việt Nam) và partition theo nó; silver và bronze giữ partition theo ngày UTC.' },
+      { st: 'ok', q: 'Partition theo cột nào?', s: 'Theo thời gian event', a: 'Bronze GPS theo day(event_ts); bronze CDC theo day(commit_ts). Đề xuất silver GPS thêm bucket(16, vehicle_id); gold theo local_date.', why: 'Query gần như luôn lọc theo khoảng thời gian; bucket theo xe giúp tra lịch sử một xe mà không quét cả ngày.', where: 'ADR 0009 · infra/local/trino/init' },
+      { st: 'gap', q: 'Xe chuyển sang kho khác thì báo cáo cũ có bị sai không?', s: 'Chưa có SCD', a: 'Chưa thiết kế. Nếu chỉ giữ trạng thái hiện tại của bảng vans, đơn của tháng trước sẽ bị gán sang kho mới.', why: 'KPI theo kho trong quá khứ thay đổi mỗi khi có xe chuyển kho, nên không ai tin được con số cũ.', prop: 'dim_van dạng SCD Type 2 (valid_from, valid_to, is_current), dựng từ bronze.vans_cdc; fact join theo thời điểm đơn đóng.' },
+      { st: 'gap', q: 'Cột nào là PII và đi tới tầng nào?', s: 'Tọa độ khách', a: 'dest_lat/dest_lon là địa chỉ nhà khách. Hiện chúng đi nguyên vẹn từ OLTP tới bronze.', why: 'Analyst không cần địa chỉ chính xác để tính KPI, nên không có lý do để PII lan xuống gold.', prop: 'Gold chỉ giữ dest_area (geohash 7 ký tự, ô khoảng 150 m); bronze/silver hạn chế quyền đọc. Xem field dest_lat trong phần lineage.' },
+      { st: 'part', q: 'Schema thay đổi thì sao?', s: 'Feature 3', a: 'Quy tắc đã ghi: chỉ thêm field có default; không đổi tên, đổi kiểu hay xóa; muốn vậy thì tạo bản v2 và topic mới.', why: 'Producer và consumer deploy ở những thời điểm khác nhau.', where: '.claude/rules/schemas.md · ADR 0008' },
+      { st: 'ok', q: 'Timestamp và giá trị null được quy ước thế nào?', s: 'UTC, nullable có chủ đích', a: 'Mọi thời gian là timestamptz UTC. Các mốc vòng đời (assigned_at, delivered_at…) để null cho tới khi xảy ra. Thời gian nghiệp vụ (event_ts) tách khỏi thời gian hệ thống (ingest_ts, commit_ts).', why: 'Giữ cả hai loại thời gian thì đo được độ trễ của dữ liệu, và tách được câu hỏi "chuyện xảy ra lúc nào" khỏi "hệ thống biết lúc nào".', where: 'CLAUDE.md · infra/local/postgres/init/001_schema.sql' },
+    ],
+    ops: [
+      { st: 'part', q: 'At-least-once có chấp nhận không? Tránh đếm trùng ra sao?', s: 'Exactly-once ở bronze', a: 'Từ Flink vào Iceberg là exactly-once. Debezium là at-least-once, nên trùng được nhận diện bằng source_lsn và khử ở silver.', why: 'Đã có test: gửi N ping thì có đúng N dòng; tắt rồi bật connector không mất và không trùng. Còn lại: khử trùng khi crash, ở feature 4.', where: 'Spec 001 AC3 · spec 002 AC7' },
+      { st: 'part', q: 'Sai logic thì có chạy lại 7 ngày trước được không?', s: 'Kafka 7 ngày', a: 'Kafka giữ 7 ngày; offset của consumer group lưu trong Kafka. Quy trình replay/backfill nằm ở feature 5 và 11.', why: 'Replay quá 7 ngày phải đọc lại từ bronze trên S3, không phải từ Kafka.', where: 'Roadmap 5, 11' },
+      { st: 'gap', q: 'Mất bao nhiêu dữ liệu, ngừng bao lâu là chấp nhận được?', s: 'Chưa định nghĩa', a: 'Chưa có RPO/RTO.', why: 'Không có con số thì không biết thiết kế phục hồi tới mức nào là đủ.', prop: 'RPO 0, RTO cảnh báo 15 phút; thêm test e2e: tắt Flink 15 phút rồi bật lại, phải bắt kịp mà không bắn cảnh báo cho event cũ.' },
+      { st: 'part', q: 'Backpressure khi tốc độ vào lớn hơn tốc độ xử lý?', s: 'Đo ở feature 5', a: 'Kafka làm bộ đệm, và consumer lag tăng dần. Mức stress (backfill cùng lúc với 2.000 xe live) được thiết kế để đo đúng chuyện này.', why: 'Biết lag tăng nhanh cỡ nào và hệ thống bắt kịp sau bao lâu.', where: 'ADR 0009' },
+      { st: 'part', q: 'Thêm field vào JSON thì consumer có vỡ không?', s: 'Feature 3', a: 'Hiện tại là JSON không có schema, nên rủi ro thật. Feature 3 chuyển sang Avro + Schema Registry (bắt buộc tương thích BACKWARD), đẩy event lỗi vào DLQ.', why: 'Producer và consumer do các đội khác nhau sở hữu; schema là hợp đồng giữa họ.', where: 'ADR 0008' },
+      { st: 'gap', q: 'Security: PII, IAM, mã hóa, cô lập mạng?', s: 'Tọa độ khách là PII', a: 'Ở local đang dùng plaintext và mật khẩu mặc định. Chưa xác định dữ liệu nào là PII.', why: 'Tọa độ giao hàng chính là địa chỉ nhà khách hàng. Phỏng vấn viên rất hay hỏi điểm này.', prop: 'Đánh dấu dest_lat/dest_lon là PII: ở gold làm tròn khoảng 100 m; trên AWS dùng IAM least-privilege, KMS cho S3/MSK, RDS trong private subnet.' },
+      { st: 'ok', q: 'Ngân sách mỗi tháng, kể cả dev/test?', s: '$0 local', a: 'Local tốn $0. Mỗi lần demo AWS khoảng $4 (ước tính), có budget alert ở mức $20 và $50.', why: 'Kiến trúc tốt mà quá ngân sách thì vẫn không dùng được.', where: 'ADR 0005' },
+      { st: 'part', q: 'Làm sao biết pipeline đang khỏe?', s: 'Feature 8', a: 'Đã có make cdc-status. Consumer lag, checkpoint, slot lag sẽ lên Grafana ở feature 8.', why: 'Nên cảnh báo khi: lag tăng liên tục quá 5 phút, checkpoint fail, slot lag vượt 500 MB, bronze không có dòng mới trong 2 phút.', where: 'Roadmap 8' },
+    ],
+  };
+
+  // tally
+  const all = Object.values(Q).flat();
+  const cnt = s => all.filter(x => x.st === s).length;
+  $('tally').innerHTML = ['ok', 'part', 'gap'].map(s => `<div class="tile ${s}"><span class="v">${cnt(s)}</span><span class="l">${{ ok: 'câu đã trả lời', part: 'một phần', gap: 'lỗ hổng' }[s]}</span></div>`).join('');
+
+  // tabs
+  let current = 0;
+  $('rail').innerHTML = STEPS.map((s, i) => {
+    const g = (Q[s.id] || []).filter(x => x.st === 'gap').length;
+    return `<li><button role="tab" id="tab-${s.id}" aria-controls="s-${s.id}" aria-selected="${i === 0}" data-i="${i}"><span class="n">BƯỚC ${s.n}</span><span class="t">${s.t}</span>${g ? `<span class="g">${g} đỏ</span>` : ''}</button></li>`;
+  }).join('');
+  function go(i, scroll) {
+    current = i;
+    STEPS.forEach((s, j) => { $('s-' + s.id).hidden = j !== i; $('tab-' + s.id).setAttribute('aria-selected', String(j === i)); });
+    $('prev').hidden = i === 0; $('next').hidden = i === STEPS.length - 1;
+    $('next').textContent = i < STEPS.length - 1 ? `Bước tiếp: ${STEPS[i + 1].t} →` : '';
+    if (location.hash.slice(1) !== STEPS[i].id) history.replaceState(null, '', '#' + STEPS[i].id);
+    if (scroll) document.querySelector('.rail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.querySelectorAll('.rail button').forEach(b => b.addEventListener('click', () => go(Number(b.dataset.i), false)));
+  $('prev').addEventListener('click', () => go(current - 1, true));
+  $('next').addEventListener('click', () => go(current + 1, true));
+  window.addEventListener('hashchange', () => { const i = STEPS.findIndex(s => s.id === location.hash.slice(1)); if (i >= 0) go(i, false); });
+
+  // master-detail
+  function md(el, key) {
+    const items = Q[key];
+    let filter = 'all', sel = 0;
+    el.innerHTML = `<div><div class="filter"><button type="button" data-f="all" aria-pressed="true">Tất cả</button><button type="button" data-f="gap" aria-pressed="false">Chỉ lỗ hổng</button></div><div class="qlist" role="listbox"></div></div><div class="detail" aria-live="polite"></div>`;
+    const list = el.querySelector('.qlist'), detail = el.querySelector('.detail');
+    function render() {
+      const vis = items.map((x, i) => [x, i]).filter(([x]) => filter === 'all' || x.st === 'gap');
+      if (!vis.some(([, i]) => i === sel)) sel = vis.length ? vis[0][1] : 0;
+      list.innerHTML = vis.map(([x, i]) => `<button class="qbtn" role="option" type="button" data-i="${i}" aria-selected="${i === sel}"><span class="dot ${x.st}"></span><span><span class="qt">${x.q}</span><br><span class="qs">${x.s}</span></span></button>`).join('');
+      list.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => { sel = Number(b.dataset.i); render(); }));
+      const x = items[sel];
+      detail.innerHTML = `<span class="badge ${x.st}">${LABEL[x.st]}</span><h3>${x.q}</h3><p class="answer">${x.a}</p><div class="facts"><div class="fact"><span class="k">${x.st === 'gap' ? 'Vì sao quan trọng' : 'Hệ quả kỹ thuật'}</span><span class="x">${x.why}</span></div>${x.where ? `<div class="fact"><span class="k">Ở đâu trong repo</span><span class="x"><code>${x.where}</code></span></div>` : ''}${x.prop ? `<div class="fact propose"><span class="k">Đề xuất</span><span class="x">${x.prop}</span></div>` : ''}</div>`;
+    }
+    el.querySelectorAll('.filter button').forEach(b => b.addEventListener('click', () => {
+      filter = b.dataset.f; el.querySelectorAll('.filter button').forEach(o => o.setAttribute('aria-pressed', String(o === b))); render();
+    }));
+    render();
+  }
+  document.querySelectorAll('[data-md]').forEach(el => md(el, el.dataset.md));
+
+  // ---- schema by layer
+  const LAYERS = [
+    { id: 'contract', name: 'Event contract', st: 'ok', note: 'Hình dạng message trên Kafka: hợp đồng giữa producer và consumer. Hiện là JSON; feature 3 chuyển sang Avro + Schema Registry.', tables: [
+      { n: 'gps.pings.v1', grain: '1 message = 1 lần đo GPS', key: 'vehicle_id (giữ thứ tự theo xe)', part: '3 partition, giữ 7 ngày', st: 'ok', cols: [
+        ['vehicle_id', 'string', 'k', ''], ['event_ts', 'timestamp-millis', '', 'thời điểm thiết bị đo, UTC'], ['lat', 'double', '', ''], ['lon', 'double', '', ''], ['speed_kmh', 'double', '', ''], ['heading_deg', 'double', '', '']] },
+      { n: 'cdc.public.orders', grain: '1 message = 1 thay đổi đã commit', key: '{order_id}', part: '3 partition, giữ 7 ngày', st: 'ok', cols: [
+        ['op', 'string', '', 'c = insert, u = update, r = snapshot'], ['before', 'row', '', 'cả dòng trước khi đổi (REPLICA IDENTITY FULL)'], ['after', 'row', '', 'cả dòng sau khi đổi'], ['source.lsn', 'long', 'd', 'vị trí trong WAL: thứ tự commit'], ['source.ts_ms', 'long', '', 'thời điểm commit'], ['source.txId', 'long', '', ''], ['ts_ms', 'long', '', 'thời điểm Debezium đọc được']] },
+      { n: 'alerts.v1', grain: '1 message = 1 cảnh báo', key: 'order_id', part: 'đề xuất', st: 'plan', cols: [
+        ['alert_id', 'string', 'k', ''], ['type', 'enum', '', 'SLA_RISK | ABNORMAL_STOP'], ['order_id', 'string', '', ''], ['van_id', 'string', '', ''], ['raised_at', 'timestamp-millis', '', ''], ['predicted_eta', 'timestamp-millis', '', ''], ['promised_end', 'timestamp-millis', '', 'để người nhận khỏi phải tra lại']] },
+    ] },
+    { id: 'oltp', name: 'OLTP (nguồn)', st: 'ok', note: 'Database của đội vận hành; mình chỉ đọc qua CDC. Bảng orders bật REPLICA IDENTITY FULL để CDC có cả dòng cũ khi update.', tables: [
+      { n: 'orders', grain: '1 dòng = 1 đơn (trạng thái hiện tại)', key: 'order_id', part: '—', st: 'ok', cols: [
+        ['order_id', 'text', 'k', ''], ['depot_id', 'text → depots', '', ''], ['van_id', 'text → vans', '', 'null cho tới khi assigned'], ['stop_seq', 'int', '', ''], ['dest_lat', 'double', 'pii', 'địa chỉ khách'], ['dest_lon', 'double', 'pii', ''], ['promised_start', 'timestamptz', '', ''], ['promised_end', 'timestamptz', '', 'hạn giao cam kết'], ['status', 'text (CHECK)', '', 'created → assigned → out_for_delivery → delivered | failed'], ['created_at … failed_at', 'timestamptz', '', 'mốc vòng đời, null cho tới khi xảy ra'], ['updated_at', 'timestamptz', '', '']] },
+      { n: 'vans', grain: '1 dòng = 1 xe', key: 'van_id (= GPS vehicle_id)', part: '—', st: 'ok', cols: [
+        ['van_id', 'text', 'k', ''], ['depot_id', 'text → depots', '', 'có thể đổi, cần SCD2 ở gold'], ['plate', 'text', '', ''], ['capacity', 'int', '', '']] },
+      { n: 'depots', grain: '1 dòng = 1 kho', key: 'depot_id', part: '—', st: 'ok', cols: [
+        ['depot_id', 'text', 'k', ''], ['name', 'text', '', ''], ['lat', 'double', '', ''], ['lon', 'double', '', '']] },
+    ] },
+    { id: 'bronze', name: 'Bronze', st: 'ok', note: 'Thô, chỉ ghi thêm, có thể trùng. Thêm metadata (ingest_ts, partition, offset, LSN) để truy vết và replay. Không sửa, không merge.', tables: [
+      { n: 'bronze.gps_pings', grain: '1 dòng = 1 message nhận được (có thể trùng)', key: '— (append-only)', part: 'day(event_ts)', st: 'ok', cols: [
+        ['vehicle_id', 'varchar', '', ''], ['event_ts', 'timestamptz', 'p', ''], ['lat, lon, speed_kmh, heading_deg', 'double', '', ''], ['ingest_ts', 'timestamptz', '', 'thời điểm Kafka nhận'], ['kafka_partition, kafka_offset', 'int, bigint', '', 'truy vết; không dùng làm khóa vì đổi khi replay']] },
+      { n: 'bronze.orders_cdc', grain: '1 dòng = 1 thay đổi CDC', key: '— (append-only)', part: 'day(commit_ts)', st: 'ok', cols: [
+        ['op', 'varchar', '', ''], ['before', 'row(...)', 'pii', 'kiểu rõ ràng, có dest_lat/lon'], ['after', 'row(...)', 'pii', ''], ['source_lsn', 'bigint', 'd', ''], ['commit_ts', 'timestamptz', 'p', ''], ['capture_ts, ingest_ts', 'timestamptz', '', ''], ['kafka_partition, kafka_offset', 'int, bigint', '', '']] },
+    ] },
+    { id: 'silver', name: 'Silver', st: 'plan', note: 'Đề xuất (feature 4). Đã khử trùng, đúng kiểu, một dòng đúng một thực thể. Iceberg upsert (MERGE) theo khóa khử trùng.', tables: [
+      { n: 'silver.gps_pings', grain: '1 dòng = 1 ping duy nhất', key: '(vehicle_id, event_ts)', part: 'day(event_ts), bucket(16, vehicle_id)', st: 'plan', cols: [
+        ['vehicle_id', 'varchar', 'd', ''], ['event_ts', 'timestamptz', 'd', ''], ['lat, lon, speed_kmh, heading_deg', 'double', '', ''], ['ingest_ts', 'timestamptz', '', 'bản nhận được sớm nhất'], ['late_by_s', 'int', '', 'ingest_ts − event_ts: đo độ trễ dữ liệu']] },
+      { n: 'silver.orders', grain: '1 dòng = 1 đơn, trạng thái mới nhất', key: 'order_id', part: 'month(created_at)', st: 'plan', cols: [
+        ['order_id', 'varchar', 'k', ''], ['… mọi cột của orders', '', 'pii', 'dest_lat/lon vẫn còn, quyền đọc hạn chế'], ['last_lsn', 'bigint', '', 'chỉ upsert khi LSN mới hơn: chống đổi thứ tự và trùng'], ['last_commit_ts', 'timestamptz', '', '']] },
+      { n: 'silver.order_status_history', grain: '1 dòng = 1 lần đổi trạng thái', key: '(order_id, status)', part: 'day(status_ts)', st: 'plan', cols: [
+        ['order_id', 'varchar', 'd', ''], ['status', 'varchar', 'd', ''], ['status_ts', 'timestamptz', 'p', 'thời điểm nghiệp vụ'], ['commit_ts', 'timestamptz', '', 'thời điểm hệ thống biết'], ['source_lsn', 'bigint', '', '']] },
+    ] },
+    { id: 'gold', name: 'Gold', st: 'plan', note: 'Đề xuất (feature 7). Star schema cho KPI; ngày theo giờ Việt Nam; không có PII chính xác. Xem sơ đồ ERD bên dưới.', tables: [
+      { n: 'gold.fct_delivery', grain: '1 dòng = 1 đơn đã đóng', key: 'order_id', part: 'local_date', st: 'plan', cols: [
+        ['order_id', 'varchar', 'k', ''], ['local_date', 'date', 'p', 'ngày đóng đơn theo Asia/Ho_Chi_Minh'], ['depot_id, van_key', 'varchar, bigint', '', 'van_key trỏ tới dim_van đúng thời điểm'], ['promised_start, promised_end, closed_at', 'timestamptz', '', ''], ['outcome', 'varchar', '', 'delivered | failed'], ['is_on_time', 'boolean', '', 'closed_at ≤ promised_end; failed = false'], ['minutes_late', 'int', '', '0 nếu đúng giờ'], ['eta_error_t30_min, eta_error_t15_min', 'double', '', 'sai số ETA lúc còn 30 và 15 phút'], ['first_alert_at, alert_lead_min', 'timestamptz, double', '', 'cảnh báo đến sớm bao nhiêu phút'], ['dest_area', 'varchar', '', 'geohash 7 (~150 m), thay cho tọa độ chính xác'], ['is_final', 'boolean', '', 'true sau khi chốt sổ đêm']] },
+      { n: 'gold.dim_van', grain: '1 dòng = 1 phiên bản của xe', key: 'van_key (surrogate)', part: '—', st: 'plan', cols: [
+        ['van_key', 'bigint', 'k', ''], ['van_id', 'varchar', '', ''], ['depot_id', 'varchar', '', ''], ['plate', 'varchar', '', ''], ['valid_from, valid_to', 'timestamptz', '', 'SCD Type 2'], ['is_current', 'boolean', '', '']] },
+      { n: 'gold.agg_depot_daily', grain: '1 dòng = 1 kho × 1 ngày', key: '(depot_id, local_date)', part: 'local_date', st: 'plan', cols: [
+        ['depot_id, local_date', 'varchar, date', 'k', ''], ['orders_closed', 'int', '', ''], ['on_time_rate, failed_rate', 'double', '', ''], ['avg_minutes_late', 'double', '', ''], ['alert_precision, alert_recall', 'double', '', ''], ['is_final', 'boolean', '', '']] },
+      { n: 'gold.closed_days', grain: '1 dòng = 1 ngày đã chốt', key: 'local_date', part: '—', st: 'plan', cols: [
+        ['local_date', 'date', 'k', ''], ['closed_at', 'timestamptz', '', ''], ['late_events_absorbed', 'int', '', ''], ['late_after_close', 'int', '', 'đến sau khi chốt, chờ reclose']] },
+    ] },
+    { id: 'serving', name: 'Serving', st: 'plan', note: 'Đề xuất (feature 6). Bảng Postgres được Flink upsert tại chỗ, cho màn hình cần tươi trong vài giây.', tables: [
+      { n: 'serving.vehicle_latest', grain: '1 dòng = 1 xe', key: 'van_id', part: '—', st: 'plan', cols: [
+        ['van_id', 'text', 'k', ''], ['lat, lon, speed_kmh', 'double', '', ''], ['event_ts', 'timestamptz', '', 'chỉ ghi đè nếu mới hơn bản đang có'], ['updated_at', 'timestamptz', '', '']] },
+      { n: 'serving.order_eta', grain: '1 dòng = 1 đơn đang giao', key: 'order_id', part: '—', st: 'plan', cols: [
+        ['order_id', 'text', 'k', ''], ['eta', 'timestamptz', '', ''], ['distance_km', 'double', '', ''], ['updated_at', 'timestamptz', '', '']] },
+      { n: 'serving.alerts', grain: '1 dòng = 1 cảnh báo', key: 'alert_id', part: '—', st: 'plan', cols: [
+        ['alert_id', 'text', 'k', ''], ['type', 'text', '', ''], ['order_id, van_id', 'text', '', ''], ['promised_end, predicted_eta', 'timestamptz', '', ''], ['raised_at, resolved_at', 'timestamptz', '', 'resolved_at = null khi còn mở']] },
+    ] },
+  ];
+  const TAGN = { k: 'KEY', d: 'DEDUP', p: 'PART', pii: 'PII' };
+  const LIN = {
+    promised_end: { label: 'promised_end', hops: [
+      ['OLTP', 'orders.promised_end', 'Simulator đặt hạn giao khi tạo đơn.', 'oltp', 'orders', 'promised_end'],
+      ['Event', 'cdc.public.orders · after', 'Nằm trong envelope dưới dạng chuỗi ISO-8601 UTC.', 'contract', 'cdc.public.orders', 'after'],
+      ['Bronze', 'orders_cdc.after.promised_end', 'Giữ nguyên; mỗi thay đổi một dòng.', 'bronze', 'bronze.orders_cdc', 'after'],
+      ['Silver', 'orders.promised_end', 'Lấy từ thay đổi có LSN lớn nhất.', 'silver', 'silver.orders', '… mọi cột của orders'],
+      ['Serving', 'alerts.promised_end', 'Flink so ETA dự đoán với hạn giao → SLA_RISK.', 'serving', 'serving.alerts', 'promised_end, predicted_eta'],
+      ['Gold', 'fct_delivery.is_on_time', 'closed_at ≤ promised_end; kèm minutes_late.', 'gold', 'gold.fct_delivery', 'is_on_time'],
+    ] },
+    event_ts: { label: 'event_ts (GPS)', hops: [
+      ['Event', 'gps.pings.v1.event_ts', 'Thời điểm thiết bị đo, UTC, độ chính xác mili giây.', 'contract', 'gps.pings.v1', 'event_ts'],
+      ['Bronze', 'gps_pings.event_ts', 'Cột partition day(event_ts); có thể trùng.', 'bronze', 'bronze.gps_pings', 'event_ts'],
+      ['Silver', 'gps_pings.event_ts', 'Cùng vehicle_id tạo thành khóa khử trùng.', 'silver', 'silver.gps_pings', 'event_ts'],
+      ['Serving', 'vehicle_latest.event_ts', 'Chỉ cập nhật nếu mới hơn: ping đến trễ không kéo xe "lùi lại".', 'serving', 'serving.vehicle_latest', 'event_ts'],
+      ['Gold', 'fct_delivery.eta_error_t30_min', 'ETA tính từ vị trí lúc còn 30 phút, so với closed_at.', 'gold', 'gold.fct_delivery', 'eta_error_t30_min, eta_error_t15_min'],
+    ] },
+    dest: { label: 'dest_lat / dest_lon (PII)', hops: [
+      ['OLTP', 'orders.dest_lat/lon', 'Địa chỉ khách: dữ liệu cá nhân.', 'oltp', 'orders', 'dest_lat'],
+      ['Event', 'cdc.public.orders · after', 'Đi nguyên trong envelope (Kafka có retention 7 ngày).', 'contract', 'cdc.public.orders', 'after'],
+      ['Bronze', 'orders_cdc.after.dest_*', 'Giữ nguyên, nhưng hạn chế quyền đọc.', 'bronze', 'bronze.orders_cdc', 'after'],
+      ['Silver', 'orders.dest_*', 'Vẫn còn, quyền đọc hạn chế.', 'silver', 'silver.orders', '… mọi cột của orders'],
+      ['Gold', 'fct_delivery.dest_area', 'Geohash 7 (~150 m): không còn là địa chỉ chính xác.', 'gold', 'gold.fct_delivery', 'dest_area'],
+    ] },
+    lsn: { label: 'source_lsn', hops: [
+      ['Event', 'source.lsn', 'Vị trí của commit trong WAL của Postgres.', 'contract', 'cdc.public.orders', 'source.lsn'],
+      ['Bronze', 'orders_cdc.source_lsn', 'Giữ thứ tự commit; nhận diện bản trùng.', 'bronze', 'bronze.orders_cdc', 'source_lsn'],
+      ['Silver', 'orders.last_lsn', 'Upsert chỉ khi LSN mới hơn: chống đổi thứ tự và trùng.', 'silver', 'silver.orders', 'last_lsn'],
+      ['Gold', '(không mang sang)', 'Gold không cần biết vị trí WAL.', 'gold', '', ''],
+    ] },
+  };
+  let layer = 'bronze', linSel = null;
+  function hlSet() {
+    if (!linSel) return new Set();
+    return new Set(LIN[linSel].hops.filter(h => h[4]).map(h => `${h[3]}|${h[4]}|${h[5]}`));
+  }
+  function renderLayers() {
+    $('layerbar').innerHTML = LAYERS.map(L => `<button type="button" data-l="${L.id}" aria-pressed="${L.id === layer}">${L.name}<span class="lst ${L.st}">${L.st === 'ok' ? 'đã chạy' : 'đề xuất'}</span></button>`).join('');
+    $('layerbar').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { layer = b.dataset.l; renderLayers(); }));
+    const L = LAYERS.find(x => x.id === layer), hl = hlSet();
+    $('layerNote').textContent = L.note;
+    $('tables').innerHTML = L.tables.map(t => `<div class="tcard"><h4>${t.n}</h4><dl class="tmeta"><dt>Grain</dt><dd>${t.grain}</dd><dt>Khóa</dt><dd>${t.key}</dd><dt>Partition</dt><dd>${t.part}</dd></dl><div class="cols">${t.cols.map(([c, ty, tg, note]) => `<div class="col${hl.has(`${L.id}|${t.n}|${c}`) ? ' hl' : ''}"><span class="cn">${c}${tg ? `<span class="tags"><span class="tag ${tg}">${TAGN[tg]}</span></span>` : ''}</span><span class="ct">${ty}</span>${note ? `<span class="cx">${note}</span>` : ''}</div>`).join('')}</div></div>`).join('');
+  }
+  function renderLineage() {
+    $('linPick').innerHTML = Object.entries(LIN).map(([k, v]) => `<button type="button" data-k="${k}" aria-pressed="${k === linSel}">${v.label}</button>`).join('');
+    $('linPick').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { linSel = b.dataset.k; renderLineage(); renderLayers(); }));
+    $('chain').innerHTML = linSel ? LIN[linSel].hops.map(([lay, what, how]) => `<div class="hopx"><span class="lay">${lay}</span><span class="rail2"></span><div class="what"><b>${what}</b><span>${how}</span></div></div>`).join('') : '';
+  }
+  linSel = 'promised_end'; renderLineage(); renderLayers();
+
+  // ---- gold ERD
+  (() => {
+    const box = (x, y, w, title, cols, fact) => `<g class="ebox${fact ? ' fact' : ''}"><rect x="${x}" y="${y}" width="${w}" height="${30 + cols.length * 18}" rx="10"/><text class="eh" x="${x + 12}" y="${y + 21}">${title}</text>${cols.map((c, i) => `<text class="ec" x="${x + 12}" y="${y + 42 + i * 18}">${c}</text>`).join('')}</g>`;
+    // boxes: height = 30 + 18 * columns
+    let s = '<svg viewBox="0 0 900 380" role="img" aria-label="Star schema tầng gold">';
+    s += '<path class="erel" d="M230,192 L320,199"/><path class="erel" d="M450,92 L450,130"/><path class="erel" d="M670,192 L580,199"/><path class="erel dash" d="M450,268 L450,320"/>';
+    s += '<text class="erl" x="238" y="186">depot_id</text><text class="erl" x="458" y="116">van_key</text><text class="erl" x="592" y="186">local_date</text><text class="erl" x="458" y="300">tổng hợp theo kho × ngày</text>';
+    s += box(20, 150, 210, 'dim_depot', ['depot_id  PK', 'name', 'lat, lon'], 0);
+    s += box(340, 8, 220, 'dim_van  (SCD2)', ['van_key  PK', 'van_id, depot_id', 'valid_from / valid_to'], 0);
+    s += box(670, 150, 210, 'dim_date', ['local_date  PK', 'weekday, is_weekend', 'is_closed'], 0);
+    s += box(320, 130, 260, 'fct_delivery', ['order_id  PK · local_date', 'depot_id → dim_depot', 'van_key → dim_van', 'is_on_time, minutes_late', 'eta_error_t30/t15, alert_lead', 'dest_area · is_final'], 1);
+    s += box(320, 320, 260, 'agg_depot_daily', ['on_time_rate, failed_rate, …'], 0);
+    $('erd').innerHTML = s + '</svg>';
+  })();
+
+  // ---- batch vs stream timeline (minutes from local midnight of day D)
+  const hhmm = m => { const d = ((m % 1440) + 1440) % 1440; return String(Math.floor(d / 60)).padStart(2, '0') + ':' + String(d % 60).padStart(2, '0'); };
+  const SEV = [
+    [360, 'bronze.orders_cdc +1 (op=c): đơn được tạo', { status: 'created' }],
+    [450, 'bronze.orders_cdc +1 (op=u): assigned cho VAN-0001', { status: 'assigned' }],
+    [480, 'bronze.orders_cdc +1 (op=u): out_for_delivery', { status: 'out_for_delivery' }],
+    [520, 'Xe kẹt xe: serving.order_eta = 09:10 > hạn 09:00 → alert SLA_RISK', { eta: '09:10 (sau hạn 09:00)', alert: 'SLA_RISK, báo sớm 20 phút trước hạn' }],
+    [552, 'bronze.orders_cdc +1 (op=u): delivered lúc 09:12', { status: 'delivered', alert: 'đã đóng (resolved)' }],
+    [557, 'dbt: fct_delivery is_on_time=false, minutes_late=12, is_final=false', { fct: 'trễ 12 phút · tạm tính' }],
+    [592, 'Ping GPS lúc 09:12 đến trễ 40 phút → bronze +1; không bắn lại cảnh báo', {}],
+    [595, 'dbt (nhìn lại 2 giờ): tính lại eta_error_t30_min', { fct: 'trễ 12 phút · tạm tính · ETA error cập nhật' }],
+    [1500, 'Chốt sổ 01:00: is_final=true, ghi closed_days', { fct: 'trễ 12 phút · ĐÃ CHỐT' }],
+  ];
+  const BEV = [
+    [1440, 'Chụp bảng orders: thấy status=delivered', { status: 'delivered (chỉ trạng thái cuối)' }],
+    [1470, 'Job xong: fct từ bản chụp; các mốc 07:30 / 08:00 đã mất', { fct: 'trễ 12 phút (nếu nguồn có cột delivered_at)' }],
+  ];
+  function renderClock() {
+    const t = Number($('clock').value);
+    $('clockOut').textContent = (t >= 1440 ? 'ngày D+1 · ' : 'ngày D · ') + hhmm(t);
+    const fold = evs => evs.filter(e => e[0] <= t).reduce((s, e) => Object.assign(s, e[2]), {});
+    const logHtml = evs => { const seen = evs.filter(e => e[0] <= t); return seen.length ? seen.map((e, i) => `<div class="${i === seen.length - 1 ? 'new' : ''}"><time>${hhmm(e[0])}</time><span>${e[1]}</span></div>`).join('') : '<span class="empty">Chưa có gì.</span>'; };
+    const dd = (v, cls) => v ? `<dd class="${cls || ''}">${v}</dd>` : '<dd class="none">không biết</dd>';
+    const s = fold(SEV), b = fold(BEV);
+    $('sState').innerHTML = `<dt>Trạng thái đơn</dt>${dd(s.status)}<dt>ETA dự đoán</dt>${dd(s.eta)}<dt>Cảnh báo</dt>${dd(s.alert, s.alert && s.alert.startsWith('SLA') ? 'alert' : '')}<dt>KPI</dt>${dd(s.fct, s.fct && s.fct.includes('CHỐT') ? 'good' : '')}`;
+    $('bState').innerHTML = `<dt>Trạng thái đơn</dt>${dd(b.status)}<dt>ETA dự đoán</dt>${dd(null)}<dt>Cảnh báo</dt>${dd(null)}<dt>KPI</dt>${dd(b.fct)}`;
+    $('sLog').innerHTML = logHtml(SEV); $('bLog').innerHTML = logHtml(BEV);
+  }
+  $('clock').addEventListener('input', renderClock); renderClock();
+  const CMP = [
+    ['Đơn vị dữ liệu', 'Bản chụp trạng thái', 'Sự kiện; trạng thái được suy ra từ log'],
+    ['Trục thời gian', 'Thường chỉ có ngày load', 'event_ts (xảy ra lúc nào) + ingest/commit_ts (biết lúc nào)'],
+    ['Partition theo', 'Ngày load', 'Ngày của event; event trễ rơi vào partition cũ'],
+    ['Dữ liệu trễ', 'Hầu như không có', 'Thường ngày: watermark, nhìn lại 2 giờ, chốt sổ'],
+    ['Khử trùng', 'Ít cần', 'Bắt buộc, theo khóa nghiệp vụ; không dùng offset'],
+    ['Update', 'Ghi đè bảng hoặc partition', 'Upsert theo khóa + số thứ tự (LSN)'],
+    ['Độ đầy đủ', 'Ngầm hiểu là đủ', 'Ghi rõ: is_final, closed_days'],
+    ['SCD', 'So sánh bản chụp hôm nay với hôm qua (bỏ sót thay đổi trong ngày)', 'Dựng SCD2 từ CDC, chính xác tới thời điểm commit'],
+    ['Join dimension', 'Với bản hiện tại', 'Theo thời điểm event (temporal join)'],
+    ['Phục vụ', 'Một star schema', 'Bảng mới-nhất cho màn hình + star schema cho KPI'],
+  ];
+  $('cmp').innerHTML = '<div class="h"><span>Khía cạnh</span><span>Batch thuần</span><span>Stream + batch</span></div>' + CMP.map(([a, b, c]) => `<div><b>${a}</b><span>${b}</span><span>${c}</span></div>`).join('');
+  const RULES = [
+    ['Sự kiện trước, trạng thái sau', 'Bronze chỉ ghi thêm và không sửa. Mọi bảng khác dựng lại được từ bronze; replay phải cho cùng kết quả.'],
+    ['Grain + khóa khử trùng + khóa thứ tự', 'Không dùng offset làm khóa. Bản nào thắng do số thứ tự quyết định, không phải do bản nào đến sau.'],
+    ['Hai trục thời gian', 'Thời gian nghiệp vụ để tính KPI; thời gian hệ thống để đo độ trễ và trả lời "lúc đó ta biết gì".'],
+    ['Ghi rõ độ đầy đủ', 'is_final và closed_days; sửa một ngày đã chốt chỉ bằng restatement có dấu vết.'],
+    ['Mỗi tầng một chế độ ghi', 'Append ở bronze, MERGE ở silver và gold tạm tính, ghi đè partition khi chốt sổ, upsert ở serving.'],
+  ];
+  $('rules').innerHTML = RULES.map(([b, s], i) => `<div class="rule"><span class="rn">${i + 1}</span><b>${b}</b><span>${s}</span></div>`).join('');
+
+  // tech requirements
+  const TR = [
+    ['Use case', 'Cảnh báo đơn sắp trễ + KPI giao hàng', 'ok'], ['Metrics', 'On-time %, sai số ETA, điểm giao/giờ; còn thiếu: đơn thất bại', 'part'],
+    ['Freshness', 'Cảnh báo p95 < 10 s · bronze < 60 s · KPI ~5 phút · chốt đêm', 'ok'], ['Correctness', 'Event trùng hoặc trễ không làm sai KPI, có test chứng minh', 'ok'],
+    ['Retention', 'Kafka 7 ngày; Iceberg chưa định nghĩa', 'gap'], ['Availability', 'Không cam kết (demo; HA ngoài phạm vi)', 'ok'], ['Recovery', 'Chưa có RPO/RTO', 'gap'],
+  ];
+  $('techreq').innerHTML = TR.map(([k, v, s]) => `<div><b>${k}</b><span>${v}</span><span class="badge ${s}">${{ ok: 'Đã có', part: 'Một phần', gap: 'Lỗ hổng' }[s]}</span></div>`).join('');
+
+  // calculator
+  const fmtN = n => n >= 1e9 ? (n / 1e9).toFixed(2) + ' tỉ' : n >= 1e6 ? (n / 1e6).toFixed(2) + ' tr' : n >= 100 ? Math.round(n).toLocaleString('vi-VN') : (Math.round(n * 10) / 10).toLocaleString('vi-VN');
+  const fmtB = b => b >= 1e12 ? (b / 1e12).toFixed(2) + ' TB' : b >= 1e9 ? (b / 1e9).toFixed(2) + ' GB' : b >= 1e6 ? Math.round(b / 1e6) + ' MB' : (b / 1e3).toFixed(1) + ' KB';
+  const fmtT = s => s >= 86400 ? (s / 86400).toFixed(1) + ' ngày' : s >= 3600 ? (s / 3600).toFixed(1) + ' giờ' : s >= 60 ? Math.round(s / 60) + ' phút' : Math.round(s) + ' giây';
+  const num = id => Math.max(0, Number($(id).value) || 0);
+  function calc() {
+    const eps = num('vans') / Math.max(1, num('interval')), perDay = eps * 86400, raw = perDay * num('gpsB') + num('orders') * 4 * num('cdcB');
+    $('o-eps').textContent = fmtN(eps); $('o-day').textContent = fmtN(perDay); $('o-gb').textContent = fmtB(raw);
+    $('o-kafka').textContent = fmtB(raw * num('ret')); $('o-pq').textContent = fmtB(raw / 5); $('o-burst').textContent = fmtN(num('orders') / 2);
+    $('o-100m').textContent = perDay ? (1e8 / perDay).toFixed(1) : '–'; $('o-bf').textContent = fmtT(1e8 / Math.max(1, num('rate')));
+  }
+  ['vans', 'interval', 'gpsB', 'orders', 'cdcB', 'ret', 'rate'].forEach(id => $(id).addEventListener('input', calc)); calc();
+
+  // latency budget
+  const HOPS = [
+    { id: 'h1', l: 'Producer gom batch', max: 1000, step: 10, v: 20, c: '#7a8798' },
+    { id: 'h2', l: 'Kafka → Flink', max: 2000, step: 10, v: 100, c: '#2b63c9' },
+    { id: 'h3', l: 'Flink: join + ETA', max: 5000, step: 50, v: 500, c: '#0b7b86' },
+    { id: 'h4', l: 'Ghi bảng serving', max: 5000, step: 50, v: 1000, c: '#1a8a4a' },
+    { id: 'h5', l: 'Chu kỳ refresh dashboard', min: 1000, max: 15000, step: 500, v: 5000, c: '#e08a00' },
+  ];
+  const MAX = 15000, SLA = 10000;
+  $('hops').innerHTML = HOPS.map(h => `<div class="hop"><i style="background:${h.c}"></i><label for="${h.id}">${h.l}</label><input id="${h.id}" type="range" min="${h.min || 0}" max="${h.max}" step="${h.step}" value="${h.v}"><output id="${h.id}o"></output></div>`).join('');
+  HOPS.forEach(h => { const s = document.createElement('span'); s.id = h.id + 's'; s.style.background = h.c; $('stack').insertBefore(s, $('slaMark')); });
+  $('slaMark').style.left = SLA / MAX * 100 + '%';
+  const fms = v => v >= 1000 ? (v / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' s' : v + ' ms';
+  function budget() {
+    let t = 0;
+    HOPS.forEach(h => { const v = Number($(h.id).value); t += v; $(h.id + 'o').textContent = fms(v); const seg = $(h.id + 's'); seg.style.width = Math.min(100, v / MAX * 100) + '%'; seg.textContent = v >= 1500 ? fms(v) : ''; });
+    $('totalOut').innerHTML = `<span class="${t <= SLA ? 'ok' : 'bad'}">${(t / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} s ${t <= SLA ? '✓' : '✕'}</span>`;
+  }
+  HOPS.forEach(h => $(h.id).addEventListener('input', budget)); budget();
+  function ckpt() { const v = Number($('ckpt').value); $('ckptOut').textContent = v + ' s'; $('ckptNote').textContent = `Dữ liệu hiện ở bronze sau tối đa khoảng ${v + 5} giây. Ngắn hơn thì tươi hơn nhưng sinh nhiều file nhỏ hơn (${Math.round(86400 / v).toLocaleString('vi-VN')} lần commit mỗi ngày cho mỗi bảng), nên phải compaction thường xuyên hơn. Spec 001 yêu cầu ≤ 60 giây.`; }
+  function dbt() { const v = Number($('dbt').value); $('dbtOut').textContent = v + ' phút'; $('dbtNote').textContent = `KPI tạm tính cũ nhất khoảng ${v} phút cộng thời gian chạy, tức ${Math.round(1440 / v)} lần chạy mỗi ngày, mỗi lần quét lại 2 giờ gần nhất. Athena tính tiền theo dữ liệu quét, nên lịch dày hơn thì tốn hơn.`; }
+  $('ckpt').addEventListener('input', ckpt); $('dbt').addEventListener('input', dbt); ckpt(); dbt();
+
+  // late data
+  const toSec = p => p === 0 ? 0 : Math.round(Math.pow(10, p / 100 * Math.log10(86400 * 1.5)));
+  function late() {
+    const s = toSec(Number($('late').value)); $('lateOut').textContent = s === 0 ? 'đúng giờ' : 'trễ ' + fmtT(s);
+    const L = [
+      [s <= 30, 'Cảnh báo', 'Flink, watermark 30 s', 'Được tính; có thể phát cảnh báo.', 'Quá watermark: không kích hoạt lại cảnh báo cũ.'],
+      [true, 'Bronze', 'Iceberg, chỉ ghi thêm', 'Luôn được lưu, kèm ingest_ts, nên biết chính xác nó trễ bao lâu.', ''],
+      [s <= 7200, 'KPI tạm tính', 'dbt mỗi 5 phút, nhìn lại 2 giờ', 'Lần chạy dbt kế tiếp tính nó vào đúng giờ 10:00.', 'Ngoài cửa sổ 2 giờ: số tạm tính hôm nay chưa thấy nó.'],
+      [s < 15 * 3600, 'KPI chính thức', 'chốt sổ lúc 01:00', 'Đến trước giờ chốt nên số chính thức vẫn đúng.', 'Đến sau giờ chốt: đếm vào late_after_close; muốn sửa số phải chạy make reclose.'],
+    ];
+    $('lanes').innerHTML = L.map(([ok, b, sub, y, n]) => `<div class="lane ${ok ? 'yes' : 'no'}"><span class="st">${ok ? '✓ Có tính' : '✕ Không tính'}</span><b>${b}</b><span>${sub}</span><span>${ok ? y : n}</span></div>`).join('');
+  }
+  $('late').addEventListener('input', late); late();
+
+  // processing chips
+  const P = [
+    ['Transform', 'UTC, ingest_ts, partition/offset', 'đã có', 1], ['Khử trùng', '(vehicle_id, event_ts) và source_lsn', 'feature 4', 0],
+    ['Join có state', 'vị trí mới nhất ⋈ đơn đang giao', 'feature 6', 0], ['Cửa sổ thời gian', 'xe đứng yên quá N phút ngoài điểm giao', 'feature 6', 0],
+    ['Late events', 'watermark 30 s; nhìn lại 2 giờ; chốt đêm', 'ADR 0006', 1], ['Tổng hợp KPI', 'on-time %, sai số ETA (dbt)', 'feature 7', 0],
+  ];
+  $('proc').innerHTML = P.map(([b, s, e, ok]) => `<div class="pchip"><b>${b}</b><span>${s}</span><em class="${ok ? 'ok' : ''}">${e}</em></div>`).join('');
+
+  // architecture map
+  const W = 156, H = 54;
+  const BANDS = [['Nguồn', 20], ['Ingest', 205], ['Event log', 390], ['Xử lý', 575], ['Lưu trữ', 760], ['Phục vụ', 945]];
+  const N = [
+    { id: 'sim', x: 20, y: 70, t: 'Simulator', s: 'Python', st: 'ok', role: 'Sinh một ngày giao hàng có seed: GPS và đơn hàng kể cùng một câu chuyện.', req: 'Dữ liệu giả lập phải có event trễ, trùng và đơn trễ có chủ đích.', aws: 'ECS Fargate task', w: 'Spec 001, 002' },
+    { id: 'pg', x: 20, y: 270, t: 'Postgres OLTP', s: 'orders · vans', st: 'ok', role: 'Database đơn hàng của "đội khác".', req: 'Không được sửa ứng dụng nguồn, nên phải lấy dữ liệu qua CDC.', aws: 'Amazon RDS for PostgreSQL', w: 'Spec 002' },
+    { id: 'dbz', x: 205, y: 270, t: 'Debezium', s: 'Kafka Connect', st: 'ok', role: 'Đọc WAL qua replication slot, phát từng thay đổi kèm before/after.', req: 'Đủ mọi thay đổi, đúng thứ tự commit, có snapshot ban đầu.', aws: 'MSK Connect + plugin Debezium', w: 'Spec 002 · ADR 0004' },
+    { id: 'kafka', x: 390, y: 170, t: 'Kafka', s: 'Redpanda', st: 'ok', role: 'Log bền vững có thể đọc lại; bộ đệm giữa nguồn và xử lý.', req: 'Replay 7 ngày; hấp thụ đỉnh tải lúc backfill và lúc CDC dồn cục.', aws: 'Amazon MSK Serverless', w: 'ADR 0001' },
+    { id: 'sr', x: 390, y: 300, t: 'Schema Registry', s: 'Avro', st: 'plan', role: 'Hợp đồng dữ liệu giữa producer và consumer.', req: 'Thêm field không được làm vỡ consumer.', aws: 'AWS Glue Schema Registry', w: 'Feature 3 · ADR 0008' },
+    { id: 'fb', x: 575, y: 70, t: 'Flink bronze', s: 'bronze_gps · bronze_cdc', st: 'ok', role: 'Ghi nguyên trạng mọi event vào Iceberg, exactly-once.', req: 'Không mất, không trùng; bronze tươi trong ≤ 60 giây.', aws: 'Managed Service for Apache Flink', w: 'Spec 001, 002' },
+    { id: 'fct', x: 575, y: 270, t: 'Flink control tower', s: 'ETA · cảnh báo', st: 'plan', role: 'Join vị trí mới nhất với đơn đang giao, tính ETA, phát cảnh báo.', req: 'Cảnh báo sắp trễ p95 < 10 s, sớm ít nhất 15 phút.', aws: 'Managed Service for Apache Flink', w: 'Feature 6' },
+    { id: 'ice', x: 760, y: 70, t: 'Iceberg', s: 'bronze → silver', st: 'part', role: 'Lakehouse trên S3: bronze thô, silver đã khử trùng.', req: 'Lưu lịch sử dài, upsert để khử trùng, analyst query bằng SQL.', aws: 'S3 + Glue Data Catalog', w: 'Bronze xong · silver: feature 4' },
+    { id: 'dbt', x: 760, y: 170, t: 'dbt gold', s: '5 phút + chốt đêm', st: 'plan', role: 'Tính lại KPI từ silver; mỗi đêm chốt sổ ngày hôm trước.', req: 'KPI đúng tuyệt đối dù event trễ hoặc trùng.', aws: 'ECS Fargate + EventBridge Scheduler', w: 'Feature 7 · ADR 0006' },
+    { id: 'serv', x: 760, y: 270, t: 'Postgres serving', s: 'vehicle_latest · alerts', st: 'plan', role: 'Bảng cập nhật tại chỗ cho màn hình cảnh báo.', req: 'Màn hình tươi trong vài giây mà không tốn tiền query lakehouse.', aws: 'Amazon RDS', w: 'Feature 6 · ADR 0007' },
+    { id: 'trino', x: 945, y: 70, t: 'Trino', s: 'SQL', st: 'ok', role: 'Engine SQL đọc trực tiếp bảng Iceberg.', req: 'Analyst query lịch sử bằng SQL.', aws: 'Amazon Athena', w: 'Spec 001' },
+    { id: 'graf', x: 945, y: 220, t: 'Grafana', s: 'bản đồ · KPI', st: 'plan', role: 'Bản đồ xe, cảnh báo, KPI, sức khỏe pipeline.', req: '3 nhóm người dùng, một chỗ xem.', aws: 'Grafana trên ECS', w: 'Feature 8' },
+  ];
+  const E = [['sim', 'kafka', 'GPS'], ['sim', 'pg', 'đơn hàng'], ['pg', 'dbz', 'WAL'], ['dbz', 'kafka', 'CDC'], ['sr', 'kafka', '', 1], ['kafka', 'fb'], ['kafka', 'fct'], ['fb', 'ice'], ['ice', 'dbt'], ['ice', 'trino'], ['dbt', 'trino', 'gold'], ['fct', 'serv'], ['serv', 'graf'], ['trino', 'graf']];
+  const by = Object.fromEntries(N.map(n => [n.id, n]));
+  const port = (a, b) => {
+    const ax = a.x + W / 2, ay = a.y + H / 2, bx = b.x + W / 2, by2 = b.y + H / 2, dx = bx - ax, dy = by2 - ay;
+    return Math.abs(dx) > Math.abs(dy) * 1.1 ? [dx > 0 ? a.x + W : a.x, ay, dx > 0 ? b.x : b.x + W, by2] : [ax, dy > 0 ? a.y + H : a.y, bx, dy > 0 ? b.y : b.y + H];
+  };
+  let svg = `<svg viewBox="0 0 1121 370" role="img" aria-label="Sơ đồ luồng dữ liệu"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  BANDS.forEach(([l, x]) => { svg += `<rect class="band" x="${x - 8}" y="8" width="${W + 16}" height="354" rx="14"/><text class="bandlabel" x="${x}" y="34">${l}</text>`; });
+  E.forEach(([a, b, l, d]) => { const [x1, y1, x2, y2] = port(by[a], by[b]); svg += `<path class="edge${d ? ' dash' : ''}" d="M${x1},${y1} L${x2},${y2}" marker-end="url(#arrow)"/>`; if (l) svg += `<text class="elabel" x="${(x1 + x2) / 2 + 5}" y="${(y1 + y2) / 2 - 6}">${l}</text>`; });
+  N.forEach(n => { svg += `<g class="node ${n.st}" data-id="${n.id}" tabindex="0" role="button" aria-label="${n.t}"><rect x="${n.x}" y="${n.y}" width="${W}" height="${H}" rx="10"/><text class="nt" x="${n.x + 14}" y="${n.y + 23}">${n.t}</text><text class="ns" x="${n.x + 14}" y="${n.y + 41}">${n.s}</text></g>`; });
+  $('map').innerHTML = svg + '</svg>';
+  const SL = { ok: ['ok', 'Đã chạy'], part: ['part', 'Một phần'], plan: ['part', 'Feature sau'] };
+  function show(id) {
+    const n = by[id]; document.querySelectorAll('.node').forEach(g => g.classList.toggle('sel', g.dataset.id === id));
+    const [c, t] = SL[n.st];
+    $('nodeDetail').innerHTML = `<span class="badge ${c}">${t} · ${n.w}</span><h3>${n.t}</h3><p class="answer">${n.role}</p><div class="facts"><div class="fact"><span class="k">Yêu cầu cần nó</span><span class="x">${n.req}</span></div><div class="fact"><span class="k">Trên AWS</span><span class="x">${n.aws}</span></div></div>`;
+  }
+  document.querySelectorAll('.node').forEach(g => { g.addEventListener('click', () => show(g.dataset.id)); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(g.dataset.id); } }); });
+  show('kafka');
+
+  // decisions
+  const D = [
+    ['Replay 7 ngày; CDC đẩy thẳng vào; chạy cả local lẫn AWS', 'Kafka API: Redpanda → Amazon MSK', 'Kinesis', 'rẻ hơn trên AWS, nhưng giả lập ở local kém và CDC phải đi vòng qua DMS.', 'ADR 0001'],
+    ['Không sửa ứng dụng nguồn; cần before/after; đúng thứ tự', 'Debezium (logical replication)', 'AWS DMS', 'managed, nhưng AWS nói DMS CDC không cam kết độ trễ cố định; SLA tính bằng giây thì phải benchmark.', 'ADR 0004'],
+    ['Event time, watermark, join có state, exactly-once', 'Apache Flink → Managed Flink', 'Lambda / Spark', 'Lambda phải tự viết state và watermark; Spark chạy theo micro-batch, logic có state kém linh hoạt.', 'ADR 0002'],
+    ['Lưu lịch sử dài, upsert để khử trùng, query bằng SQL', 'Iceberg + S3 + Glue + Athena', 'Delta / Hudi', 'Athena hỗ trợ Iceberg tốt nhất; đó là định dạng AWS đang đầu tư (S3 Tables).', 'ADR 0003'],
+    ['Màn hình tươi trong vài giây, không tốn tiền query', 'Postgres serving + Grafana', 'Query thẳng Athena', 'chậm vì phụ thuộc checkpoint, và tính tiền mỗi lần query.', 'ADR 0007'],
+    ['KPI đúng tuyệt đối dù dữ liệu trễ hoặc trùng', 'dbt batch + chốt sổ hằng đêm', 'Tính toàn bộ bằng stream', 'phải giữ state dài và rút lại kết quả đã phát, rất khó kiểm thử.', 'ADR 0006'],
+  ];
+  $('decisions').innerHTML = D.map(([need, pick, alt, why, adr]) => `<div class="dec"><span class="need">Cần: ${need}</span><span class="pick">${pick}</span><span class="not"><b>Không chọn ${alt}:</b> ${why}</span><span class="adr">${adr}</span></div>`).join('');
+
+  const start = STEPS.findIndex(s => s.id === location.hash.slice(1));
+  go(start >= 0 ? start : 0, false);
+})();
+</script>
+</body>
+</html>
