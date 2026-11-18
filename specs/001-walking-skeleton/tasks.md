@@ -8,8 +8,8 @@
 - [x] T5: compose Redpanda + topic init; healthy; produce with the simulator
 - [x] T6: compose Iceberg REST (persistent) + Trino + bronze DDL; table visible in Trino
 - [x] T7: Flink image with JARs + JM/TM + idempotent submit; job RUNNING
-- [ ] T8: integration tests AC1, AC3, AC4, AC5 → `make e2e` green
-- [ ] T9: AC8 memory test + memory limits tuned
-- [ ] T10: AC7 restart test → `make e2e-restart` green
+- [x] T8: integration tests AC1, AC3, AC4, AC5 → `make e2e` green
+- [x] T9: AC8 memory test + memory limits tuned
+- [x] T10: AC7 restart test → `make e2e-restart` green
 - [ ] T11: CI e2e job (dhi.io login), `.env.example`, README, tech-stack
 - [ ] T12: `make check` green; roadmap + project-spec updated; spec Status: Implemented; open PR

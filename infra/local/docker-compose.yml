@@ -160,8 +160,9 @@ services:
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
     mem_limit: 1536m
 
-  flink-submit:
+  flink-submit: # one-shot, idempotent; run by `make up` via `docker compose run`
     image: control-tower/flink:1.20.5
+    profiles: ["jobs"]
     depends_on:
       taskmanager: { condition: service_started }
       jobmanager: { condition: service_healthy }
