@@ -1,9 +1,9 @@
 # Tasks 001: Walking skeleton
 
 <!-- Small, independently testable. Test first. Tick as you go. -->
-- [ ] T1: failing unit tests for the fleet generator (AC2)
-- [ ] T2: implement `simulator/fleet.py` until T1 passes
-- [ ] T3: failing test for JSON serialisation and key → implement `producer.py` + CLI; `make check` green
+- [x] T1: failing unit tests for the fleet generator (AC2)
+- [x] T2: implement `simulator/fleet.py` until T1 passes
+- [x] T3: failing test for JSON serialisation and key → implement `producer.py` + CLI; `make check` green
 - [ ] T4: compose MinIO (DHI) + bucket init; healthy
 - [ ] T5: compose Redpanda + topic init; healthy; produce with the simulator
 - [ ] T6: compose Iceberg REST (persistent) + Trino + bronze DDL; table visible in Trino
