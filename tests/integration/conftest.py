@@ -15,7 +15,7 @@ from typing import TypeVar
 import pytest
 
 from simulator.day import local_dates, merged_stream, simulate_day
-from simulator.producer import make_producer, produce_all
+from simulator.producer import GpsEncoder, make_producer, produce_all
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = os.environ.get("PROFILES", "cdc").split()
@@ -28,6 +28,7 @@ COMPOSE = [
 ]
 TOPIC = os.environ.get("GPS_TOPIC", "gps.pings.v1")
 BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:19092")
+REGISTRY = os.environ.get("SCHEMA_REGISTRY_URL", "http://localhost:18081")
 TABLE = "lakehouse.bronze.gps_pings"
 CONNECT_URL = "http://localhost:8083"
 ORDERS_DSN = os.environ.get("ORDERS_DSN", "postgresql://ct:ct-local@localhost:15432/control_tower")
@@ -79,7 +80,7 @@ def run_orders_sim(prefix: str, *, vans: int = 4, orders_per_day: int = 20, hour
             ORDERS_DSN,
         ]
     )
-    changes, _ = run_day(args, _mp, connect)
+    changes, _, _ = run_day(args, _mp, connect)
     return changes
 
 
@@ -136,7 +137,8 @@ def produce(prefix: str, *, vans: int, steps: int, interval_s: int = 5, seed: in
         )
         for _, _, p in merged_stream(plans, start, end, orders=False)
     )
-    return produce_all(make_producer(BOOTSTRAP), TOPIC, pings)
+    encoder = GpsEncoder.from_registry(REGISTRY)
+    return produce_all(make_producer(BOOTSTRAP), TOPIC, pings, encoder)
 
 
 def compose_services() -> list[dict]:
