@@ -1,0 +1,42 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.key
+secrets/
+
+# Claude: personal files only (team files under .claude/ ARE committed)
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# Common build output
+__pycache__/
+.venv/
+node_modules/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# Local data / tooling
+infra/local/data/
+.coverage
+htmlcov/

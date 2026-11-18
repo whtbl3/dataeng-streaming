@@ -1,0 +1,83 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make check)",
+      "Bash(make lint)",
+      "Bash(make test)",
+      "Bash(make format)",
+      "Bash(make install)",
+      "Bash(make up)",
+      "Bash(make down)",
+      "Bash(make demo)",
+      "Bash(make e2e)",
+      "Bash(make aws-plan)",
+      "Bash(uv sync*)",
+      "Bash(uv run pytest*)",
+      "Bash(uv run ruff*)",
+      "Bash(docker compose -f infra/local/docker-compose.yml ps*)",
+      "Bash(docker compose -f infra/local/docker-compose.yml logs*)",
+      "Bash(terraform -chdir=infra/aws fmt*)",
+      "Bash(terraform -chdir=infra/aws validate*)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ],
+    "ask": [
+      "Bash(git push origin main*)",
+      "Bash(git push * main)",
+      "Bash(rm -rf *)",
+      "Bash(make clean)",
+      "Bash(make aws-up*)",
+      "Bash(make aws-down*)",
+      "Bash(terraform * apply*)",
+      "Bash(terraform * destroy*)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(aws *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git reset --hard*)",
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.production)",
+      "Read(./secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.p8)",
+      "Read(./**/*.key)",
+      "Read(./**/*.tfvars)",
+      "Read(./**/*.tfstate)",
+      "Read(./**/*.tfstate.backup)",
+      "Read(~/.aws/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect_secrets.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_after_edit.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

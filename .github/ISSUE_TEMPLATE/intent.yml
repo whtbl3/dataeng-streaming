@@ -1,0 +1,29 @@
+name: Intent
+description: A new feature idea. Describe the problem, not the solution.
+labels: [intent]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can't someone do today? Who is affected?
+    validations: { required: true }
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What does better look like? Observable, concrete.
+    validations: { required: true }
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: What this will NOT do.
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+  - type: textarea
+    id: questions
+    attributes:
+      label: Open questions
