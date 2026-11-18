@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -21,6 +21,7 @@ lint:
 
 test:
 	bash scripts/test_hooks.sh
+	uv run python -m contracts.compat schemas/
 	uv run pytest -q tests/unit
 
 check: lint test
@@ -50,6 +51,10 @@ cdc-status:       # connector + task state, and how far the replication slot lag
 	@curl -fsS http://localhost:8083/connectors/ct-orders/status; echo
 	@$(COMPOSE) exec -T postgres psql -U ct -d control_tower -c \
 	  "SELECT slot_name, active, pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn)) AS lag FROM pg_replication_slots"
+
+dlq-status:       # rejected events per source topic and reason (bronze.dlq_events, spec 003)
+	@$(COMPOSE) exec -T trino trino --output-format ALIGNED --execute \
+	  "SELECT source_topic, reason, count(*) AS events, max(ingest_ts) AS last_seen FROM lakehouse.bronze.dlq_events GROUP BY 1, 2 ORDER BY 1, 2"
 
 psql:
 	$(COMPOSE) exec postgres psql -U ct -d control_tower

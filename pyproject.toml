@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.12" # PyFlink supports up to 3.11 (ADR 0002)
 dependencies = [
     "confluent-kafka>=2.16,<3",
+    "fastavro==1.13.1",
     "psycopg[binary]>=3.3,<4",
 ]
 

@@ -9,19 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-MAX_SPEED_KMH = 80.0
+from contracts.bounds import HCMC_BBOX, MAX_SPEED_KMH, BBox  # noqa: F401  (re-exported)
+
 KM_PER_DEG_LAT = 111.32
-
-
-@dataclass(frozen=True)
-class BBox:
-    lat_min: float
-    lat_max: float
-    lon_min: float
-    lon_max: float
-
-
-HCMC_BBOX = BBox(lat_min=10.65, lat_max=10.90, lon_min=106.55, lon_max=106.85)
 
 
 @dataclass(frozen=True)

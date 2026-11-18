@@ -19,7 +19,7 @@ x-flink-props: &flink-props |
   execution.checkpointing.dir: file:///opt/flink/checkpoints
   execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
   jobmanager.memory.process.size: 900m
-  taskmanager.memory.process.size: 1400m
+  taskmanager.memory.process.size: 1900m
 
 services:
   # ---- Object storage (S3 API) -------------------------------------------------
@@ -104,21 +104,21 @@ services:
       retries: 30
     mem_limit: 1g
 
-  redpanda-init:
+  redpanda-init: # idempotent: topics + dead-letter topics, compatibility mode, GPS schemas
     image: redpandadata/redpanda:v26.1.20
     depends_on:
       redpanda: { condition: service_healthy }
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        for t in ${GPS_TOPIC:-gps.pings.v1} cdc.public.depots cdc.public.vans cdc.public.orders; do
-          rpk topic describe $$t -X brokers=redpanda:9092 >/dev/null 2>&1 \
-            || rpk topic create $$t -p 3 -r 1 -c retention.ms=604800000 -X brokers=redpanda:9092
-        done
+    volumes:
+      - ../../schemas:/schemas:ro
+      - ./redpanda/init.sh:/init.sh:ro
+    environment:
+      GPS_TOPIC: ${GPS_TOPIC:-gps.pings.v1}
+    entrypoint: ["/bin/bash", "/init.sh"]
 
   # ---- CDC: Kafka Connect + Debezium (ADR 0004) -----------------------------------
   connect:
-    image: quay.io/debezium/connect:3.6.3.Final
+    build: ./connect # Debezium 3.6.3 + Confluent Avro converter
+    image: control-tower/connect:3.6.3
     profiles: ["cdc"]
     depends_on:
       redpanda-init: { condition: service_completed_successfully }
@@ -162,7 +162,11 @@ services:
       minio-init: { condition: service_completed_successfully }
     environment:
       CATALOG_WAREHOUSE: ${WAREHOUSE:-s3://warehouse/}
-      CATALOG_URI: jdbc:sqlite:file:/home/iceberg/catalog.db
+      CATALOG_URI: jdbc:sqlite:file:/home/iceberg/catalog.db?busy_timeout=30000
+      # One JDBC connection: with the default pool of 2, a connection that just read holds a
+      # stale SQLite snapshot, and its next commit fails with SQLITE_BUSY_SNAPSHOT (HTTP 500).
+      # Five Flink committers + Trino hit this constantly (spec 003). Requests now serialize.
+      CATALOG_CLIENTS: "1"
       CATALOG_JDBC_USER: iceberg
       CATALOG_JDBC_PASSWORD: iceberg
       CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
@@ -227,7 +231,7 @@ services:
     environment:
       FLINK_PROPERTIES: *flink-props
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
-    mem_limit: 1536m
+    mem_limit: 2g # JVM + one Python UDF worker per job (ADR 0010)
 
   flink-submit: # one-shot, idempotent; run by `make up` via `docker compose run`
     image: control-tower/flink:1.20.5
@@ -242,8 +246,12 @@ services:
       FLINK_PROPERTIES: *flink-props
       KAFKA_BOOTSTRAP: redpanda:9092
       GPS_TOPIC: ${GPS_TOPIC:-gps.pings.v1}
+      SCHEMA_REGISTRY_URL: http://redpanda:8081
       CHECKPOINT_INTERVAL: ${CHECKPOINT_INTERVAL:-30 s}
-    volumes: ["../../flink/jobs:/opt/flink/jobs:ro"]
+    volumes:
+      - ../../flink/jobs:/opt/flink/jobs:ro
+      - ../../contracts:/opt/ct/contracts:ro # shipped to the cluster via python.files
+      - ../../schemas:/opt/ct/schemas:ro
     entrypoint: ["/bin/bash", "-c"]
     command:
       - >-

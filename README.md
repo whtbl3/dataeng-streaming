@@ -23,9 +23,15 @@ Simulator (HCMC, 200 vans) ── GPS ──────────────
 
 See [ADR 0006](docs/decisions/0006-stream-freshness-batch-correctness.md).
 
+**Data contracts:** every event is Avro with a registered schema (FULL_TRANSITIVE compatibility,
+checked in CI too). A bad message never stops a job: it goes to `bronze.dlq_events` and
+`dlq.<topic>` with the reason ([ADR 0008](docs/decisions/0008-avro-schema-registry.md),
+[ADR 0010](docs/decisions/0010-dlq-raw-source-python-udf.md)).
+
 | Layer | Local | AWS managed |
 |---|---|---|
 | Event log | Redpanda | Amazon MSK Serverless |
+| Data contracts | Avro + Redpanda Schema Registry | AWS Glue Schema Registry |
 | CDC | Debezium on Kafka Connect | MSK Connect + RDS PostgreSQL |
 | Stream processing | Apache Flink | Managed Service for Apache Flink |
 | Lakehouse | Iceberg on MinIO (S3 API) + REST catalog | Iceberg on S3 + Glue Data Catalog |
@@ -41,6 +47,7 @@ make check                    # lint + unit tests (same as CI)
 make up                       # core + CDC stack, Flink jobs (~1 min with images cached)
 make demo                     # live delivery day, 20 vans: orders → Postgres, GPS → Kafka
 make cdc-status               # Debezium connector state + replication slot lag
+make dlq-status               # rejected events per source topic and reason
 make e2e                      # acceptance tests against the running stack
 make backfill DAYS=30         # ~100M events      (roadmap feature 5)
 make bench                    # throughput report (roadmap feature 5)
@@ -54,7 +61,9 @@ docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
   "SELECT op, before.status, after.status, commit_ts FROM lakehouse.bronze.orders_cdc
    WHERE after.order_id = 'ORD-20261118-00001' ORDER BY source_lsn"
 ```
-UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001 · Kafka Connect http://localhost:8083 · Postgres `localhost:15432` (`make psql`)
+Try the dead-letter path: `uv run python -m simulator day --invalid-rate 0.05`, then `make dlq-status`.
+
+UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001 · Kafka Connect http://localhost:8083 · Schema Registry http://localhost:18081 · Postgres `localhost:15432` (`make psql`)
 
 ## Docs
 - [Intent](docs/intent.md) · [Project spec](docs/project-spec.md) · [Tech stack](docs/tech-stack.md)

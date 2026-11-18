@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "GpsPing",
+  "namespace": "ct.gps",
+  "doc": "One GPS position of a delivery van. Producer: simulator. Subject: gps.pings.v1-value.",
+  "fields": [
+    {"name": "vehicle_id", "type": "string", "doc": "VAN-0001 … VAN-0200; also the Kafka key"},
+    {"name": "event_ts", "type": {"type": "long", "logicalType": "timestamp-millis"}, "doc": "When the ping was taken (UTC)"},
+    {"name": "lat", "type": "double"},
+    {"name": "lon", "type": "double"},
+    {"name": "speed_kmh", "type": "double"},
+    {"name": "heading_deg", "type": "double"}
+  ]
+}

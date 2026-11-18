@@ -4,6 +4,10 @@ SET 'execution.runtime-mode' = 'streaming';
 SET 'execution.checkpointing.interval' = '${CHECKPOINT_INTERVAL}';
 SET 'execution.checkpointing.mode' = 'EXACTLY_ONCE';
 SET 'table.local-time-zone' = 'UTC';
+-- Python UDFs (contracts/, ADR 0010): the client ships /opt/ct (contracts + schemas) to the cluster.
+SET 'python.executable' = '/opt/venv/bin/python';
+SET 'python.client.executable' = '/opt/venv/bin/python';
+SET 'python.files' = '/opt/ct';
 
 CREATE CATALOG lakehouse WITH (
   'type' = 'iceberg',

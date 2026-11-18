@@ -20,7 +20,7 @@ from datetime import UTC, datetime, timedelta
 
 from simulator.day import local_dates, merged_stream, simulate_day
 from simulator.orders_db import ConnectionLike, OrdersWriter, connect
-from simulator.producer import ProducerLike, make_producer, send
+from simulator.producer import Corrupter, GpsEncoder, ProducerLike, make_producer, send
 from simulator.world import seed_sql
 
 DEFAULT_DSN = "postgresql://ct:ct-local@localhost:15432/control_tower"
@@ -49,6 +49,13 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--no-gps", action="store_true", help="do not send GPS pings")
     d.add_argument("--topic", default=os.environ.get("GPS_TOPIC", "gps.pings.v1"))
     d.add_argument("--bootstrap", default=os.environ.get("KAFKA_BOOTSTRAP", "localhost:19092"))
+    d.add_argument(
+        "--registry", default=os.environ.get("SCHEMA_REGISTRY_URL", "http://localhost:18081")
+    )
+    d.add_argument("--schema-version", default=None, help="e.g. v1; default: newest in schemas/")
+    d.add_argument(
+        "--invalid-rate", type=float, default=0.0, help="share of pings sent invalid (DLQ tests)"
+    )
     d.add_argument("--dsn", default=os.environ.get("ORDERS_DSN", DEFAULT_DSN))
     return p
 
@@ -63,7 +70,8 @@ def run_day(
     producer_factory: Callable[[str], ProducerLike],
     db_factory: Callable[[str], ConnectionLike],
     now: datetime | None = None,
-) -> tuple[int, int]:
+    encoder_factory: Callable[[argparse.Namespace], GpsEncoder] | None = None,
+) -> tuple[int, int, Corrupter | None]:
     now = _floor(now or datetime.now(UTC), args.interval)
     if args.realtime:
         start, end = now, now + timedelta(days=7)
@@ -86,6 +94,11 @@ def run_day(
     ]
     writer = None if args.no_db else OrdersWriter(db_factory(args.dsn))
     producer = None if args.no_gps else producer_factory(args.bootstrap)
+    make_encoder = encoder_factory or (
+        lambda a: GpsEncoder.from_registry(a.registry, a.schema_version)
+    )
+    encoder = make_encoder(args) if producer else None
+    corrupter = Corrupter(args.invalid_rate, args.seed) if args.invalid_rate > 0 else None
 
     if writer:  # catch-up: order history before the window, without pings
         for plan in plans:
@@ -114,7 +127,7 @@ def run_day(
                             for f in ("event_ts", "lat", "lon", "speed_kmh", "heading_deg")
                         ),
                     )
-                send(producer, args.topic, item)
+                send(producer, args.topic, item, encoder, corrupter)
                 pings += 1
     except KeyboardInterrupt:
         print("stopped", file=sys.stderr)
@@ -123,7 +136,7 @@ def run_day(
             remaining = producer.flush(30)
             if remaining:
                 raise RuntimeError(f"{remaining} pings were not delivered")
-    return (writer.changes if writer else 0), pings
+    return (writer.changes if writer else 0), pings, corrupter
 
 
 def main(
@@ -131,13 +144,17 @@ def main(
     producer_factory: Callable[[str], ProducerLike] = make_producer,
     db_factory: Callable[[str], ConnectionLike] = connect,
     now: datetime | None = None,
+    encoder_factory: Callable[[argparse.Namespace], GpsEncoder] | None = None,
 ) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "seed-sql":
         print(seed_sql(), end="")
         return 0
-    changes, pings = run_day(args, producer_factory, db_factory, now)
-    print(f"order_changes={changes} pings={pings} vans={args.vans} prefix={args.prefix}")
+    changes, pings, corrupter = run_day(args, producer_factory, db_factory, now, encoder_factory)
+    line = f"order_changes={changes} pings={pings} vans={args.vans} prefix={args.prefix}"
+    if corrupter:
+        line += " invalid=" + ",".join(f"{k}:{n}" for k, n in sorted(corrupter.counts.items()))
+    print(line)
     return 0
 
 
