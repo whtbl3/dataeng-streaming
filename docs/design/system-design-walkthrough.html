@@ -7,28 +7,28 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
 /* Layout: one working screen. Header (stage, arch view) · left timeline of business events ·
    centre workspace: problem → decision → synchronized panes → architecture → Learn/Explore/Build.
    Inspector drawer on the right opens only for a selected component. */
 :root {
-  --bg: #f3f5f8; --paper: #ffffff; --sunk: #edf0f4; --ink: #12202d; --soft: #4b5a6b; --faint: #7c8a9b; --line: #dce2e9;
-  --accent: #c97a00; --accent-ink: #8a5300; --accent-bg: #fdf1dc; --teal: #0c7680; --teal-bg: #dff1f2;
-  --impl: #1c7f45; --impl-bg: #e2f3e8; --des: #2a5fc0; --des-bg: #e5edfb; --bad: #bf3a32; --bad-bg: #fbe6e4;
-  --code: #f7f8fa; --chg: #fff1b8; --new: #e3f6ee;
-  --f-d: "Archivo", "Arial Narrow", system-ui, sans-serif; --f-b: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --bg: #f4f7fd; --paper: #ffffff; --sunk: #edf2fb; --ink: #0f2350; --soft: #40507a; --faint: #7887a8; --line: #d5e1f5;
+  --accent: #2f6fde; --accent-ink: #1e4fb8; --accent-bg: #e5eeff; --on-accent: #ffffff; --teal: #1890d8; --teal-bg: #e0f1fc;
+  --impl: #1f8a50; --impl-bg: #e3f4ea; --des: #5d6b8a; --des-bg: #e9edf5; --bad: #c43a35; --bad-bg: #fce7e5; --warn: #9a5b00; --warn-bg: #fbeedb;
+  --code: #f6f9ff; --chg: #fff2bf; --new: #e2f5ea; --hero-mid: #dce8ff; --hero-end: #8db1f4; --depth: #c7d9fb; --band: #f0f5fe;
+  --f-d: "Lexend", "Segoe UI", system-ui, sans-serif; --f-b: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0c1218; --paper: #131c26; --sunk: #192430; --ink: #e6edf4; --soft: #a6b3c2; --faint: #6f7f92; --line: #243241;
-  --accent: #f3a838; --accent-ink: #f7c674; --accent-bg: #33270f; --teal: #4dc3cd; --teal-bg: #10303a;
-  --impl: #5fcb8c; --impl-bg: #132c1e; --des: #83aaff; --des-bg: #172745; --bad: #f4847c; --bad-bg: #3b1c1b;
-  --code: #0f171f; --chg: #4a3c0c; --new: #12301f; color-scheme: dark; } }
+  --bg: #0b1220; --paper: #111a2e; --sunk: #17223a; --ink: #e6edfb; --soft: #a9b6d0; --faint: #6f7f9f; --line: #24324f;
+  --accent: #6c9cff; --accent-ink: #9dbcff; --accent-bg: #16264a; --on-accent: #0b1220; --teal: #4cb5f0; --teal-bg: #102a3e;
+  --impl: #5fcb8c; --impl-bg: #132c1e; --des: #9aa6c2; --des-bg: #1c2438; --bad: #f4847c; --bad-bg: #3b1c1b; --warn: #f0b45a; --warn-bg: #33260f;
+  --code: #0d1526; --chg: #4a3c0c; --new: #12301f; --hero-mid: #14264a; --hero-end: #2a4f9c; --depth: #1d3263; --band: #131e35; color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --bg: #0c1218; --paper: #131c26; --sunk: #192430; --ink: #e6edf4; --soft: #a6b3c2; --faint: #6f7f92; --line: #243241;
-  --accent: #f3a838; --accent-ink: #f7c674; --accent-bg: #33270f; --teal: #4dc3cd; --teal-bg: #10303a;
-  --impl: #5fcb8c; --impl-bg: #132c1e; --des: #83aaff; --des-bg: #172745; --bad: #f4847c; --bad-bg: #3b1c1b;
-  --code: #0f171f; --chg: #4a3c0c; --new: #12301f; color-scheme: dark; }
+  --bg: #0b1220; --paper: #111a2e; --sunk: #17223a; --ink: #e6edfb; --soft: #a9b6d0; --faint: #6f7f9f; --line: #24324f;
+  --accent: #6c9cff; --accent-ink: #9dbcff; --accent-bg: #16264a; --on-accent: #0b1220; --teal: #4cb5f0; --teal-bg: #102a3e;
+  --impl: #5fcb8c; --impl-bg: #132c1e; --des: #9aa6c2; --des-bg: #1c2438; --bad: #f4847c; --bad-bg: #3b1c1b; --warn: #f0b45a; --warn-bg: #33260f;
+  --code: #0d1526; --chg: #4a3c0c; --new: #12301f; --hero-mid: #14264a; --hero-end: #2a4f9c; --depth: #1d3263; --band: #131e35; color-scheme: dark; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--f-b); }
@@ -57,7 +57,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .ctrl { display: flex; align-items: center; gap: 4px; }
 .btn { border: 1px solid var(--line); background: var(--paper); border-radius: 9px; padding: 8px 14px; cursor: pointer; font-size: 14px; font-weight: 600; }
 .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.btn.accent { background: var(--accent); color: #1c1200; border-color: var(--accent); }
+.btn.accent { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .btn.small { padding: 5px 10px; font-size: 13px; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 .linkbtn { border: 0; background: none; color: var(--teal); cursor: pointer; padding: 0; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
@@ -85,10 +85,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-content: start; max-width: 1240px; }
 
 /* problem + decision */
-.problem { display: grid; gap: 8px; }
+.problem { display: grid; gap: 8px; padding: 22px 26px 24px; border-radius: 18px; border: 1px solid var(--line);
+  background: linear-gradient(115deg, var(--paper) 0 54%, var(--hero-mid) 70%, var(--hero-end) 100%); }
 .problem .k { font: 600 11.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
-.problem h2 { font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; letter-spacing: -.01em; max-width: 34ch; }
-.problem p { color: var(--soft); max-width: 78ch; font-size: 15.5px; }
+.problem h2 { font-size: clamp(22px, 2.6vw, 31px); font-weight: 700; letter-spacing: -.015em; max-width: 30ch; color: var(--ink); }
+.problem p { color: var(--soft); max-width: 62ch; font-size: 15.5px; }
 .decision { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .decision .q { font: 700 16px var(--f-d); }
 .opts { display: grid; gap: 6px; }
@@ -103,7 +104,7 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 
 /* panes */
 .panes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
-.pane { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; position: relative; }
+.pane { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 6px 18px -10px var(--depth); padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; position: relative; }
 .pane.wide { grid-column: 1 / -1; }
 .pane.flash { animation: flash 1.1s ease; }
 @keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
@@ -121,11 +122,11 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .note { font-size: 12.5px; color: var(--soft); }
 .st { display: inline-flex; align-items: center; gap: 4px; font: 600 10.5px/1 var(--f-b); padding: 3px 7px; border-radius: 999px; white-space: nowrap; letter-spacing: 0; text-transform: none; }
 .st::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.st.impl { color: var(--impl); background: var(--impl-bg); } .st.des { color: var(--des); background: var(--des-bg); } .st.prop, .st.ex { color: var(--accent-ink); background: var(--accent-bg); }
-.st.ex { background: transparent; border: 1px dashed var(--accent-ink); }
+.st.impl { color: var(--impl); background: var(--impl-bg); } .st.des { color: var(--des); background: var(--des-bg); } .st.prop, .st.ex { color: var(--warn); background: var(--warn-bg); }
+.st.ex { background: transparent; border: 1px dashed var(--warn); }
 .status-line { font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .pill { font: 600 11.5px var(--f-m); padding: 3px 8px; border-radius: 6px; background: var(--sunk); }
-.pill.wait { background: var(--accent-bg); color: var(--accent-ink); } .pill.ok { background: var(--impl-bg); color: var(--impl); }
+.pill.wait { background: var(--warn-bg); color: var(--warn); } .pill.ok { background: var(--impl-bg); color: var(--impl); }
 .map svg { display: block; width: 100%; height: auto; }
 .map .road { stroke: var(--line); stroke-width: 2; stroke-dasharray: 5 5; }
 .map .dep { fill: var(--ink); } .map .dst { fill: var(--accent); } .map .van { fill: var(--teal); }
@@ -145,15 +146,16 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 .arch-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; }
 .arch-head h3 { font: 700 13.5px var(--f-b); }
 .arch-svg { overflow-x: auto; } .arch-svg svg { display: block; width: 100%; min-width: 820px; height: auto; }
-.an rect { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
-.an.impl rect { stroke: var(--impl); } .an.des rect { stroke: var(--faint); stroke-dasharray: 5 4; }
-.an.hot rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: none; }
+.band { fill: var(--band); } .bandl { fill: var(--faint); font: 600 10.5px var(--f-b); letter-spacing: .12em; text-transform: uppercase; }
+.an rect { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; filter: drop-shadow(0 4px 0 var(--depth)); }
+.an.impl rect { stroke: var(--accent); } .an.des rect { stroke: var(--faint); stroke-dasharray: 5 4; filter: none; }
+.an.hot rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: none; filter: drop-shadow(0 5px 0 var(--accent)); }
 .an text.t { fill: var(--ink); font: 700 12.5px var(--f-b); } .an text.s { fill: var(--soft); font: 500 10.5px var(--f-m); }
 .an { cursor: pointer; } .an:focus { outline: none; } .an:hover rect, .an:focus rect { fill: var(--teal-bg); }
-.ae { stroke: var(--line); stroke-width: 1.6; fill: none; } .ae.hot { stroke: var(--accent); stroke-width: 2.6; }
+.ae { stroke: var(--faint); stroke-opacity: .55; stroke-width: 1.5; fill: none; } .ae.hot { stroke: var(--accent); stroke-width: 2.6; }
 .ae.dash { stroke-dasharray: 5 4; }
 .ael { fill: var(--faint); font: 500 10.5px var(--f-m); } .ael.hot { fill: var(--accent-ink); font-weight: 600; }
-#mk path { fill: var(--line); } #mkh path { fill: var(--accent); }
+#mk path { fill: var(--faint); fill-opacity: .7; } #mkh path { fill: var(--accent); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--soft); }
 .legend i { display: inline-block; width: 18px; height: 10px; border-radius: 3px; border: 1.5px solid; margin-right: 5px; vertical-align: -1px; }
 
@@ -192,7 +194,7 @@ main.ws { min-width: 0; padding: 22px max(16px, 2.4vw) 80px; display: grid; grid
 @media (max-width: 640px) { .tl-row, .tl-axis { grid-template-columns: minmax(0, 1fr); } .tl-axis > span:first-child { display: none; } }
 .tl-state { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 8px; }
 .tl-state div { background: var(--sunk); border-radius: 10px; padding: 10px 12px; font-size: 13px; display: grid; gap: 3px; }
-.tl-state div.g { background: var(--impl-bg); } .tl-state div.w { background: var(--accent-bg); }
+.tl-state div.g { background: var(--impl-bg); } .tl-state div.w { background: var(--warn-bg); }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
 .calc label { display: grid; gap: 4px; font-size: 13px; } .calc input { font: 500 14px var(--f-m); padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); }
@@ -256,7 +258,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <section class="reqs" id="reqs" aria-label="Yêu cầu đã suy ra"></section>
     <section class="panes" id="panes" aria-label="Trạng thái hệ thống"></section>
     <section class="arch" aria-label="Kiến trúc">
-      <div class="arch-head"><h3 id="archTitle"></h3><div class="legend"><span><i style="border-color:var(--impl)"></i>Đã triển khai</span><span><i style="border-color:var(--faint);border-style:dashed"></i>Mới thiết kế</span><span><i style="border-color:var(--accent);background:var(--accent-bg)"></i>Đang học ở bước này</span></div></div>
+      <div class="arch-head"><h3 id="archTitle"></h3><div class="legend"><span><i style="border-color:var(--accent)"></i>Đã triển khai</span><span><i style="border-color:var(--faint);border-style:dashed"></i>Mới thiết kế</span><span><i style="border-color:var(--accent);background:var(--accent-bg)"></i>Đang học ở bước này</span></div></div>
       <div class="arch-svg" id="arch"></div>
       <p class="note" id="archNote"></p>
     </section>
@@ -315,20 +317,23 @@ function prevRowAt(c) { let j = c; while (j > 0 && !EV[j].set) j--; return j > 0
 
 /* ============ 2. COMPONENTS (real implementation status) ============ */
 const N = {
-  sim:     { x: 20,  y: 20,  t: 'Simulator',        s: 'Python · seed 42',        st: 'impl', aws: 'ECS Fargate task' },
-  pg:      { x: 20,  y: 165, t: 'PostgreSQL',       s: 'orders · vans',  st: 'impl', aws: 'Amazon RDS' },
-  dbz:     { x: 205, y: 165, t: 'Debezium',         s: 'WAL → CDC',               st: 'impl', aws: 'MSK Connect' },
-  rp:      { x: 390, y: 92,  t: 'Redpanda',         s: 'Kafka API',     st: 'impl', aws: 'MSK Serverless' },
-  flink:   { x: 575, y: 20,  t: 'Flink bronze',     s: '2 job bronze', st: 'impl', aws: 'Managed Flink' },
-  fct:     { x: 575, y: 165, t: 'Flink control tower', s: 'ETA · cảnh báo',       st: 'des',  aws: 'Managed Flink' },
-  ice:     { x: 760, y: 20,  t: 'Iceberg bronze',   s: 'MinIO · REST',    st: 'impl', aws: 'S3 + Glue Catalog' },
-  silver:  { x: 760, y: 92,  t: 'Iceberg silver',   s: 'khử trùng',  st: 'des',  aws: 'S3 + Glue Catalog' },
-  gold:    { x: 760, y: 165, t: 'Gold (dbt)',       s: 'KPI · chốt sổ đêm',       st: 'des',  aws: 'dbt trên ECS + Athena' },
-  serving: { x: 760, y: 238, t: 'Postgres serving', s: 'ETA · alerts', st: 'des',  aws: 'Amazon RDS' },
-  trino:   { x: 945, y: 56,  t: 'Trino',            s: 'SQL',                     st: 'impl', aws: 'Amazon Athena' },
-  grafana: { x: 945, y: 200, t: 'Grafana',          s: 'bản đồ · KPI',            st: 'des',  aws: 'Grafana trên ECS' },
+  sim:     { c: 0, r: 0,  t: 'Simulator',        s: 'Python · seed 42',        st: 'impl', aws: 'ECS Fargate task' },
+  pg:      { c: 0, r: 3, t: 'PostgreSQL',       s: 'orders · vans',  st: 'impl', aws: 'Amazon RDS' },
+  dbz:     { c: 1, r: 3, t: 'Debezium',         s: 'WAL → CDC',               st: 'impl', aws: 'MSK Connect' },
+  rp:      { c: 2, r: 1,  t: 'Redpanda',         s: 'Kafka API',     st: 'impl', aws: 'MSK Serverless' },
+  flink:   { c: 3, r: 0,  t: 'Flink bronze',     s: '2 job bronze', st: 'impl', aws: 'Managed Flink' },
+  fct:     { c: 3, r: 3, t: 'Flink control tower', s: 'ETA · cảnh báo',       st: 'des',  aws: 'Managed Flink' },
+  ice:     { c: 4, r: 0,  t: 'Iceberg bronze',   s: 'MinIO · REST',    st: 'impl', aws: 'S3 + Glue Catalog' },
+  silver:  { c: 4, r: 1,  t: 'Iceberg silver',   s: 'khử trùng',  st: 'des',  aws: 'S3 + Glue Catalog' },
+  gold:    { c: 4, r: 2, t: 'Gold (dbt)',       s: 'KPI · chốt sổ đêm',       st: 'des',  aws: 'dbt trên ECS + Athena' },
+  serving: { c: 4, r: 3, t: 'Postgres serving', s: 'ETA · alerts', st: 'des',  aws: 'Amazon RDS' },
+  trino:   { c: 5, r: 0,  t: 'Trino',            s: 'SQL',                     st: 'impl', aws: 'Amazon Athena' },
+  sr:      { c: 2, r: 3, t: 'Schema Registry',  s: 'Avro · feature 3',      st: 'des',  aws: 'Glue Schema Registry' },
+  grafana: { c: 5, r: 2, t: 'Grafana',          s: 'bản đồ · KPI',            st: 'des',  aws: 'Grafana trên ECS' },
 };
-const E = [['sim', 'pg', 'SQL'], ['sim', 'rp', 'GPS'], ['pg', 'dbz', 'WAL'], ['dbz', 'rp', 'CDC'], ['rp', 'flink'], ['rp', 'fct'], ['flink', 'ice'], ['ice', 'silver'], ['silver', 'gold'], ['ice', 'trino'], ['gold', 'trino'], ['fct', 'serving'], ['serving', 'grafana'], ['trino', 'grafana']];
+const COLW = 182, ROWH = 78, LAYERS = ['Nguồn', 'Ingest', 'Event log', 'Xử lý', 'Lưu trữ', 'Phục vụ'];
+Object.values(N).forEach(n => { n.x = 24 + n.c * COLW; n.y = 56 + n.r * ROWH; });
+const E = [['sr', 'rp', 'schema'], ['sim', 'pg', 'đơn hàng'], ['sim', 'rp', 'GPS'], ['pg', 'dbz', 'WAL'], ['dbz', 'rp', 'CDC'], ['rp', 'flink'], ['rp', 'fct'], ['flink', 'ice'], ['ice', 'silver'], ['silver', 'gold'], ['ice', 'trino'], ['gold', 'trino'], ['fct', 'serving'], ['serving', 'grafana'], ['trino', 'grafana']];
 
 /* ============ 3. STEPS ============ */
 const STAGES = ['Công ty đang gặp vấn đề gì?', 'Thiết kế database từ nghiệp vụ', 'Mô phỏng một ngày giao hàng', 'Vì sao cần CDC và streaming?', 'Flink nhận và xử lý thế nào?', 'Vì sao cần bronze, silver, gold?', 'Tươi, đúng và chịu tải', 'Chạy thật và lên AWS'];
@@ -786,11 +791,12 @@ function openTable(t) {
 
 /* ---- architecture ---- */
 function renderArch(st, intro) {
-  const target = state.arch === 'target', show = id => target || intro.has(id), hot = new Set(st.hot), W = 150, H = 44;
+  const target = state.arch === 'target', show = id => target || intro.has(id), hot = new Set(st.hot), W = 150, H = 46;
   $('archTitle').textContent = target ? 'Target Architecture: toàn bộ thiết kế, kèm dịch vụ AWS' : 'Current Architecture: chỉ những thành phần đã cần tới ở bước này';
-  const shownIds = Object.keys(N).filter(show), ys = shownIds.map(k => N[k].y);
-  const vy = shownIds.length ? Math.min(...ys) - 14 : 0, vh = shownIds.length ? Math.max(...ys) + H + 16 - vy : 60;
-  let s = `<svg viewBox="0 ${vy} 1110 ${vh}" role="img" aria-label="Sơ đồ kiến trúc" style="max-height:${Math.max(120, vh * 1.05)}px"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker><marker id="mkh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  const shownIds = Object.keys(N).filter(show);
+  let s = `<svg viewBox="0 0 1110 368" role="img" aria-label="Sơ đồ kiến trúc theo tầng">`;
+  s += `<defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker><marker id="mkh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  LAYERS.forEach((l, c) => { s += `<rect class="band" x="${14 + c * COLW}" y="8" width="${COLW - 12}" height="352" rx="12"/><text class="bandl" x="${26 + c * COLW}" y="34">${l}</text>`; });
   const port = (a, b) => { const ax = a.x + W / 2, ay = a.y + H / 2, bx = b.x + W / 2, by = b.y + H / 2, dx = bx - ax, dy = by - ay; return Math.abs(dx) > Math.abs(dy) * 1.1 ? [dx > 0 ? a.x + W : a.x, ay, dx > 0 ? b.x : b.x + W, by] : [ax, dy > 0 ? a.y + H : a.y, bx, dy > 0 ? b.y : b.y + H]; };
   E.forEach(([a, b, l]) => {
     if (!show(a) || !show(b)) return;
@@ -804,7 +810,7 @@ function renderArch(st, intro) {
     const h = !target && hot.has(id);
     s += `<g class="an ${n.st}${h ? ' hot' : ''}" data-c="${id}" tabindex="0" role="button" aria-label="${n.t}"><rect x="${n.x}" y="${n.y}" width="${W}" height="${H}" rx="9"/><text class="t" x="${n.x + 10}" y="${n.y + 19}">${n.t}</text><text class="s" x="${n.x + 10}" y="${n.y + 35}">${target ? n.aws : n.s}</text></g>`;
   });
-  if (!target && intro.size === 0) s += `<text class="ael" x="20" y="30">Chưa xây gì. Giai đoạn 1 chỉ làm rõ vấn đề và yêu cầu.</text>`;
+  if (!target && intro.size === 0) s += `<text class="ael" x="555" y="200" text-anchor="middle">Chưa xây gì. Giai đoạn 1 chỉ làm rõ vấn đề và yêu cầu.</text>`;
   $('arch').innerHTML = s + '</svg>';
   $('arch').querySelectorAll('.an').forEach(g => { const go = () => openComp(g.dataset.c); g.addEventListener('click', go); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }); });
   const ids = Object.keys(N).filter(show), nImpl = ids.filter(k => N[k].st === 'impl').length, nDes = ids.length - nImpl;
@@ -971,6 +977,7 @@ const COMP = {
   gold: { sub: 'Designed (ADR 0006, feature 7) · schema Proposed', tabs: [['Thiết kế', '<p>Star schema: <code>fct_delivery</code> (1 đơn đã đóng), <code>dim_van</code> (SCD2), <code>dim_depot</code>, <code>dim_date</code>, <code>agg_depot_daily</code>, <code>closed_days</code>. Partition theo <code>local_date</code>. dbt chạy mỗi 5 phút (nhìn lại 2 giờ) và chốt sổ lúc 01:00.</p>']] },
   fct: { sub: 'Designed (feature 6)', tabs: [['Thiết kế', '<p>Join vị trí mới nhất của xe với các đơn đang mở của xe đó (theo stop_seq), tính ETA, phát SLA_RISK khi ETA vượt promised_end. Có state theo xe và watermark. Ping cũ hơn alert horizon không bắn cảnh báo.</p>']] },
   serving: { sub: 'Designed (ADR 0007)', tabs: [['Thiết kế', '<p>Bảng Postgres được upsert tại chỗ: <code>vehicle_latest</code>, <code>order_eta</code>, <code>alerts</code>. Màn hình đọc từ đây để tươi trong vài giây mà không phải query lakehouse.</p>']] },
+  sr: { sub: 'Proposed (ADR 0008) · feature 3', tabs: [['Thiết kế', '<p>Avro schema trong <code>schemas/</code> là hợp đồng giữa producer và consumer; registry ép tương thích BACKWARD (chỉ thêm field có default). Message lỗi vào DLQ thay vì làm dừng job (DRN-1). Local: Schema Registry có sẵn trong Redpanda (cổng 18081). AWS: Glue Schema Registry.</p><div class="drn"><div><b class="id">ADR 0008</b>Vẫn là Proposed: định dạng Confluent (local) và Glue (AWS) khác nhau; nếu quá tốn công thì tự chạy registry tương thích Confluent trên Fargate.</div></div>']] },
   grafana: { sub: 'Designed (feature 8)', tabs: [['Thiết kế', '<p>Bản đồ xe, danh sách cảnh báo, KPI (tạm tính hoặc đã chốt), sức khỏe pipeline (consumer lag, checkpoint, slot lag).</p>']] },
 };
 function compTab(id, k) { const t = COMP[id].tabs[k][1]; return typeof t === 'function' ? t() : t; }
