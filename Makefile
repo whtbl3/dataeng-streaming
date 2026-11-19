@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild maintain table-health aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild tower-status maintain table-healthaws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -61,6 +61,10 @@ silver-status:    # per silver table and local day: rows kept, copies removed, l
 
 silver-rebuild:   # drop silver and rebuild it from bronze with the same jobs (spec 004 AC8)
 	COMPOSE="$(COMPOSE)" infra/local/silver_rebuild.sh
+
+tower-status:     # control tower: open orders with an ETA, open alerts by type, newest position per van (spec 006)
+	@$(COMPOSE) exec -T postgres psql -X -q -A -F ' | ' -P footer=off -U ct -d control_tower \
+	  < infra/local/postgres/tower_status.sql
 
 maintain:         # run table maintenance now: make maintain [TASK=compact|manifests|expire|orphans|retention] [TABLE=ns.t]
 	$(COMPOSE) run --rm --no-deps -e SNAPSHOT_RETENTION -e ORPHAN_RETENTION maintenance --once \
