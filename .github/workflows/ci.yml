@@ -20,6 +20,8 @@ jobs:
         run: make install
       - name: Check (same as local `make check`)
         run: make check
+      - name: dbt unit tests and SQL lint on a throwaway Trino (spec 007 AC11)
+        run: make dbt-ci
 
   # End-to-end tests against the full Docker stack. Manual trigger only (heavy).
   e2e:

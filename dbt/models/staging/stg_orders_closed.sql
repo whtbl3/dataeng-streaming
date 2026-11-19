@@ -17,5 +17,6 @@ select
     last_lsn,
     last_commit_ts
 from {{ source('silver', 'orders') }}
-where status in ('delivered', 'failed')
+where
+    status in ('delivered', 'failed')
     and coalesce(delivered_at, failed_at) is not null

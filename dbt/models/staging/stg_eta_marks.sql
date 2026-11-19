@@ -1,5 +1,11 @@
 -- One ETA per order and mark (T30, T15): the first one written wins.
-select order_id, van_id, mark, eta, promised_end, event_ts
+select
+    order_id,
+    van_id,
+    mark,
+    eta,
+    promised_end,
+    event_ts
 from (
     select
         *,

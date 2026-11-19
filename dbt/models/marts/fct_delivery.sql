@@ -9,26 +9,27 @@
     materialized='incremental',
     incremental_strategy='delete+insert' if close else 'merge',
     unique_key='local_date' if close else 'order_id',
-    properties={'partitioning': "ARRAY['local_date']"},
+    properties=partitioned_by('local_date'),
     on_schema_change='fail',
 ) }}
 
 with orders as (
     select * from {{ ref('stg_orders_closed') }}
     {% if close %}
-    where local_date = date '{{ var("day") }}'
+        where local_date = date '{{ var("day") }}'
     {% elif is_incremental() %}
-    where local_date not in (select local_date from {{ ref('closed_days') }})
-        and (
-            last_commit_ts >= current_timestamp - interval '{{ var("lookback_hours") }}' hour
-            or order_id in (
-                select order_id from {{ ref('stg_alert_events') }}
-                where event_ts >= current_timestamp - interval '{{ var("lookback_hours") }}' hour
-                union all
-                select order_id from {{ ref('stg_eta_marks') }}
-                where event_ts >= current_timestamp - interval '{{ var("lookback_hours") }}' hour
+        where
+            local_date not in (select local_date from {{ ref('closed_days') }})
+            and (
+                last_commit_ts >= current_timestamp - interval '{{ var("lookback_hours") }}' hour
+                or order_id in (
+                    select order_id from {{ ref('stg_alert_events') }}
+                    where event_ts >= current_timestamp - interval '{{ var("lookback_hours") }}' hour
+                    union all
+                    select order_id from {{ ref('stg_eta_marks') }}
+                    where event_ts >= current_timestamp - interval '{{ var("lookback_hours") }}' hour
+                )
             )
-        )
     {% endif %}
 ),
 
@@ -42,7 +43,9 @@ marks as (
 ),
 
 alerts as (
-    select order_id, min(raised_at) as first_alert_at
+    select
+        order_id,
+        min(raised_at) as first_alert_at
     from {{ ref('stg_alert_events') }}
     where type = 'SLA_RISK' and event = 'raised' and order_id is not null
     group by order_id
@@ -76,8 +79,9 @@ select
     o.last_commit_ts
 from orders as o
 left join {{ ref('dim_van') }} as v
-    on v.van_id = o.van_id
-    and o.closed_at >= v.valid_from
-    and (v.valid_to is null or o.closed_at < v.valid_to)
-left join marks as m on m.order_id = o.order_id
-left join alerts as a on a.order_id = o.order_id
+    on
+        o.van_id = v.van_id
+        and o.closed_at >= v.valid_from
+        and (v.valid_to is null or o.closed_at < v.valid_to)
+left join marks as m on o.order_id = m.order_id
+left join alerts as a on o.order_id = a.order_id

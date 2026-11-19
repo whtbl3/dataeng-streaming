@@ -12,4 +12,4 @@ select
     day_of_week(d) in (6, 7) as is_weekend,
     date_format(d, '%Y-%m') as year_month
 from bounds
-cross join unnest(sequence(first_day, last_day)) as t (d)
+cross join unnest(sequence(first_day, last_day)) as t (d)  -- noqa: AL05

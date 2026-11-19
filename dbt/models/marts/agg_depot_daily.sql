@@ -6,16 +6,16 @@
     materialized='incremental',
     incremental_strategy='delete+insert',
     unique_key='local_date',
-    properties={'partitioning': "ARRAY['local_date']"},
+    properties=partitioned_by('local_date'),
     on_schema_change='fail',
 ) }}
 
 with facts as (
     select * from {{ ref('fct_delivery') }}
     {% if close %}
-    where local_date = date '{{ var("day") }}'
+        where local_date = date '{{ var("day") }}'
     {% elif is_incremental() %}
-    where local_date not in (select local_date from {{ ref('closed_days') }})
+        where local_date not in (select local_date from {{ ref('closed_days') }})
     {% endif %}
 ),
 
@@ -34,13 +34,19 @@ van_days as (
 ),
 
 depot_stops as (
-    select depot_id, local_date, avg(stops_per_hour) as stops_per_hour
+    select
+        depot_id,
+        local_date,
+        avg(stops_per_hour) as stops_per_hour
     from van_days
     group by depot_id, local_date
 ),
 
 late as (
-    select *, outcome = 'delivered' and not is_on_time as is_late from facts
+    select
+        *,
+        outcome = 'delivered' and not is_on_time as is_late
+    from facts
 )
 
 select
@@ -63,12 +69,12 @@ select
     -- BR-5: precision = alerted orders that were late; recall = late orders warned >= 15 min
     -- ahead, over the late orders that could be warned (spec 006, revised)
     count_if(f.first_alert_at is not null and f.is_late)
-        / cast(nullif(count(f.first_alert_at), 0) as double) as alert_precision,
+    / cast(nullif(count(f.first_alert_at), 0) as double) as alert_precision,
     count_if(f.is_late and f.is_warnable and f.alert_lead_min >= 15)
-        / cast(nullif(count_if(f.is_late and f.is_warnable), 0) as double) as alert_recall,
+    / cast(nullif(count_if(f.is_late and f.is_warnable), 0) as double) as alert_recall,
     count_if(f.is_late and f.alert_lead_min >= 15)
-        / cast(nullif(count_if(f.is_late), 0) as double) as alert_recall_all_late,
+    / cast(nullif(count_if(f.is_late), 0) as double) as alert_recall_all_late,
     {{ 'true' if close else 'false' }} as is_final
 from late as f
-left join depot_stops as s on s.depot_id = f.depot_id and s.local_date = f.local_date
+left join depot_stops as s on f.depot_id = s.depot_id and f.local_date = s.local_date
 group by f.depot_id, f.local_date

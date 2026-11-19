@@ -14,3 +14,13 @@ ct:
       catalog: "{{ env_var('DBT_TRINO_CATALOG', 'lakehouse') }}"
       schema: gold
       threads: 2
+    ci:  # a throwaway Trino with a memory catalog named lakehouse (`make dbt-ci`, CI)
+      type: trino
+      method: none
+      user: "{{ env_var('DBT_TRINO_USER', 'dbt') }}"
+      host: "{{ env_var('DBT_TRINO_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_TRINO_PORT', '18089') | int }}"
+      http_scheme: http
+      catalog: lakehouse
+      schema: gold
+      threads: 2

@@ -3,10 +3,10 @@
 -- version is valid from the beginning of time, so history older than the CDC snapshot joins.
 with changes as (
     select distinct
-        "after".van_id as van_id,
-        "after".depot_id as depot_id,
-        "after".plate as plate,
-        "after".capacity as capacity,
+        "after".van_id,
+        "after".depot_id,
+        "after".plate,
+        "after".capacity,
         source_lsn,
         coalesce("after".updated_at, commit_ts) as changed_at
     from {{ source('bronze', 'vans_cdc') }}
@@ -26,7 +26,8 @@ marked as (
 versions as (
     select *
     from marked
-    where change_no = 1
+    where
+        change_no = 1
         or depot_id is distinct from prev_depot
         or plate is distinct from prev_plate
         or capacity is distinct from prev_capacity

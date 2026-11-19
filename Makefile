@@ -62,6 +62,9 @@ silver-status:    # per silver table and local day: rows kept, copies removed, l
 silver-rebuild:   # drop silver and rebuild it from bronze with the same jobs (spec 004 AC8)
 	COMPOSE="$(COMPOSE)" infra/local/silver_rebuild.sh
 
+dbt-ci:           # dbt unit tests + SQL lint on a throwaway Trino, no stack needed (CI, spec 007)
+	scripts/dbt_ci.sh
+
 tower-status:     # control tower: open orders with an ETA, open alerts by type, newest position per van (spec 006)
 	@$(COMPOSE) exec -T postgres psql -X -q -A -F ' | ' -P footer=off -U ct -d control_tower \
 	  < infra/local/postgres/tower_status.sql
