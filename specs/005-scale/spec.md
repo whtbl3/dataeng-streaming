@@ -39,7 +39,11 @@ and adding machines would not help:
 - [ ] AC8: Given snapshots older than 7 days, unreferenced files, and partitions older than their retention (NFR-5), when maintenance runs, then they are removed, and current data and running jobs are unaffected.
 - [ ] AC9: Given a topic at its size bound, when more messages arrive, then the oldest segments are removed and its disk use stays under the bound.
 - [ ] AC10: Given the developer asks for table health, then they see per table: data files, delete files, average file size, snapshots, and when each maintenance task last ran.
-- [ ] AC11: Given the core and CDC stack with maintenance running, then total container memory stays under 6 GB.
+- [ ] AC11: Given a table written by parallel writers, when a commit is made, then each partition gets files from one writer, not one file per writer (write distribution by partition).
+- [ ] AC12: Given a table committed every 30 s for a day, then the number of metadata files and manifests stays bounded (old metadata versions removed, manifests rewritten), not one more per commit forever.
+- [ ] AC13: Given a streaming job that reads a table incrementally and is stopped, when snapshot expiry runs, then the snapshots that job still needs are kept within the documented limit, and if the job stays stopped longer than that limit, it says so clearly on restart instead of silently skipping data.
+- [ ] AC14: Given silver GPS written append-only (open question 6), when the same pings arrive again after the dedup state has forgotten them, then the next maintenance run removes the extra copies, keeping the first arrival, and silver status shows how many were removed.
+- [ ] AC15: Given the core and CDC stack with maintenance running, then total container memory stays under 6 GB.
 
 ## Out of scope
 - Data tiers, `make backfill`, `make bench`, and the `stress` run (removed, see below).
@@ -51,10 +55,12 @@ and adding machines would not help:
 - **Intent success measure and ADR 0009:** "a 30-day backfill is measured and published" is dropped.
   Tiers, backfill and benchmark become a stretch item. ADR 0009 is marked partly superseded.
 - **ADR 0010:** decoding moves from one row at a time to batches (open question 2).
-- **ADR 0011:** state backend moves from memory to disk.
+- **ADR 0011:** state backend moves from memory to disk; silver GPS may move from upsert to append (open question 6); `silver.orders` stays upsert.
 - **ADR 0009 / spec 004:** GPS partitioning `day + bucket(16)` changes (open question 4).
 - **NFR-5:** Kafka retention becomes "7 days or a size bound, whichever first".
-- New **ADR 0012**: what limits scale per layer, and how tables are maintained.
+- New **ADR 0012**: what limits scale per layer, and how tables are maintained. It also records two
+  deliberate trade-offs against the usual advice: Python stays in the decode path (batched), and
+  bronze GPS stays partitioned by event time rather than arrival time (lateness is at most about 2 h).
 
 ## Open questions
 1. **How many GPS partitions?** *Recommended:* 6. Room for 6 readers (the laptop has 8 cores) without
@@ -72,3 +78,10 @@ and adding machines would not help:
    during compaction, so a one-van query still skips most files.
 5. **Kafka size bound?** *Recommended:* GPS 1 GB per partition (6 GB), CDC 256 MB per partition,
    dead-letter topics 128 MB; time limit stays 7 days.
+6. **Silver GPS: upsert or append?** Pings never change and only about 5% are copies, yet upsert
+   writes a delete record for every row. The usual advice for event data is append plus dedup.
+   *Recommended:* append; the dedup state (24 h) drops copies as today, and maintenance removes the
+   rare copy that arrives later (AC14). `silver.orders` keeps upsert, because an order really changes.
+   Cost: a job restarted without its state (a rebuild, or a lost checkpoint without HA) would append
+   everything again. A rebuild already starts from empty tables; for a lost checkpoint the plan must
+   either resume from the last bronze snapshot silver has read, or rely on the maintenance dedup.
