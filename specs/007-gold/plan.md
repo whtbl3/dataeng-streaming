@@ -22,6 +22,31 @@ Branch `feat/007-gold` is stacked on `feat/006-control-tower` (PR #15).
 4. **ETA marks:** a mark is written when the first ETA at or after T-30 (T-15) is computed and the
    order already had an ETA before that time; an order dispatched later gets no mark (spec Q6).
 
+## Spike outcome and departures (build, 2026-11-19)
+- **S1 dbt-trino on Iceberg REST works:** `merge` (intraday) and `delete+insert` on `local_date`
+  (close) on partitioned Iceberg tables; views in `gold_staging`; Bing tiles and `at_timezone` in
+  Trino. Found: `current_timestamp` is precision 3 and Iceberg wants 6 (cast); a `ref` inside a
+  Jinja branch needs a `-- depends_on:` hint; dbt-trino's default incremental strategy is
+  `append`, so `closed_days` sets `merge` (a restatement first added a second row).
+- **S2 CI on a memory catalog works** with empty source tables (`infra/local/dbt/ci_sources.sql`)
+  and `dbt run --empty`. Two changes: the CI target gets no `partitioning` property (the memory
+  connector has none; `partitioned_by()` macro), and expected rows use the dict format (a SQL
+  fixture for `expect` must list every model column).
+- **S3 the PyFlink job writes Iceberg** in the same statement set as JDBC and Kafka. The `tower`
+  operator now has a fixed uid, so its per-van state restores after the job graph changes; this
+  deployment started the control tower fresh (`FRESH_JOBS`) to re-read the order changelog.
+- **sqlfluff `fix` dropped the `unnest(...) as t (d)` alias** in `dim_date` (rule AL05); restored
+  with `-- noqa: AL05`, and the whole auto-fix diff was reviewed (formatting only otherwise).
+- **Gold is in the maintenance service** (compaction with silver every 30 min; retention 2 years,
+  NFR-5); the scheduler gained `--test` and `--freshness` for `make gold-test` and the AC12 test.
+- **Connection settings:** the project rule `.claude/rules/dbt.md` says `profiles.yml` is committed
+  with `env_var()`, CLAUDE.md says never to read or edit `profiles.yml`. The approved spec keeps
+  `profiles.yml.example` (env vars only, copied at run time); the owner decides on the rule.
+- **ETA error uses the close time as the arrival** (the order data has no arrival time); noted in
+  ADR 0014.
+- `minutes_late` is 0 for an on-time delivery and NULL for a failure.
+- A `.PHONY` typo from spec 006 (`table-healthaws-plan`) was fixed here and on `feat/006-control-tower`.
+
 ## Design
 **Control tower → bronze** (`flink/udf/tower.py`, `flink/jobs/control_tower.py`):
 - New output `EtaMark(order_id, van_id, mark 'T30'|'T15', eta, promised_end, event_ts)`; state per
