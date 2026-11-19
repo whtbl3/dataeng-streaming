@@ -34,11 +34,31 @@ render() {
 RENDERED_INIT="$(render "$INIT_FILE")"
 RENDERED="$(render "$SQL_FILE")"
 
+# Resume from the savepoint `make down` took (stop_jobs.sh), unless this job must start fresh
+# (FRESH_JOBS, used by `make silver-rebuild`). Operators the SQL no longer has are skipped, so an
+# edited job still starts; its sources then fall back to Kafka group offsets or a full re-read.
+SP_ROOT="${SAVEPOINT_ROOT:-/opt/flink/checkpoints/savepoints}"
+PENDING="$SP_ROOT/$JOB_NAME.pending"
+if [ -f "$PENDING" ]; then
+  if [[ " ${FRESH_JOBS:-} " == *" $JOB_NAME "* ]]; then
+    mv "$PENDING" "$SP_ROOT/$JOB_NAME.discarded"
+    echo "job '${JOB_NAME}': starting fresh, savepoint discarded"
+  else
+    SAVEPOINT="$(cat "$PENDING")"
+    echo "job '${JOB_NAME}': resuming from $SAVEPOINT"
+    {
+      echo "SET 'execution.state-recovery.path' = '$SAVEPOINT';"
+      echo "SET 'execution.state-recovery.ignore-unclaimed-state' = 'true';"
+    } >> "$RENDERED_INIT"
+  fi
+fi
+
 /opt/flink/bin/sql-client.sh -Drest.address="${FLINK_JOBMANAGER_HOST:-jobmanager}" \
   -i "$RENDERED_INIT" -f "$RENDERED"
 
 for _ in $(seq 1 30); do
   if job_running; then
+    [ -f "$PENDING" ] && mv "$PENDING" "$SP_ROOT/$JOB_NAME.used"
     echo "job '${JOB_NAME}' is RUNNING"
     exit 0
   fi

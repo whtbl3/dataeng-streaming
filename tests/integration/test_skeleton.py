@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import time
 
 import pytest
 from conftest import (
     BOOTSTRAP,
+    ROOT,
     TABLE,
     TOPIC,
     compose,
@@ -119,11 +121,15 @@ def test_stack_memory_under_6gb(prefix):
 
 @pytest.mark.restart
 def test_data_survives_restart(prefix):
-    """AC7: stop the stack (keeping volumes), start it again, earlier rows are still there."""
+    """AC7: stop the stack (keeping volumes), start it again, earlier rows are still there.
+
+    The stack is stopped the documented way (`make down`), which stops the jobs with a savepoint
+    so they resume exactly (spec 004). A hard kill is covered by spec 004 AC7 on silver.
+    """
     sent = produce(prefix, vans=5, steps=4)
     wait_for(lambda: count_prefix(prefix), lambda n: n == sent, timeout_s=120)
 
-    compose("--profile", "jobs", "down")
+    subprocess.run(["make", "-s", "down"], cwd=ROOT, check=True, capture_output=True)
     compose("up", "-d", "--remove-orphans")
     compose("run", "--rm", "flink-submit")
 

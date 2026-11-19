@@ -31,6 +31,6 @@ RUN uv venv /opt/venv --python 3.11 \
  && chown -R flink:flink /opt/venv /opt/python /opt/flink/lib
 ENV PATH=/opt/venv/bin:$PATH
 
-COPY --chown=flink:flink submit.sh /opt/flink/bin/submit.sh
-RUN chmod +x /opt/flink/bin/submit.sh && mkdir -p /opt/flink/checkpoints && chown flink:flink /opt/flink/checkpoints
+COPY --chown=flink:flink submit.sh stop_jobs.sh /opt/flink/bin/
+RUN chmod +x /opt/flink/bin/submit.sh /opt/flink/bin/stop_jobs.sh && mkdir -p /opt/flink/checkpoints && chown flink:flink /opt/flink/checkpoints
 USER flink

@@ -248,11 +248,13 @@ services:
       GPS_TOPIC: ${GPS_TOPIC:-gps.pings.v1}
       SCHEMA_REGISTRY_URL: http://redpanda:8081
       CHECKPOINT_INTERVAL: ${CHECKPOINT_INTERVAL:-30 s}
+      FRESH_JOBS: ${FRESH_JOBS:-}
     volumes:
       - ../../flink/jobs:/opt/flink/jobs:ro
       - ../../contracts:/opt/ct/contracts:ro # shipped to the cluster via python.files
       - ../../schemas:/opt/ct/schemas:ro
       - ./iceberg:/opt/iceberg:ro
+      - flink-checkpoints:/opt/flink/checkpoints # savepoint pointers (stop_jobs.sh / submit.sh)
     entrypoint: ["/bin/bash", "-c"]
     # Silver upserts key on Iceberg identifier fields, which Trino cannot set (spec 004, ADR 0011).
     command:
