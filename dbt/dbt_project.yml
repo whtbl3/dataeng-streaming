@@ -25,3 +25,6 @@ models:
     marts:
       +schema: gold
       +materialized: table
+
+flags:
+  require_certificate_validation: true  # http to the local Trino; silences the SSL default warning

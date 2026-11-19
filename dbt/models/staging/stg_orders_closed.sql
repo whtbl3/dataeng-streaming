@@ -13,7 +13,7 @@ select
     out_for_delivery_at as dispatched_at,
     coalesce(delivered_at, failed_at) as closed_at,
     {{ local_date('coalesce(delivered_at, failed_at)') }} as local_date,
-    bing_tile_quadkey(bing_tile_at(dest_lat, dest_lon, 18)) as dest_area,
+    {{ area_of("dest_lat", "dest_lon") }} as dest_area,
     last_lsn,
     last_commit_ts
 from {{ source('silver', 'orders') }}

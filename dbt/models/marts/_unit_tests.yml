@@ -1,0 +1,152 @@
+version: 2
+
+# Fixed input rows → expected KPIs (spec 007 AC2, AC4, AC5, AC11; resolved questions 6, 7).
+# Fixtures are SQL, so they need no table to exist: CI runs them on an empty Trino.
+unit_tests:
+  - name: fct_delivery_outcomes_eta_error_alert_lead_and_van_version
+    description: >
+      BR-2: a failed order is never on time. Minutes late: 0 when on time, none for a failure.
+      ETA error = mark - close, signed. Alert lead = promised end - first raise.
+      AC4: the van version valid at the close gives the depot.
+    model: fct_delivery
+    overrides:
+      macros: {is_incremental: false}
+      vars: {mode: intraday}
+    given:
+      - input: ref('stg_orders_closed')
+        format: sql
+        rows: |
+          select * from (values
+            ('O1', 'DEP-01', 'VAN-1', 1, timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 10:30:00 UTC',
+             'delivered', cast(null as varchar), timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 09:00:00 UTC',
+             date '2026-11-18', 'q1', bigint '1', timestamp '2026-11-18 09:00:01 UTC'),
+            ('O2', 'DEP-01', 'VAN-1', 2, timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 10:30:00 UTC',
+             'delivered', null, timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 10:42:00 UTC',
+             date '2026-11-18', 'q2', bigint '2', timestamp '2026-11-18 10:42:01 UTC'),
+            ('O3', 'DEP-01', 'VAN-1', 3, timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 12:00:00 UTC',
+             'failed', 'customer_absent', timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 11:00:00 UTC',
+             date '2026-11-18', 'q3', bigint '3', timestamp '2026-11-18 11:00:01 UTC')
+          ) as t (order_id, depot_id, van_id, stop_seq, promised_start, promised_end, outcome,
+                  failure_reason, dispatched_at, closed_at, local_date, dest_area, last_lsn,
+                  last_commit_ts)
+      - input: ref('dim_van')
+        format: sql
+        rows: |
+          select * from (values
+            ('VAN-1#1', 'VAN-1', 'DEP-01', 'P-1', 100, timestamp '1970-01-01 00:00:00 UTC',
+             timestamp '2026-11-18 09:30:00 UTC', false),
+            ('VAN-1#2', 'VAN-1', 'DEP-02', 'P-1', 100, timestamp '2026-11-18 09:30:00 UTC',
+             cast(null as timestamp(6) with time zone), true)
+          ) as t (van_key, van_id, depot_id, plate, capacity, valid_from, valid_to, is_current)
+      - input: ref('stg_eta_marks')
+        format: sql
+        rows: |
+          select 'O2' as order_id, 'VAN-1' as van_id, 'T15' as mark,
+                 timestamp '2026-11-18 10:40:00 UTC' as eta,
+                 timestamp '2026-11-18 10:30:00 UTC' as promised_end,
+                 timestamp '2026-11-18 10:15:00 UTC' as event_ts
+      - input: ref('stg_alert_events')
+        format: sql
+        rows: |
+          select 'SLA_RISK:O2:1' as alert_id, 'raised' as event, 'SLA_RISK' as type,
+                 'VAN-1' as van_id, 'O2' as order_id,
+                 timestamp '2026-11-18 10:00:00 UTC' as raised_at,
+                 cast(null as timestamp(6) with time zone) as resolved_at,
+                 timestamp '2026-11-18 10:00:00 UTC' as event_ts
+      - input: ref('closed_days')
+        format: sql
+        rows: |
+          select cast(null as date) as local_date where false
+    expect:
+      rows:
+        - {order_id: O1, depot_id: DEP-01, van_key: "VAN-1#1", is_on_time: true, minutes_late: 0.0,
+           eta_error_t15_min: null, alert_lead_min: null, is_final: false}
+        - {order_id: O2, depot_id: DEP-02, van_key: "VAN-1#2", is_on_time: false, minutes_late: 12.0,
+           eta_error_t15_min: -2.0, alert_lead_min: 30.0, is_final: false}
+        - {order_id: O3, depot_id: DEP-02, van_key: "VAN-1#2", is_on_time: false, minutes_late: null,
+           eta_error_t15_min: null, alert_lead_min: null, is_final: false}
+
+  - name: stg_orders_closed_local_day_at_midnight
+    description: BR-4, AC5 - 23:59:59 local stays on its day, 00:00:01 local is the next day.
+    model: stg_orders_closed
+    given:
+      - input: source('silver', 'orders')
+        format: sql
+        rows: |
+          select * from (values
+            ('A', 'DEP-01', 'VAN-1', 1, 10.78e0, 106.70e0, timestamp '2026-11-18 08:00:00 UTC',
+             timestamp '2026-11-18 18:00:00 UTC', 'delivered', cast(null as varchar),
+             timestamp '2026-11-18 10:00:00 UTC', timestamp '2026-11-18 16:59:59 UTC',
+             cast(null as timestamp(6) with time zone), bigint '1', timestamp '2026-11-18 17:00:00 UTC'),
+            ('B', 'DEP-01', 'VAN-1', 2, 10.78e0, 106.70e0, timestamp '2026-11-18 08:00:00 UTC',
+             timestamp '2026-11-18 18:00:00 UTC', 'delivered', null,
+             timestamp '2026-11-18 10:00:00 UTC', timestamp '2026-11-18 17:00:01 UTC',
+             null, bigint '2', timestamp '2026-11-18 17:00:02 UTC'),
+            ('C', 'DEP-01', 'VAN-1', 3, 10.78e0, 106.70e0, timestamp '2026-11-18 08:00:00 UTC',
+             timestamp '2026-11-18 18:00:00 UTC', 'out_for_delivery', null,
+             timestamp '2026-11-18 10:00:00 UTC', null, null, bigint '3', timestamp '2026-11-18 10:00:01 UTC')
+          ) as t (order_id, depot_id, van_id, stop_seq, dest_lat, dest_lon, promised_start,
+                  promised_end, status, failure_reason, out_for_delivery_at, delivered_at,
+                  failed_at, last_lsn, last_commit_ts)
+    expect:
+      rows:
+        - {order_id: A, local_date: "2026-11-18"}
+        - {order_id: B, local_date: "2026-11-19"}
+
+  - name: stg_van_versions_scd2
+    description: AC4 - copies and no-op updates collapse; a depot change starts a new version.
+    model: stg_van_versions
+    given:
+      - input: source('bronze', 'vans_cdc')
+        format: sql
+        rows: |
+          select op, cast(row(van_id, depot_id, plate, capacity, ts, ts) as row(van_id varchar,
+                 depot_id varchar, plate varchar, capacity integer,
+                 created_at timestamp(6) with time zone, updated_at timestamp(6) with time zone))
+                 as "after", source_lsn, ts as commit_ts
+          from (values
+            ('r', 'VAN-1', 'DEP-01', 'P-1', 100, bigint '10', timestamp '2026-11-17 00:00:00 UTC'),
+            ('r', 'VAN-1', 'DEP-01', 'P-1', 100, bigint '10', timestamp '2026-11-17 00:00:00 UTC'),
+            ('u', 'VAN-1', 'DEP-01', 'P-1', 100, bigint '20', timestamp '2026-11-18 01:00:00 UTC'),
+            ('u', 'VAN-1', 'DEP-02', 'P-1', 100, bigint '30', timestamp '2026-11-18 09:30:00 UTC')
+          ) as t (op, van_id, depot_id, plate, capacity, source_lsn, ts)
+    expect:
+      rows:
+        - {van_key: "VAN-1#1", depot_id: DEP-01, valid_from: "1970-01-01 00:00:00 UTC",
+           valid_to: "2026-11-18 09:30:00 UTC"}
+        - {van_key: "VAN-1#2", depot_id: DEP-02, valid_from: "2026-11-18 09:30:00 UTC",
+           valid_to: null}
+
+  - name: agg_depot_daily_stops_per_hour_and_alert_quality
+    description: >
+      Resolved question 7: closed orders of a van / hours from first dispatch to last close,
+      averaged over the depot's vans. BR-5: precision over alerted orders; recall over late
+      orders that could be warned, warned >= 15 min ahead.
+    model: agg_depot_daily
+    overrides:
+      macros: {is_incremental: false}
+      vars: {mode: intraday}
+    given:
+      - input: ref('fct_delivery')
+        format: sql
+        rows: |
+          select * from (values
+            ('O1', date '2026-11-18', 'DEP-01', 'VAN-1', timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 09:00:00 UTC', 'delivered', true,  cast(null as double), cast(null as double), cast(null as double), cast(null as timestamp(6) with time zone), cast(null as double), true),
+            ('O2', date '2026-11-18', 'DEP-01', 'VAN-1', timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 10:00:00 UTC', 'delivered', false, 12e0, -2e0, 4e0, timestamp '2026-11-18 09:00:00 UTC', 30e0, true),
+            ('O3', date '2026-11-18', 'DEP-01', 'VAN-2', timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 08:30:00 UTC', 'delivered', false, 5e0, cast(null as double), cast(null as double), cast(null as timestamp(6) with time zone), cast(null as double), true),
+            ('O4', date '2026-11-18', 'DEP-01', 'VAN-2', timestamp '2026-11-18 08:00:00 UTC', timestamp '2026-11-18 08:30:00 UTC', 'delivered', true,  cast(null as double), cast(null as double), cast(null as double), timestamp '2026-11-18 08:10:00 UTC', 20e0, true)
+          ) as t (order_id, local_date, depot_id, van_id, dispatched_at, closed_at, outcome,
+                  is_on_time, minutes_late, eta_error_t15_min, eta_error_t30_min,
+                  first_alert_at, alert_lead_min, is_warnable)
+      - input: ref('closed_days')
+        format: sql
+        rows: |
+          select cast(null as date) as local_date where false
+    # VAN-1: 2 orders in 2 h = 1/h; VAN-2: 2 orders in 0.5 h = 4/h → 2.5.
+    # Alerted: O2 (late) and O4 (on time) → precision 0.5. Late and warnable: O2, O3;
+    # warned >= 15 min ahead: O2 → recall 0.5.
+    expect:
+      rows:
+        - {depot_id: DEP-01, local_date: "2026-11-18", orders_closed: 4, on_time_rate: 0.5,
+           stops_per_hour: 2.5, alert_precision: 0.5, alert_recall: 0.5, eta_mae_t15_min: 2.0,
+           is_final: false}
