@@ -148,7 +148,7 @@ non-zero, instead of a silent skip.
   (→ `test_table_admin.py`), `tests/integration/test_silver*.py` (append semantics).
 - **Docs:** ADR 0009 (partly superseded), 0010 (batched decode), 0011 (silver GPS append, RocksDB,
   checkpoint resume), `docs/intent.md` (success measure), `docs/requirements.md` NFR-5/NFR-11,
-  `docs/project-spec.md`, `docs/roadmap.md`, `README.md`, `.claude/rules/flink.md`, explainer status.
+  `docs/project-spec.md`, `docs/roadmap.md`, `README.md`, the Flink rules, explainer status.
 
 ## Order of work
 1. **Spike (half a day), results into plan.md:**

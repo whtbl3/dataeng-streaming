@@ -151,7 +151,7 @@ STATEMENT SET with two sinks:
   - `docs/project-spec.md` (silver interfaces, the meaning of `ingest_ts`)
   - `docs/requirements.md` (section 4 keys)
   - `docs/roadmap.md`, `README.md`, `docs/tech-stack.md` if needed
-  - `.claude/rules/flink.md`, only if R1 changes the watermark rule
+  - the Flink rules, only if R1 changes the watermark rule
   - the explainer 08:07 chapter status: Dự kiến → Đã chạy
 
 ## Order of work

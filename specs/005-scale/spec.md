@@ -1,5 +1,5 @@
 # Spec 005: Scale (parallelism, cheaper per-event work, table maintenance, bounded storage)
-Status: Implemented (2026-11-19) · Intent: roadmap item 5 · Author: project owner + Claude
+Status: Implemented (2026-11-19) · Intent: roadmap item 5 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 

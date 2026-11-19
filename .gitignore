@@ -7,11 +7,6 @@
 *.key
 secrets/
 
-# Claude: personal files only (team files under .claude/ ARE committed)
-.claude/settings.local.json
-.claude/worktrees/
-CLAUDE.local.md
-
 # Common build output
 __pycache__/
 .venv/

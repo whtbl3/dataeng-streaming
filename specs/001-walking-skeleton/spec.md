@@ -1,5 +1,5 @@
 # Spec 001: Walking skeleton (GPS → Kafka → Flink → Iceberg bronze → SQL)
-Status: Implemented (2026-11-18) · Intent: roadmap item 1 · Author: project owner + Claude
+Status: Implemented (2026-11-18) · Intent: roadmap item 1 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 

@@ -105,5 +105,5 @@ UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://
 - Feature specs: [`specs/`](specs/)
 
 ## How this repo is built
-The project follows a spec-driven workflow with Claude Code: intent → spec → plan → tasks → PR.
-See `CLAUDE.md`, `.claude/` and `specs/README.md`.
+The project follows a spec-driven workflow: intent → spec → plan → tasks → PR.
+See [`specs/README.md`](specs/README.md).

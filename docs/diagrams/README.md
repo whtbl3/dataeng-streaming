@@ -16,11 +16,12 @@ Facts come from the code: `infra/local/postgres/init/001_schema.sql`, `infra/loc
 `docs/requirements.md` section 4; its other columns and types are a draft.
 
 ## Regenerate after an edit
-The Archify skill lives in `.claude/skills/archify/` and needs Node 18+ and Chrome or Chromium
-(set `ARCHIFY_CHROME` to its path if it is not on `PATH`). For example:
+Get the [Archify](https://github.com/tt-a1i/archify) renderer (its `archify/` folder) anywhere
+outside this repo. It needs Node 18+ and Chrome or Chromium (set `ARCHIFY_CHROME` to its path if
+it is not on `PATH`). For example, with `ARCHIFY` set to that folder:
 
 ```bash
-node .claude/skills/archify/bin/archify.mjs finalize dataflow \
+node "$ARCHIFY/bin/archify.mjs" finalize dataflow \
   docs/diagrams/data-flow.dataflow.json docs/diagrams/data-flow.html --quality showcase
 ```
 
