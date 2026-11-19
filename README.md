@@ -15,34 +15,7 @@ and keeps KPIs correct even when GPS data arrives late or duplicated.
 ![Data flow: simulator and Postgres CDC into Kafka, Flink into Iceberg bronze and silver, dbt into gold, a Flink alert job into Postgres serving, and Trino and Grafana as consumers](docs/diagrams/data-flow.svg)
 
 Nodes marked *built* run today (features 1–5); *planned* nodes are features 6–8 on the
-[roadmap](docs/roadmap.md). More diagrams (click to open):
-
-<details>
-<summary><b>One GPS ping</b>: first copy, duplicate copy and a bad message</summary>
-
-![Sequence: a ping goes from the van to Kafka, is decoded by bronze_gps with the Schema Registry, appended to bronze, then upserted to silver by silver_gps; a duplicate is appended to bronze but produces no silver row; a ping outside the city goes to the dead-letter table and topic](docs/diagrams/gps-ping.svg)
-</details>
-
-<details>
-<summary><b>Order status lifecycle</b>: created → assigned → out_for_delivery → delivered or failed</summary>
-
-![Lifecycle: created, assigned, out_for_delivery, then delivered or failed (customer absent)](docs/diagrams/order-lifecycle.svg)
-</details>
-
-<details>
-<summary><b>Data model, built</b>: Postgres source tables and Iceberg silver</summary>
-
-![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
-</details>
-
-<details>
-<summary><b>Data model, planned</b>: gold star schema (feature 7)</summary>
-
-![ERD: fct_delivery joined to dim_van (SCD Type 2), dim_depot and dim_date; agg_depot_daily and closed_days](docs/diagrams/model-gold.svg)
-</details>
-
-The diagrams are drawn with [Archify](https://github.com/tt-a1i/archify) from the JSON files in
-[`docs/diagrams/`](docs/diagrams/), which also explains how to regenerate them.
+[roadmap](docs/roadmap.md).
 
 **Stream for freshness, batch for correctness:**
 - Flink raises alerts within seconds.
@@ -65,6 +38,23 @@ checked in CI too). A bad message never stops a job: it goes to `bronze.dlq_even
 | Lakehouse | Iceberg on MinIO (S3 API) + REST catalog | Iceberg on S3 + Glue Data Catalog |
 | SQL / transforms | Trino + dbt | Athena + dbt |
 | Dashboards | Grafana + Prometheus | Grafana on ECS + CloudWatch |
+
+## How data moves
+### One GPS ping: first copy, duplicate copy and a bad message
+![Sequence: a ping goes from the van to Kafka, is decoded by bronze_gps with the Schema Registry, appended to bronze, then upserted to silver by silver_gps; a duplicate is appended to bronze but produces no silver row; a ping outside the city goes to the dead-letter table and topic](docs/diagrams/gps-ping.svg)
+
+### Order status lifecycle
+![Lifecycle: created, assigned, out_for_delivery, then delivered or failed (customer absent)](docs/diagrams/order-lifecycle.svg)
+
+## Data model
+### Built: Postgres source tables and Iceberg silver
+![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
+
+### Planned: gold star schema (feature 7)
+![ERD: fct_delivery joined to dim_van (SCD Type 2), dim_depot and dim_date; agg_depot_daily and closed_days](docs/diagrams/model-gold.svg)
+
+The diagrams are drawn with [Archify](https://github.com/tt-a1i/archify) from the JSON files in
+[`docs/diagrams/`](docs/diagrams/), which also explains how to regenerate them.
 
 ## Quick start
 Prerequisites: Docker with ~6 GB free RAM, [uv](https://docs.astral.sh/uv/), and a free
