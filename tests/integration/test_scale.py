@@ -131,3 +131,51 @@ def test_state_lives_in_rocksdb_with_incremental_checkpoints():
     assert cfg["execution.checkpointing.externalized-checkpoint-retention"] == (
         "RETAIN_ON_CANCELLATION"
     )
+
+
+def _catalog_table(name: str) -> dict:
+    namespace, table = name.split(".")
+    url = f"http://localhost:8181/v1/namespaces/{namespace}/tables/{table}"
+    with urllib.request.urlopen(url, timeout=5) as r:
+        return json.load(r)["metadata"]
+
+
+@pytest.mark.parametrize("table", ["bronze.gps_pings", "silver.gps_pings"])
+def test_each_commit_writes_one_file_per_partition(prefix, table):
+    """AC11: with hash write distribution, parallel writers share no partition in a commit."""
+    sent, _ = run_gps_sim(prefix, vans=6, hours=0.5)
+    wait_for(
+        lambda: query(
+            f"SELECT count(*) FROM lakehouse.{table} WHERE vehicle_id LIKE ?", (f"{prefix}-%",)
+        )[0][0],
+        lambda n: n == sent,
+        240,
+    )
+    namespace, name = table.split(".")
+    rows = query(
+        f"SELECT CAST(element_at(summary, 'added-data-files') AS integer), "
+        f"CAST(element_at(summary, 'changed-partition-count') AS integer) "
+        f'FROM lakehouse.{namespace}."{name}$snapshots" '
+        "WHERE element_at(summary, 'added-data-files') IS NOT NULL "
+        "AND element_at(summary, 'flink.job-id') IS NOT NULL "
+        "ORDER BY committed_at DESC LIMIT 5"
+    )
+    assert rows, "no Flink commit found"
+    assert all(files == parts for files, parts in rows), rows
+
+
+def test_every_silver_gps_file_uses_the_current_partition_spec():
+    """After the layout change an equality delete only reaches rows in current-spec files."""
+    current = _catalog_table("silver.gps_pings")["default-spec-id"]
+    specs = query(
+        'SELECT DISTINCT spec_id FROM lakehouse.silver."gps_pings$files" WHERE content = 0'
+    )  # data files; an old-spec delete file left behind applies to nothing and goes next compaction
+    assert specs == [(current,)]
+
+
+def test_silver_gps_is_one_partition_a_day_sorted_by_van():
+    meta = _catalog_table("silver.gps_pings")
+    spec = next(s for s in meta["partition-specs"] if s["spec-id"] == meta["default-spec-id"])
+    assert [f["transform"] for f in spec["fields"]] == ["day"]
+    order = next(o for o in meta["sort-orders"] if o["order-id"] == meta["default-sort-order-id"])
+    assert len(order["fields"]) == 2

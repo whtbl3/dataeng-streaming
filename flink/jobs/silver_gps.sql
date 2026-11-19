@@ -7,6 +7,8 @@
 --      row instead of adding one.
 -- Lateness comes from the data (ingest_ts - event_ts), so every rebuild flags the same rows.
 SET 'pipeline.name' = 'silver_gps';
+-- GPS jobs can read with as many parallel readers as the topic has partitions (6, spec 005).
+SET 'parallelism.default' = '${GPS_PARALLELISM}';
 SET 'table.exec.state.ttl' = '24 h';
 
 -- A connector table (not the catalog table) so the source can declare a watermark. The watermark

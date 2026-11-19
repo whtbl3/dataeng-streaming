@@ -56,6 +56,24 @@ Run on the dev stack (Flink 1.20.5, Iceberg 1.10.1, Trino 484, Redpanda 26.1).
   Retested with RocksDB incremental checkpoints in T3.
 - **S4 write distribution** is checked directly by the AC11 test in T5 (no separate spike).
 
+## Departures from the plan (build, 2026-11-19)
+- **Silver GPS stays upsert** (spec resolved question 6, revised with the project owner). `EXPLAIN
+  CHANGELOG_MODE` on the silver GPS dedup: a data-ordered Top-1 (`Rank`, AppendFastStrategy) and an
+  event-time `Deduplicate(keep=FirstRow, order=ROWTIME)` both emit `[I,UA,D]`, so an append sink
+  cannot take them. Dropped with it: findings 2 and 3 (lineage columns, the dedup task and its
+  DELETE), the `submit.sh` guard against starting without state, AC14, and the `silver-status`
+  change. Silver GPS gets its identifier fields from `table_admin.py` again.
+- **Partition change needs an immediate full compaction.** An equality delete applies only to data
+  files with the same partition spec (Iceberg spec, "Scan planning"). After `silver.gps_pings` drops
+  `bucket(16)`, a late copy's delete in the new spec would not reach the old row. So `005_scale.sql`
+  rewrites every old-spec file right after the ALTER; it runs in `trino-init`, before `flink-submit`
+  resumes the jobs, so nothing writes in between. A test checks that every data file has the current
+  spec id.
+- `set_identifier_fields.py` became `table_admin.py` (identifier fields + write properties +
+  `has-rows`), configured in one place (`FLINK_TABLES`, `TABLE_PROPERTIES`, `UPSERT_KEYS`).
+- The vectorized UDF returns `TIMESTAMP(3)` (UTC) for its timestamps; the SQL casts as before.
+- Spec 001 tests that hard-coded 3 GPS partitions now expect 6 (spec 005 AC1 changed the requirement).
+
 ## Design
 **Kafka** (`infra/local/redpanda/init.sh`)
 - GPS topic and its DLQ: 6 partitions (`rpk topic add-partitions` when the topic exists: idempotent).
@@ -91,7 +109,6 @@ the new shape for fresh installs)
   |---|---|---|---|
   | compact | silver GPS and upsert tables (all partitions, S1) | 30 min | `EXECUTE optimize(file_size_threshold => '128MB') WHERE …` |
   | compact | bronze GPS, CDC, DLQ (all partitions) | 60 min | same |
-  | dedup | silver GPS, days touched since last run | 30 min | DELETE of non-first copies (finding 3) |
   | manifests | all | daily | `EXECUTE optimize_manifests` |
   | expire | all | daily | `EXECUTE expire_snapshots(retention_threshold => '7d')` |
   | orphans | all | daily | `EXECUTE remove_orphan_files(retention_threshold => '7d')` |
@@ -170,7 +187,7 @@ non-zero, instead of a silent skip.
 | AC11 one writer per partition | e2e: snapshot summary `added-data-files` == `changed-partition-count` |
 | AC12 metadata bounded | e2e: `$metadata_log_entries` ≤ 101 and old metadata files deleted; `$manifests` bounded after `optimize_manifests` |
 | AC13 expiry vs stopped reader | restart e2e: stop `silver_gps`, expire all bronze snapshots, resubmit → clear error + non-zero; `silver-rebuild` recovers |
-| AC14 late copy removed | e2e: resend pings after state TTL (TTL lowered by env in test) → dedup run removes them; `silver-status` shows count |
+| AC14 | dropped (silver GPS stays upsert, see departures) |
 | AC15 memory | existing memory e2e with maintenance running, < 6 GB |
 
 ## Verification
