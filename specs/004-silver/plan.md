@@ -21,7 +21,7 @@ These come out of reading the code. Each one keeps an acceptance criterion true 
    same result on every run. The 30 s is the watermark allowance from ADR 0006. The silver GPS source
    still declares that 30 s watermark for later event-time operators (feature 6). See risk R1.
 3. **Among copies of one ping, the first arrival wins (smallest `ingest_ts`), not the last write**
-   (this changes resolved question 6). Last-write-wins would change `ingest_ts` and `lateness_ms` when
+   (this changes resolved question 6). Last-write-wins would change `ingest_ts` and `lateness_s` when
    a copy comes back hours later, which breaks AC4. A Top-1 per key ordered by `ingest_ts`, with state
    TTL 24 h, emits each key once. The upsert sink on the primary key (resolved question 2b) stays as
    the backstop: a copy that arrives after the TTL still cannot create a second row, it can only
@@ -65,7 +65,7 @@ and `status_ts` is set once per status, so adding them changes no uniqueness. Th
   `monitor-interval = 10s`. It is declared through a temporary `connector = 'iceberg'` table so that
   it can carry `WATERMARK FOR event_ts AS event_ts - INTERVAL '30' SECOND`.
 - `ROW_NUMBER() OVER (PARTITION BY vehicle_id, event_ts ORDER BY ingest_ts, kafka_partition, kafka_offset) = 1`.
-- Computes `lateness_ms` and `is_late`.
+- Computes `lateness_s` and `is_late`.
 - Writes upserts through a temporary iceberg-connector sink table that declares `PRIMARY KEY … NOT ENFORCED`.
 - `table.exec.state.ttl = 24 h`.
 
