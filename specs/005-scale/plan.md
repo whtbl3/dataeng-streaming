@@ -17,13 +17,44 @@ e2e tests. On approval this becomes `specs/005-scale/plan.md` + `tasks.md`.
    small, so they are compacted only in *cold* partitions, and append tables in any partition.
 3. **Append needs a way to remove a late copy exactly.** A replayed copy can be byte-identical, so a
    DELETE by value would remove both. Silver GPS gains `kafka_partition`/`kafka_offset` (lineage), and
-   the dedup DELETE keeps the minimum `(ingest_ts, kafka_partition, kafka_offset, "$path")` per key:
-   one atomic statement, position deletes only.
+   the dedup DELETE keeps the minimum `(ingest_ts, kafka_partition, kafka_offset)` per key: one
+   atomic statement, position deletes only (see the spike outcome for why not `"$path"`).
 4. **Retained checkpoints already exist on disk** (`RETAIN_ON_CANCELLATION`), but nothing uses them
    after a crash. `submit.sh` resumes from the latest retained checkpoint when there is no savepoint.
    This also closes the bronze-duplicate gap ADR 0011 left open (lost checkpoint without HA).
 5. **Iceberg properties Trino cannot set** (distribution mode, metadata cleanup) go through the REST
    catalog, like `infra/local/iceberg/set_identifier_fields.py`. That script is generalised.
+
+## Spike outcome (T1, 2026-11-19)
+Run on the dev stack (Flink 1.20.5, Iceberg 1.10.1, Trino 484, Redpanda 26.1).
+- **S1 compaction vs live upserts: safe in every partition.** 147 back-to-back
+  `optimize(file_size_threshold => '128MB')` runs on `silver.orders` while about 20k order changes
+  streamed in: 0 failed, the Flink job had 0 exceptions and 0 failed checkpoints, and silver equalled
+  Top-1-by-LSN from bronze exactly (14,426 orders, 0 missing, 0 extra, 0 duplicate keys). `optimize`
+  applies and removes equality and position deletes (9 delete files → 0). **Change:** upsert tables are
+  compacted in all partitions, not cold ones only (R1 fallback no longer needed).
+- **S1 other procedures.** `optimize_manifests` works (5 manifests → 1). `sorted_by` works.
+  Session properties `expire_snapshots_min_retention` / `remove_orphan_files_min_retention` let tests
+  expire with `0s`. `extra_properties` rejects `write.metadata.*` keys, so those go through the REST
+  catalog as planned. Snapshot summaries omit `added-data-files` on empty commits (use `element_at`).
+- **S1 dedup by `"$path"` is wrong.** Two identical copies in one file share `(key, "$path")`, so the
+  DELETE removed the keeper too (317 keys lost on a scratch table). **Change:** the dedup DELETE
+  identifies the keeper by `(vehicle_id, event_ts, ingest_ts, kafka_partition, kafka_offset)`, which
+  separates every real copy (each has its own Kafka offset). Byte-identical copies (the same bronze row
+  read twice) cannot be separated by any predicate, so they are prevented instead: `submit.sh` refuses
+  to start `silver_gps` without state (no savepoint, no retained checkpoint) on a non-empty table unless
+  it is in `FRESH_JOBS` (`make silver-rebuild`). `silver-status` reports identical copies; expected 0.
+- **S2 batched decode: 28 % less decode time.** 172,820 pings, parallelism 1, the same mini-cluster:
+  read only 9.3 s (startup + Kafka); row UDF 17.6–18.0 s; vectorized UDF 15.4–15.5 s. Decode alone:
+  about 8.5 s → 6.1 s (≈ 20k → 28k messages/s). The rest is fastavro per row. Worth it, but not a
+  10× change; ADR 0010 records both numbers. A vectorized UDF cannot return `TIMESTAMP_LTZ` inside a
+  ROW, so its result uses `TIMESTAMP(3)` (UTC, the session time zone) and the SQL casts back to LTZ.
+  A constant argument arrives as a scalar, not a Series.
+- **S3 resume from a retained checkpoint works.** `docker compose kill jobmanager taskmanager` left
+  `chk-359` on the volume. Resubmitting `bronze_gps` from it gave exactly one row per message for pings
+  sent before the kill and pings sent while Flink was down (2,884 and 2,884, 0 duplicates).
+  Retested with RocksDB incremental checkpoints in T3.
+- **S4 write distribution** is checked directly by the AC11 test in T5 (no separate spike).
 
 ## Design
 **Kafka** (`infra/local/redpanda/init.sh`)
@@ -58,7 +89,7 @@ the new shape for fresh installs)
 - New compose service `maintenance` (`python:3.11-slim`, ~40 MB), loop with per-task intervals from env:
   | Task | Tables | Every | Statement |
   |---|---|---|---|
-  | compact | silver GPS (all partitions); upsert tables (cold partitions only) | 30 min | `EXECUTE optimize(file_size_threshold => '128MB') WHERE …` |
+  | compact | silver GPS and upsert tables (all partitions, S1) | 30 min | `EXECUTE optimize(file_size_threshold => '128MB') WHERE …` |
   | compact | bronze GPS, CDC, DLQ (all partitions) | 60 min | same |
   | dedup | silver GPS, days touched since last run | 30 min | DELETE of non-first copies (finding 3) |
   | manifests | all | daily | `EXECUTE optimize_manifests` |
