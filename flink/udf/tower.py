@@ -153,11 +153,15 @@ def _resolve(alert: Alert, at: datetime) -> Alert:
     )  # fmt: skip
 
 
-def _etas(state: VanState, van_id: str, now: datetime) -> list:
-    """Recompute every open order's ETA from the latest ping; evaluate SLA risk."""
+def _etas(state: VanState, van_id: str, now: datetime, at: datetime | None = None) -> list:
+    """Recompute every open order's ETA from the latest ping; evaluate SLA risk. Without any
+    ping yet, open orders are still listed, with no ETA (`at` is the change's event time)."""
     ping = state.latest
     if ping is None:
-        return []
+        return [
+            OrderEta(o.order_id, van_id, o.status, o.promised_end, None, None, at)
+            for o in state.orders.values()
+        ]
     out: list = []
     speed = _mean_speed(state)
     route = _dispatched(state)
@@ -266,7 +270,7 @@ def _on_order(state: VanState, change: OrderChange, now: datetime) -> list:
         change.order_id, change.status, change.stop_seq, (change.dest_lat, change.dest_lon),
         change.promised_end, change.lsn,
     )  # fmt: skip
-    return _etas(state, change.van_id, now)
+    return _etas(state, change.van_id, now, change.event_ts)
 
 
 def step(state: VanState, event: Ping | OrderChange, now: datetime) -> list:

@@ -1,7 +1,7 @@
 # Tasks 006: Control tower
 From: plan.md (approved 2026-11-19). Tests first in every task.
 
-- [ ] T1: spikes S1–S3, outcome in plan.md
+- [x] T1: spikes S1–S3, outcome in plan.md
 - [ ] T2: tests, then simulator abnormal stops + CLI (AC1)
 - [ ] T3: tests, then `eta.py` + `tower.py`; replay tests (AC2–AC6, AC8 logic)
 - [ ] T4: serving DDL + `serving-init`, `alerts.v1` schema + topic, JDBC jars, `submit.sh` for Python jobs

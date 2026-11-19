@@ -38,6 +38,22 @@ On approval this becomes `specs/006-control-tower/plan.md` + `tasks.md`.
   - 30-40 % of late orders end their window < 15 min after dispatch (the simulator makes an order
     late by setting its window 5-40 min before the true arrival), so they cannot be warned 15 min
     ahead. Spec question 3, question 5 and AC5 revised with the owner (spec, "Revised during the build").
+- **S2 PyFlink job: works, with three changes.**
+  - Python UDFs inside the SQL part failed in the planner once their ROW fields fed a union and a
+    lookup join (`ClassCastException: RexFieldAccess cannot be cast to RexCall`). So SQL only reads
+    raw Kafka bytes and does the depot lookup on the Kafka key (= vehicle id); decoding runs in the
+    DataStream part with the same `contracts` functions (`decode_gps`, `decode_cdc`).
+  - PyFlink 1.20 has no type that converts to the Table side's `LocalDateTime`
+    (`java.sql.Timestamp cannot be cast`), so timestamps cross the DataStream part as epoch ms and
+    the sinks convert with `TO_TIMESTAMP_LTZ`.
+  - `flink run -py` looks for `flink-python` in `opt/`; the image keeps it there and in `lib/`.
+    Files shipped with `-pyfs` land in a work directory, so paths go through `contracts`
+    (`SCHEMAS_DIR`). Startup modes: orders `earliest-offset` (open orders = the whole changelog),
+    GPS `latest-offset`; a restore uses the checkpointed offsets either way.
+  - JDBC: `flink-connector-jdbc 3.3.0-1.20` holds the core; the Postgres dialect is the separate
+    `flink-connector-jdbc-postgres` jar. The depot view lives in `serving` (`serving.van_depots`).
+- **S3 latency:** ping → `serving.alerts` 1.3-3.7 s, ping → `vehicle_latest` 1.7 s (bundle 100 ms,
+  JDBC flush 200 ms), one van, live.
   - Tried and not taken: a lateness margin proportional to time-to-arrival (precision +5-10 pts,
     recall -3-6 pts), a 30 min speed window, 28/30 km/h typical speed (fits the simulator, not a fleet).
 
