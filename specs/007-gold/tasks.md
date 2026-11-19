@@ -2,7 +2,7 @@
 From: plan.md (approved 2026-11-19). Tests first in every task.
 
 - [ ] T1: spikes S1-S3, outcome in plan.md
-- [ ] T2: tests, then tower ETA marks; bronze alert/mark tables and sinks (AC1)
+- [x] T2: tests, then tower ETA marks; bronze alert/mark tables and sinks (AC1)
 - [ ] T3: dbt skeleton, profiles example, staging, dimensions + their tests (AC3-AC5)
 - [ ] T4: facts, aggregate, closed days; intraday and close modes (AC2, AC6-AC9)
 - [ ] T5: unit tests, freshness, CI step (AC11, AC12)

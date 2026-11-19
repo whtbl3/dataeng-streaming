@@ -24,6 +24,8 @@ FLINK_TABLES = [
     "bronze.depots_cdc",
     "bronze.vans_cdc",
     "bronze.orders_cdc",
+    "bronze.alert_events",
+    "bronze.eta_marks",
     "silver.gps_pings",
     "silver.orders",
     "silver.order_status_history",

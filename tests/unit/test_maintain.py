@@ -47,6 +47,8 @@ def test_every_flink_written_table_is_compacted_silver_more_often():
         "bronze.depots_cdc",
         "bronze.vans_cdc",
         "bronze.dlq_events",
+        "bronze.alert_events",
+        "bronze.eta_marks",
     }
     assert m.COMPACT["silver"].every < m.COMPACT["bronze"].every
 

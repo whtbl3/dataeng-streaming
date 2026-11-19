@@ -60,6 +60,8 @@ BRONZE = (
     "bronze.depots_cdc",
     "bronze.vans_cdc",
     "bronze.dlq_events",
+    "bronze.alert_events",
+    "bronze.eta_marks",
 )
 ALL_TABLES = (*SILVER, *BRONZE, "ops.maintenance_runs")
 DAILY = timedelta(days=1)
@@ -72,6 +74,8 @@ RETENTION = {
     "bronze.gps_pings": Retention("event_ts", 90, "day"),
     "bronze.orders_cdc": Retention("commit_ts", 365, "day"),
     "bronze.dlq_events": Retention("ingest_ts", 365, "day"),
+    "bronze.alert_events": Retention("event_ts", 365, "day"),
+    "bronze.eta_marks": Retention("event_ts", 365, "day"),
     "silver.gps_pings": Retention("event_ts", 365, "day"),
     "silver.orders": Retention("created_at", 365, "month"),
     "silver.order_status_history": Retention("status_ts", 365, "day"),

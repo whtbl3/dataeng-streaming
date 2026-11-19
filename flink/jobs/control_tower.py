@@ -48,6 +48,7 @@ OUT_FIELDS = [
     ("distance_km", Types.DOUBLE()), ("alert_type", Types.STRING()),
     ("raised_at", Types.LONG()), ("resolved_at", Types.LONG()),
     ("detail", Types.STRING()), ("alert_event", Types.STRING()), ("deleted", Types.BOOLEAN()),
+    ("mark", Types.STRING()),
 ]  # fmt: skip
 OUT_TYPE = Types.ROW_NAMED([n for n, _ in OUT_FIELDS], [t for _, t in OUT_FIELDS])
 
@@ -106,6 +107,11 @@ def _to_row(out) -> Row:
                   "status": out.status, "promised_end": _ms(out.promised_end),
                   "eta": _ms(out.eta), "distance_km": out.distance_km,
                   "deleted": out.deleted}  # fmt: skip
+    elif isinstance(out, tower.EtaMark):
+        values = {**none, "kind": "mark", "id": out.order_id, "van_id": out.van_id,
+                  "order_id": out.order_id, "event_ts": _ms(out.event_ts), "eta": _ms(out.eta),
+                  "promised_end": _ms(out.promised_end), "mark": out.mark,
+                  "deleted": False}  # fmt: skip
     else:
         values = {**none, "kind": "alert", "id": out.alert_id, "van_id": out.van_id,
                   "order_id": out.order_id, "event_ts": _ms(out.resolved_at or out.raised_at),
@@ -214,6 +220,15 @@ class DecodeOrders(_Decoder):
 
 
 def build(env: StreamExecutionEnvironment, t_env: StreamTableEnvironment) -> None:
+    # Same Iceberg catalog as the SQL jobs (flink/jobs/_init_catalog.sql), from env.
+    t_env.execute_sql(f"""
+        CREATE CATALOG lakehouse WITH (
+          'type' = 'iceberg', 'catalog-type' = 'rest', 'uri' = '{ENV["ICEBERG_CATALOG_URI"]}',
+          'warehouse' = '{ENV["WAREHOUSE"]}', 'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
+          's3.endpoint' = '{ENV["S3_ENDPOINT"]}', 's3.path-style-access' = 'true',
+          's3.access-key-id' = '{ENV["S3_ACCESS_KEY"]}',
+          's3.secret-access-key' = '{ENV["S3_SECRET_KEY"]}',
+          'client.region' = '{ENV["AWS_REGION"]}')""")
     kafka = f"'connector' = 'kafka', 'properties.bootstrap.servers' = '{BOOTSTRAP}'"
     t_env.execute_sql(f"""
         CREATE TEMPORARY TABLE gps_raw (
@@ -260,6 +275,7 @@ def build(env: StreamExecutionEnvironment, t_env: StreamTableEnvironment) -> Non
         events.key_by(lambda r: r.van_id, key_type=Types.STRING())
         .process(Tower(), output_type=OUT_TYPE)
         .name("tower")
+        .uid("tower")  # a fixed id, so the per-van state restores after the job graph changes
     )
     vehicles = outputs.filter(lambda r: r.kind == "vehicle").map(
         lambda r: Row(r.van_id, r.event_ts, r.lat, r.lon, r.speed_kmh),
@@ -327,6 +343,36 @@ def build(env: StreamExecutionEnvironment, t_env: StreamTableEnvironment) -> Non
     )
     t_env.create_temporary_view("alert_rows", t_env.from_data_stream(alert_rows))
     t_env.create_temporary_view("alert_bytes", t_env.from_data_stream(alert_bytes))
+    # History for gold (spec 007): every alert event and the ETA marks, appended to bronze.
+    t_env.create_temporary_view(
+        "alert_history",
+        t_env.from_data_stream(
+            alerts.map(
+                lambda r: Row(r.id, r.alert_event, r.alert_type, r.van_id, r.order_id,
+                              r.raised_at, r.resolved_at, r.lat, r.lon, r.detail, r.event_ts),
+                output_type=Types.ROW_NAMED(
+                    ["alert_id", "event", "type", "van_id", "order_id", "raised_at",
+                     "resolved_at", "lat", "lon", "detail", "event_ts"],
+                    [Types.STRING(), Types.STRING(), Types.STRING(), Types.STRING(),
+                     Types.STRING(), Types.LONG(), Types.LONG(), Types.DOUBLE(), Types.DOUBLE(),
+                     Types.STRING(), Types.LONG()],
+                ),
+            )
+        ),
+    )  # fmt: skip
+    t_env.create_temporary_view(
+        "eta_marks",
+        t_env.from_data_stream(
+            outputs.filter(lambda r: r.kind == "mark").map(
+                lambda r: Row(r.order_id, r.van_id, r.mark, r.eta, r.promised_end, r.event_ts),
+                output_type=Types.ROW_NAMED(
+                    ["order_id", "van_id", "mark", "eta", "promised_end", "event_ts"],
+                    [Types.STRING(), Types.STRING(), Types.STRING(), Types.LONG(),
+                     Types.LONG(), Types.LONG()],
+                ),
+            )
+        ),
+    )  # fmt: skip
 
     for name, cols in {
         "vehicle_latest": "van_id STRING, event_ts TIMESTAMP(3), lat DOUBLE, lon DOUBLE, "
@@ -369,6 +415,19 @@ def build(env: StreamExecutionEnvironment, t_env: StreamTableEnvironment) -> Non
         f"{ts('resolved_at')}, lat, lon, detail FROM alert_rows"
     )
     sinks.add_insert_sql("INSERT INTO sink_alerts_topic SELECT k, v FROM alert_bytes")
+
+    def ltz(col: str) -> str:  # epoch ms → TIMESTAMP_LTZ(6), the bronze column type
+        return f"CAST(TO_TIMESTAMP_LTZ({col}, 3) AS TIMESTAMP_LTZ(6))"
+
+    sinks.add_insert_sql(
+        "INSERT INTO lakehouse.bronze.alert_events SELECT alert_id, event, type, van_id, "
+        f"order_id, {ltz('raised_at')}, {ltz('resolved_at')}, lat, lon, detail, "
+        f"{ltz('event_ts')} FROM alert_history"
+    )
+    sinks.add_insert_sql(
+        f"INSERT INTO lakehouse.bronze.eta_marks SELECT order_id, van_id, mark, {ltz('eta')}, "
+        f"{ltz('promised_end')}, {ltz('event_ts')} FROM eta_marks"
+    )
     sinks.attach_as_datastream()
 
 

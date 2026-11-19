@@ -36,6 +36,8 @@ SPEED_WINDOW = timedelta(minutes=10)
 MAX_GAP = timedelta(minutes=2)  # a longer gap between pings breaks a still period (offline)
 HORIZON = timedelta(minutes=10)
 SLA_RISK, ABNORMAL_STOP = "SLA_RISK", "ABNORMAL_STOP"
+# ETA marks for gold (spec 007): the ETA of each order when its deadline is 30 and 15 min away
+MARKS = (("T30", timedelta(minutes=30)), ("T15", timedelta(minutes=15)))
 OPEN = ("assigned", "out_for_delivery")
 CLOSED = ("delivered", "failed")
 
@@ -91,6 +93,18 @@ class OrderEta:
 
 
 @dataclass(frozen=True)
+class EtaMark:
+    """The ETA an order had when its deadline was 30 (T30) or 15 (T15) min away."""
+
+    order_id: str
+    van_id: str
+    mark: str
+    eta: datetime
+    promised_end: datetime
+    event_ts: datetime  # the ping the ETA came from (first at or after the mark time)
+
+
+@dataclass(frozen=True)
 class Alert:
     alert_id: str
     type: str
@@ -113,6 +127,8 @@ class OpenOrder:
     dest: tuple[float, float]
     promised_end: datetime
     lsn: int
+    eta_at: datetime | None = None  # event time of its latest ETA
+    marks: frozenset = frozenset()  # ETA marks already written
 
 
 @dataclass
@@ -174,6 +190,7 @@ def _etas(state: VanState, van_id: str, now: datetime, at: datetime | None = Non
             OrderEta(order.order_id, van_id, order.status, order.promised_end, eta,
                      round(km, 3), ping.event_ts)
         )  # fmt: skip
+        out += _marks(order, van_id, eta, ping.event_ts)
         out += _sla(state, van_id, order, eta, ping, now)
     for order in state.orders.values():
         if order.status != "out_for_delivery":
@@ -181,6 +198,21 @@ def _etas(state: VanState, van_id: str, now: datetime, at: datetime | None = Non
                 OrderEta(order.order_id, van_id, order.status, order.promised_end, None, None,
                          ping.event_ts)
             )  # fmt: skip
+    return out
+
+
+def _marks(order: OpenOrder, van_id: str, eta: datetime, at: datetime) -> list:
+    """Write T30/T15 on the first ETA at or after the mark time, if the order already had an
+    ETA before it (an order dispatched later has no mark: spec 007, resolved question 6)."""
+    out = []
+    before = getattr(order, "eta_at", None)  # state saved before spec 007 has no such field
+    done = getattr(order, "marks", frozenset())
+    for name, ahead in MARKS:
+        when = order.promised_end - ahead
+        if name not in done and before is not None and before < when <= at:
+            out.append(EtaMark(order.order_id, van_id, name, eta, order.promised_end, at))
+            done = done | {name}
+    order.eta_at, order.marks = at, done
     return out
 
 
@@ -288,6 +320,7 @@ def _on_order(state: VanState, change: OrderChange, now: datetime) -> list:
     state.orders[change.order_id] = OpenOrder(
         change.order_id, change.status, change.stop_seq, (change.dest_lat, change.dest_lon),
         change.promised_end, change.lsn,
+        getattr(current, "eta_at", None), getattr(current, "marks", frozenset()),
     )  # fmt: skip
     return _etas(state, change.van_id, now, change.event_ts)
 
