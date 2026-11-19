@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild tower-status maintain table-healthaws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild dbt-ci tower-status maintain table-health aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
