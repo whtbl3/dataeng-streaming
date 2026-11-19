@@ -12,10 +12,14 @@ managers get delivery KPIs a day late. This project predicts SLA breaches **befo
 and keeps KPIs correct even when GPS data arrives late or duplicated.
 
 ## Architecture
-```
-Simulator (HCMC, 200 vans) ── GPS ───────────────> Kafka ──> Flink ──> Iceberg bronze/silver ─dbt─> gold
-          └── orders ─> Postgres ─ Debezium CDC ─┘           └──> Postgres serving (ETA, alerts) ──> Grafana
-```
+![Data flow: simulator and Postgres CDC into Kafka, Flink into Iceberg bronze and silver, dbt into gold, a Flink alert job into Postgres serving, and Trino and Grafana as consumers](docs/diagrams/data-flow.svg)
+
+Nodes marked *built* run today (features 1–5); *planned* nodes are features 6–8 on the
+[roadmap](docs/roadmap.md). Interactive version: [`docs/diagrams/data-flow.html`](docs/diagrams/data-flow.html)
+(download and open it in a browser). The diagram source is
+[`data-flow.dataflow.json`](docs/diagrams/data-flow.dataflow.json), rendered with
+[Archify](https://github.com/tt-a1i/archify).
+
 **Stream for freshness, batch for correctness:**
 - Flink raises alerts within seconds.
 - dbt recomputes KPIs every 5 minutes (provisional).
