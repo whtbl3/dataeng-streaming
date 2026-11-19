@@ -1,5 +1,5 @@
 # Spec 007: Gold (delivery KPIs with dbt, intraday and nightly close)
-Status: Draft · Intent: roadmap item 7 · Author: project owner + Claude
+Status: Approved (2026-11-19) · Intent: roadmap item 7 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -52,7 +52,8 @@ latest ETA and nothing about what was predicted 30 or 15 minutes before the dead
 - New ADR 0014: how gold is built and scheduled (dbt on Trino, incremental windows, nightly close,
   where the connection settings live).
 
-## Open questions
+## Resolved questions (approved 2026-11-19)
+All seven recommendations were accepted as written.
 1. **How do alerts and past ETAs reach the lakehouse?** *Recommended:* the control tower job also
    appends them to two bronze Iceberg tables (exactly-once, in the same commit as its Kafka output):
    every alert event, and an ETA mark per open order when it passes T-30 and T-15. Reading
