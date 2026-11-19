@@ -8,7 +8,7 @@ On approval this becomes `specs/006-control-tower/plan.md` + `tasks.md`.
 
 ## Refinements to approve with this plan (from reading the code)
 1. **One pure state machine, two harnesses.** All rules (latest position, ETA, SLA risk, abnormal
-   stop, horizon) live in pure Python (`flink/udf/tower.py`, per `.claude/rules/flink.md`). Flink
+   stop, horizon) live in pure Python (`flink/udf/tower.py`, per the Flink rules). Flink
    wraps it in a keyed process function; tests also replay a whole simulated day through it
    offline. AC5 (precision/recall) and AC8 (clean = chaos) are proven by that offline replay: a full
    day in seconds, deterministic, no wall clock. The e2e tests prove the wiring with live-time events.
@@ -94,7 +94,7 @@ needed) and `postgresql 42.7.5`, SHA-1 pinned. Task slots 6 → 7.
 - **Changed:** `simulator/{day,__main__}.py` (+ `tests/unit/test_day.py`), `infra/local/flink/{Dockerfile,submit.sh}`,
   `infra/local/docker-compose.yml`, `infra/local/redpanda/init.sh`, `Makefile`, `tests/integration/conftest.py`.
 - **Docs:** ADR 0013; `docs/requirements.md` (join rule, BR-3 refined, alert horizon measured);
-  `docs/project-spec.md`, `docs/roadmap.md`, `README.md`, `.claude/rules/flink.md`.
+  `docs/project-spec.md`, `docs/roadmap.md`, `README.md`, the Flink rules.
 
 ## Order of work
 1. **Spikes:**

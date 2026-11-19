@@ -1,5 +1,5 @@
 # Spec 006: Control tower (live ETA, SLA-risk and abnormal-stop alerts)
-Status: Approved (2026-11-19) · Intent: roadmap item 6 · Author: project owner + Claude
+Status: Approved (2026-11-19) · Intent: roadmap item 6 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
