@@ -30,7 +30,7 @@ alert fires before a breach, and a van stuck somewhere it should not be goes unn
 - [ ] AC2: Given a van out for delivery with open orders, when a ping arrives, then each of those orders has an ETA that follows the agreed formula (unit tests on known routes), visible in the serving database within 10 s.
 - [ ] AC3: Given a ping older than the van's latest position, then the latest position does not move backwards, and ETAs are not recomputed from it.
 - [ ] AC4: Given an open order whose ETA passes its promised end by the agreed margin, then one SLA-risk alert is raised; it is not raised again until it has been resolved for at least 10 min (BR-3); it is resolved when the ETA is back inside the window or the order is delivered or failed.
-- [ ] AC5: Given a simulated day with late deliveries, then the share of late orders alerted at least 15 min before their promised end (recall) and the share of alerts whose order was really late (precision) meet the agreed targets, and both are reported.
+- [ ] AC5: Given a simulated day with late deliveries, then the share of late orders alerted at least 15 min before their promised end (recall), counted over late orders whose promised end is at least 15 min after dispatch, and the share of alerts whose order was really late (precision) meet the agreed targets; recall over all late orders is reported too.
 - [ ] AC6: Given an injected abnormal stop, then exactly one abnormal-stop alert is raised within the agreed idle time plus 10 s of event time, and resolved when the van moves; normal dwells at stops and parking at the depot never alert (zero on a clean day).
 - [ ] AC7: Given live mode, when a ping that changes an alert is produced, then the alert is in the serving database within 10 s at p95 (NFR-1).
 - [ ] AC8: Given the same day sent clean and with chaos (duplicates, delays, jitter, offline bursts), then the same alerts are raised (same type, order or van, and event time).
@@ -76,3 +76,14 @@ All seven recommendations were accepted as written.
 6. **Alert horizon?** *Recommended:* 10 min, as already approved (requirements, resolved question 1).
 7. **Simulator?** *Recommended:* a new option for abnormal stops per day (off by default; on in the
    demo), each 12–25 min long, at a random point of a route away from stops.
+
+## Revised during the build (2026-11-19, approved by the project owner)
+Spike S1 replayed three simulated days (20 vans, seeds 7, 11 and 23) through the alert rules.
+- **Question 3, ETA formula.** The recent speed applied to every remaining leg gave 33 % precision:
+  a jam on the current leg inflated the ETA of every later stop. Now the leg being driven uses the
+  van's mean moving speed of the last 10 min, and every later leg the typical fleet speed of
+  25 km/h, plus 4 min dwell per stop before the order's. Precision 82-86 %.
+- **Question 5 and AC5, recall.** 30-40 % of the simulated late orders have a promised end less
+  than 15 min after dispatch. ETA starts at dispatch, so no rule can warn them 15 min ahead. The
+  80 % target is counted over late orders that can be warned (promised end >= dispatch + 15 min),
+  where it measured 97-100 %; recall over all late orders (61-69 %) is reported next to it.

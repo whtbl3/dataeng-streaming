@@ -27,6 +27,20 @@ On approval this becomes `specs/006-control-tower/plan.md` + `tasks.md`.
 6. **Depot location** comes from a cached lookup join against Postgres (`vans` ⋈ `depots`, a static
    dimension); the order events' event time is `updated_at` (business time).
 
+## Spike outcome (T1, 2026-11-19)
+- **S1 alert quality (offline replay, 3 days × 20 vans × 500 orders, seeds 7/11/23).**
+  - As approved (recent speed on every leg): recall 61-69 %, precision 33 %. False alerts were all
+    raised at dispatch for far stops: a jam on the first leg (speed 4-16 km/h) inflated every
+    later ETA.
+  - Current leg at recent speed, later legs at 25 km/h: precision 82-86 %, recall over warnable
+    late orders 97-100 %, over all late orders 61-69 %; 6-10 re-raises a day. At T-15 the ETA
+    error is median 0.7 min (p10 -9.4, p90 10.8).
+  - 30-40 % of late orders end their window < 15 min after dispatch (the simulator makes an order
+    late by setting its window 5-40 min before the true arrival), so they cannot be warned 15 min
+    ahead. Spec question 3, question 5 and AC5 revised with the owner (spec, "Revised during the build").
+  - Tried and not taken: a lateness margin proportional to time-to-arrival (precision +5-10 pts,
+    recall -3-6 pts), a 30 min speed window, 28/30 km/h typical speed (fits the simulator, not a fleet).
+
 ## Design
 **Simulator** (`simulator/day.py`, `simulator/__main__.py`): `simulate_day(..., abnormal_stops=0)`
 picks vans by seed, splits their return hop at a point > 150 m from every stop and the depot, and
@@ -34,7 +48,7 @@ inserts a 12–25 min speed-0 segment; the depot arrival moves later. Exposed as
 (van, lat, lon, start, minutes). CLI `--abnormal-stops N`; `make demo` uses `--abnormal-stops 2`.
 
 **Pure logic** (`flink/udf/`, unit tested without Flink):
-- `eta.py`: `haversine_km`, `route_eta(now, pos, speed_kmh, stops_ahead, dwell=4 min)`.
+- `eta.py`: `haversine_km`, `route_eta(now, pos, current_speed_kmh, stops_ahead, typical=25 km/h, dwell=4 min)`.
 - `tower.py`: `VanState` (latest ping, last 10 min of moving speeds, open orders by stop_seq, stop
   start, alert state) and `step(state, event, now) -> outputs`:
   - ping newer than latest → update position, recompute ETAs of out-for-delivery orders, evaluate
