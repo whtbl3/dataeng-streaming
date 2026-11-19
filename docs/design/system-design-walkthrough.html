@@ -772,13 +772,13 @@ dl.pat dd { margin: 0; min-width: 0; }
         <dt>Kiểm chứng</dt><dd><code>test_exactly_n_rows</code> (480 vào, 480 ra); <code>test_taskmanager_kill_mid_load_keeps_silver_exact</code>.</dd>
       </dl>
     </div>
-    <div class="err plan">
-      <div class="hd"><span class="no">L5</span>Quá nhiều file nhỏ <span class="pn">Compactor</span><span class="pn">Horizontal Partitioner</span><span class="st plan">Dự kiến · 5</span></div>
+    <div class="err">
+      <div class="hd"><span class="no">L5</span>Quá nhiều file nhỏ <span class="pn">Compactor</span><span class="pn">Horizontal Partitioner</span><span class="st ok">Đã chạy · 005</span></div>
       <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Ghi 30 giây một lần và mỗi upsert sinh file mới; sau vài ngày query phải mở hàng nghìn file.</dd>
-        <dt class="c">Cách làm</dt><dd>Chia partition theo ngày xảy ra (đã chạy) và theo xe; gộp file định kỳ.</dd>
-        <dt>Đánh đổi</dt><dd>Gộp file tốn máy, chạy ngoài giờ cao điểm.</dd>
-        <dt>Kiểm chứng</dt><dd><code>make bench</code> trên 100 triệu dòng.</dd>
+        <dt class="v">Vấn đề</dt><dd>Ghi 30 giây một lần và mỗi upsert sinh file mới; chia 16 ô mỗi ngày cho ra file khoảng 5 MB (nên là 128–512 MB). Sau vài ngày query phải mở hàng nghìn file.</dd>
+        <dt class="c">Cách làm</dt><dd>Partition theo ngày xảy ra, file xếp theo <code>(vehicle_id, event_ts)</code>. Dịch vụ bảo trì gộp file silver mỗi 30 phút, bronze mỗi giờ; mỗi ngày xóa snapshot cũ hơn 7 ngày và file mồ côi (ADR 0012).</dd>
+        <dt>Đánh đổi</dt><dd>Giữa hai lần gộp, đọc bảng upsert phải áp tối đa 30 phút file xóa.</dd>
+        <dt>Kiểm chứng</dt><dd><code>test_compaction_during_live_writes_keeps_silver_exact</code>; <code>test_compaction_reads_fewer_files_for_one_van_and_keeps_every_row</code>.</dd>
       </dl>
     </div>
 

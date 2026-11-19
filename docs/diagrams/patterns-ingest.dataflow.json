@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Failures when data comes in",
+    "locale": "en",
+    "output": "docs/diagrams/patterns-ingest.html",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "problem fixed by"
+        },
+        "emphasis": {
+          "label": "result"
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "label": "Before: what breaks"
+    },
+    {
+      "label": "Pattern"
+    },
+    {
+      "label": "After: what you get"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schema-b",
+      "type": "external",
+      "label": "Device changes schema",
+      "sublabel": "old reader cannot decode",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "schema-p",
+      "type": "backend",
+      "label": "Schema compatibility",
+      "sublabel": "FULL_TRANSITIVE + CI",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "tag": "spec 003"
+    },
+    {
+      "id": "schema-a",
+      "type": "frontend",
+      "label": "Old and new pings land",
+      "sublabel": "breaking change: new topic",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "dlq-b",
+      "type": "external",
+      "label": "One bad message",
+      "sublabel": "job stops for all vans",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "dlq-p",
+      "type": "backend",
+      "label": "Dead-letter queue",
+      "sublabel": "reason + raw bytes",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "spec 003"
+    },
+    {
+      "id": "dlq-a",
+      "type": "frontend",
+      "label": "Job keeps running",
+      "sublabel": "rejects queryable in SQL",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "ckpt-b",
+      "type": "external",
+      "label": "Crash mid-write",
+      "sublabel": "replay dupes, skip loses",
+      "stage": 0,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "ckpt-p",
+      "type": "backend",
+      "label": "Checkpoint + commit",
+      "sublabel": "commit on checkpoint",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "spec 001"
+    },
+    {
+      "id": "ckpt-a",
+      "type": "frontend",
+      "label": "Exactly-once",
+      "sublabel": "480 in, 480 out",
+      "stage": 2,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "resume-b",
+      "type": "external",
+      "label": "Cluster killed, no HA",
+      "sublabel": "job lost its place",
+      "stage": 0,
+      "row": 3,
+      "width": 150
+    },
+    {
+      "id": "resume-p",
+      "type": "backend",
+      "label": "Resume from checkpoint",
+      "sublabel": "newest retained one",
+      "stage": 1,
+      "row": 3,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "resume-a",
+      "type": "frontend",
+      "label": "Back without a savepoint",
+      "sublabel": "no rows lost or doubled",
+      "stage": 2,
+      "row": 3,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "id": "schema-fix",
+      "from": "schema-b",
+      "to": "schema-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "schema-res",
+      "from": "schema-p",
+      "to": "schema-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dlq-fix",
+      "from": "dlq-b",
+      "to": "dlq-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "dlq-res",
+      "from": "dlq-p",
+      "to": "dlq-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ckpt-fix",
+      "from": "ckpt-b",
+      "to": "ckpt-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "ckpt-res",
+      "from": "ckpt-p",
+      "to": "ckpt-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "resume-fix",
+      "from": "resume-b",
+      "to": "resume-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "resume-res",
+      "from": "resume-p",
+      "to": "resume-a",
+      "label": "gives",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Read each row left to right",
+      "items": [
+        "Before: what goes wrong without the pattern",
+        "Pattern: what the pipeline does",
+        "After: what you get, proven by a test"
+      ]
+    }
+  ]
+}

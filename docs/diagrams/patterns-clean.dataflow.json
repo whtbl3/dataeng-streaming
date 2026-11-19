@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Failures when cleaning (silver)",
+    "locale": "en",
+    "output": "docs/diagrams/patterns-clean.html",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "problem fixed by"
+        },
+        "emphasis": {
+          "label": "result"
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "label": "Before: what breaks"
+    },
+    {
+      "label": "Pattern"
+    },
+    {
+      "label": "After: what you get"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "dedup-b",
+      "type": "external",
+      "label": "Same ping sent twice",
+      "sublabel": "distance counted twice",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "dedup-p",
+      "type": "backend",
+      "label": "Dedup + upsert",
+      "sublabel": "first copy wins, 24 h",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "tag": "spec 004"
+    },
+    {
+      "id": "dedup-a",
+      "type": "frontend",
+      "label": "One row per real ping",
+      "sublabel": "clean run = chaos run",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "lsn-b",
+      "type": "external",
+      "label": "CDC replayed, reordered",
+      "sublabel": "delivered order goes back",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "lsn-p",
+      "type": "backend",
+      "label": "Order by commit LSN",
+      "sublabel": "not by arrival",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "spec 004"
+    },
+    {
+      "id": "lsn-a",
+      "type": "frontend",
+      "label": "Latest commit wins",
+      "sublabel": "silver = Postgres",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "late-b",
+      "type": "external",
+      "label": "Ping 4 min late",
+      "sublabel": "drop it, or van jumps back",
+      "stage": 0,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "late-p",
+      "type": "backend",
+      "label": "Late-data flag",
+      "sublabel": "event-time order",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "spec 004"
+    },
+    {
+      "id": "late-a",
+      "type": "frontend",
+      "label": "Kept and flagged",
+      "sublabel": "is_late, lateness_s 242",
+      "stage": 2,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "ttl-b",
+      "type": "external",
+      "label": "State grows forever",
+      "sublabel": "100M keys in 30 days",
+      "stage": 0,
+      "row": 3,
+      "width": 150
+    },
+    {
+      "id": "ttl-p",
+      "type": "backend",
+      "label": "State TTL",
+      "sublabel": "pings 24 h, orders 7 d",
+      "stage": 1,
+      "row": 3,
+      "width": 150,
+      "tag": "spec 004"
+    },
+    {
+      "id": "ttl-a",
+      "type": "frontend",
+      "label": "Memory bounded",
+      "sublabel": "stack under 6 GB",
+      "stage": 2,
+      "row": 3,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "id": "dedup-fix",
+      "from": "dedup-b",
+      "to": "dedup-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "dedup-res",
+      "from": "dedup-p",
+      "to": "dedup-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lsn-fix",
+      "from": "lsn-b",
+      "to": "lsn-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "lsn-res",
+      "from": "lsn-p",
+      "to": "lsn-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "late-fix",
+      "from": "late-b",
+      "to": "late-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "late-res",
+      "from": "late-p",
+      "to": "late-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ttl-fix",
+      "from": "ttl-b",
+      "to": "ttl-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "ttl-res",
+      "from": "ttl-p",
+      "to": "ttl-a",
+      "label": "gives",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Read each row left to right",
+      "items": [
+        "Before: what goes wrong without the pattern",
+        "Pattern: what the pipeline does",
+        "After: what you get, proven by a test"
+      ]
+    }
+  ]
+}

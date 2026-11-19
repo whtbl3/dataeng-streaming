@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Scale: Iceberg tables",
+    "locale": "en",
+    "output": "docs/diagrams/patterns-scale-tables.html",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "problem fixed by"
+        },
+        "emphasis": {
+          "label": "result"
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "label": "Before: what breaks"
+    },
+    {
+      "label": "Pattern"
+    },
+    {
+      "label": "After: what you get"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "hash-b",
+      "type": "external",
+      "label": "A file per writer",
+      "sublabel": "per partition, per commit",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "hash-p",
+      "type": "backend",
+      "label": "Hash distribution",
+      "sublabel": "one writer per partition",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "hash-a",
+      "type": "frontend",
+      "label": "One file per commit",
+      "sublabel": "per partition",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "layout-b",
+      "type": "external",
+      "label": "About 5 MB files",
+      "sublabel": "16 buckets a day",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "layout-p",
+      "type": "backend",
+      "label": "Day partition, sorted",
+      "sublabel": "by vehicle_id, event_ts",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "layout-a",
+      "type": "frontend",
+      "label": "Fewer, bigger files",
+      "sublabel": "one-van query skips files",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "stale-b",
+      "type": "external",
+      "label": "Reader stopped 7+ days",
+      "sublabel": "its snapshot expired",
+      "stage": 0,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "stale-p",
+      "type": "backend",
+      "label": "Refuse the resume",
+      "sublabel": "check before start",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "stale-a",
+      "type": "frontend",
+      "label": "Clear error, rebuild",
+      "sublabel": "make silver-rebuild",
+      "stage": 2,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "maint-b",
+      "type": "external",
+      "label": "Files pile up",
+      "sublabel": "delete files, snapshots",
+      "stage": 0,
+      "row": 3,
+      "width": 150
+    },
+    {
+      "id": "maint-p",
+      "type": "backend",
+      "label": "Maintenance service",
+      "sublabel": "compact 30 min, expire 7 d",
+      "stage": 1,
+      "row": 3,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "maint-a",
+      "type": "frontend",
+      "label": "Flat file counts",
+      "sublabel": "make table-health",
+      "stage": 2,
+      "row": 3,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "id": "hash-fix",
+      "from": "hash-b",
+      "to": "hash-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "hash-res",
+      "from": "hash-p",
+      "to": "hash-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "layout-fix",
+      "from": "layout-b",
+      "to": "layout-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "layout-res",
+      "from": "layout-p",
+      "to": "layout-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "stale-fix",
+      "from": "stale-b",
+      "to": "stale-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "stale-res",
+      "from": "stale-p",
+      "to": "stale-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "maint-fix",
+      "from": "maint-b",
+      "to": "maint-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "maint-res",
+      "from": "maint-p",
+      "to": "maint-a",
+      "label": "gives",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Read each row left to right",
+      "items": [
+        "Before: what goes wrong without the pattern",
+        "Pattern: what the pipeline does",
+        "After: what you get, proven by a test"
+      ]
+    }
+  ]
+}
