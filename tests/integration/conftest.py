@@ -80,7 +80,7 @@ def run_orders_sim(prefix: str, *, vans: int = 4, orders_per_day: int = 20, hour
             ORDERS_DSN,
         ]
     )
-    changes, _, _ = run_day(args, _mp, connect)
+    changes, _, _, _ = run_day(args, _mp, connect)
     return changes
 
 

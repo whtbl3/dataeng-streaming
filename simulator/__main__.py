@@ -16,8 +16,10 @@ import os
 import sys
 import time
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+from simulator.chaos import CHAOS_DEFAULTS, Chaos, ChaosConfig
 from simulator.day import local_dates, merged_stream, simulate_day
 from simulator.orders_db import ConnectionLike, OrdersWriter, connect
 from simulator.producer import Corrupter, GpsEncoder, ProducerLike, make_producer, send
@@ -38,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--orders-per-day", type=int, default=None, help="default: 25 per van")
     d.add_argument("--interval", type=int, default=int(os.environ.get("SIM_PING_SECONDS", 5)))
     d.add_argument("--seed", type=int, default=42)
-    d.add_argument("--late-rate", type=float, default=0.10)
+    d.add_argument("--late-delivery-rate", type=float, default=0.10, help="share delivered late")
     d.add_argument("--fail-rate", type=float, default=0.02)
     d.add_argument("--prefix", default="ORD", help="order id prefix (tests use a unique one)")
     d.add_argument("--vehicle-prefix", default=None, help="rename GPS vehicle ids (tests only)")
@@ -57,7 +59,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--invalid-rate", type=float, default=0.0, help="share of pings sent invalid (DLQ tests)"
     )
     d.add_argument("--dsn", default=os.environ.get("ORDERS_DSN", DEFAULT_DSN))
+    c = d.add_argument_group("chaos (spec 004): valid but dirty GPS delivery")
+    c.add_argument(
+        "--chaos",
+        action="store_true",
+        help="5%% duplicates, 5%% delayed, 10%% jitter, one offline burst per van and day",
+    )
+    c.add_argument("--dup-rate", type=float, default=None, help="share of pings resent 1-3 times")
+    c.add_argument("--delay-rate", type=float, default=None, help="share of pings sent late")
+    c.add_argument("--max-delay-min", type=float, default=None, help="longest delay (default 120)")
+    c.add_argument("--jitter-rate", type=float, default=None, help="share sent 0-10 s late")
+    c.add_argument(
+        "--offline", action=argparse.BooleanOptionalAction, default=None, help="offline bursts"
+    )
     return p
+
+
+def chaos_config(args: argparse.Namespace) -> ChaosConfig:
+    """`--chaos` defaults, with any single share overridden; all off without flags."""
+    base = CHAOS_DEFAULTS if args.chaos else ChaosConfig()
+    overrides = {
+        f: getattr(args, f)
+        for f in ("dup_rate", "delay_rate", "max_delay_min", "jitter_rate", "offline")
+        if getattr(args, f) is not None
+    }
+    return replace(base, **overrides)
 
 
 def _floor(ts: datetime, interval_s: int) -> datetime:
@@ -71,7 +97,7 @@ def run_day(
     db_factory: Callable[[str], ConnectionLike],
     now: datetime | None = None,
     encoder_factory: Callable[[argparse.Namespace], GpsEncoder] | None = None,
-) -> tuple[int, int, Corrupter | None]:
+) -> tuple[int, int, Corrupter | None, Chaos]:
     now = _floor(now or datetime.now(UTC), args.interval)
     if args.realtime:
         start, end = now, now + timedelta(days=7)
@@ -85,7 +111,7 @@ def run_day(
             local_date=d,
             vans=args.vans,
             orders_per_day=orders_per_day,
-            late_rate=args.late_rate,
+            late_rate=args.late_delivery_rate,
             fail_rate=args.fail_rate,
             prefix=args.prefix,
             interval_s=args.interval,
@@ -107,7 +133,11 @@ def run_day(
                     writer.apply(event)
 
     pings = 0
-    stream = merged_stream(plans, start, end, gps=producer is not None, orders=writer is not None)
+    chaos = Chaos(chaos_config(args), args.seed)
+    stream = chaos.apply(
+        merged_stream(plans, start, end, gps=producer is not None, orders=writer is not None),
+        until=None if args.realtime else end,
+    )
     try:
         for ts, kind, item in stream:
             if args.realtime:
@@ -127,7 +157,7 @@ def run_day(
                             for f in ("event_ts", "lat", "lon", "speed_kmh", "heading_deg")
                         ),
                     )
-                send(producer, args.topic, item, encoder, corrupter)
+                send(producer, args.topic, item, encoder, corrupter, sent_at=ts)
                 pings += 1
     except KeyboardInterrupt:
         print("stopped", file=sys.stderr)
@@ -136,7 +166,7 @@ def run_day(
             remaining = producer.flush(30)
             if remaining:
                 raise RuntimeError(f"{remaining} pings were not delivered")
-    return (writer.changes if writer else 0), pings, corrupter
+    return (writer.changes if writer else 0), pings, corrupter, chaos
 
 
 def main(
@@ -150,10 +180,14 @@ def main(
     if args.command == "seed-sql":
         print(seed_sql(), end="")
         return 0
-    changes, pings, corrupter = run_day(args, producer_factory, db_factory, now, encoder_factory)
+    changes, pings, corrupter, chaos = run_day(
+        args, producer_factory, db_factory, now, encoder_factory
+    )
     line = f"order_changes={changes} pings={pings} vans={args.vans} prefix={args.prefix}"
     if corrupter:
         line += " invalid=" + ",".join(f"{k}:{n}" for k, n in sorted(corrupter.counts.items()))
+    if chaos.config.enabled:
+        line += " chaos=" + ",".join(f"{k}:{n}" for k, n in sorted(chaos.counts.items()))
     print(line)
     return 0
 
