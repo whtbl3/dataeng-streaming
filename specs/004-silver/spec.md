@@ -1,5 +1,5 @@
 # Spec 004: Silver (dedup, event-time watermarks, chaos mode)
-Status: Draft · Intent: roadmap item 4 · Author: project owner + Claude
+Status: Approved (2026-11-19) · Intent: roadmap item 4 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -49,10 +49,11 @@ none of this is tested.
 - The live join, ETA and alerts (feature 6).
 
 ## Decisions that change
-- New ADR 0011 for how silver is written (open questions 1 and 2).
-- Simulator option `--late-rate` (late *deliveries*, spec 002 AC4) is renamed so it is not confused with late *events* (open question 5).
+- New ADR 0011 for how silver is written (resolved questions 1 and 2).
+- Simulator option `--late-rate` (late *deliveries*, spec 002 AC4) is renamed so it is not confused with late *events* (resolved question 5).
 
-## Open questions
+## Resolved questions (approved 2026-11-19)
+All six recommendations were accepted as written.
 1. **Where do silver jobs read from?** *Recommended:* from bronze (Iceberg, read incrementally), not from Kafka again. A rebuild (AC8) is then the same job started from the first bronze snapshot, the decode and DLQ stay in one place, and bronze stays the only source of truth (rule 1). Cost: silver is about 1 minute behind bronze (two 30 s commits), which is why AC9 says 2 minutes. The alert path (feature 6) does not wait for silver.
 2. **How does silver GPS stay unique?** Options:
    - (a) Flink remembers seen keys for a time (state TTL) and appends only new ones. Cheap to read, but a duplicate that comes after the TTL (a replay, a van offline for a day) gets in, and a 100M-event backfill holds every key in state.
