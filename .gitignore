@@ -40,3 +40,9 @@ dbt/logs/
 infra/local/data/
 .coverage
 htmlcov/
+
+# Archify viewers: generated from docs/diagrams/*.json (see docs/diagrams/README.md)
+docs/diagrams/*.html
+docs/diagrams/*.delivery.json
+docs/diagrams/*.finalize*.json
+docs/diagrams/*.browser-check.json

@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "Gold star schema (planned, feature 7)",
+    "locale": "en",
+    "output": "docs/diagrams/model-gold.html",
+    "quality_profile": "showcase"
+  },
+  "layout": {
+    "mode": "grid",
+    "gapX": 96,
+    "gapY": 40
+  },
+  "entities": [
+    {
+      "id": "fct_delivery",
+      "label": "gold.fct_delivery",
+      "sublabel": "one row per closed order, by local_date",
+      "tag": "fact",
+      "row": 0,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "order_id",
+          "type": "varchar",
+          "key": "pk"
+        },
+        {
+          "name": "local_date",
+          "type": "date",
+          "key": "fk",
+          "references": "dim_date.local_date"
+        },
+        {
+          "name": "depot_id",
+          "type": "varchar",
+          "key": "fk",
+          "references": "dim_depot.depot_id"
+        },
+        {
+          "name": "van_key",
+          "type": "bigint",
+          "key": "fk",
+          "references": "dim_van.van_key"
+        },
+        {
+          "name": "promised_start",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "promised_end",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "closed_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "outcome",
+          "type": "varchar"
+        },
+        {
+          "name": "is_on_time",
+          "type": "boolean"
+        },
+        {
+          "name": "minutes_late",
+          "type": "double"
+        },
+        {
+          "name": "eta_error_t30_min",
+          "type": "double"
+        },
+        {
+          "name": "eta_error_t15_min",
+          "type": "double"
+        },
+        {
+          "name": "first_alert_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "alert_lead_min",
+          "type": "double"
+        },
+        {
+          "name": "dest_area",
+          "type": "varchar"
+        },
+        {
+          "name": "is_final",
+          "type": "boolean"
+        }
+      ],
+      "width": 250
+    },
+    {
+      "id": "dim_van",
+      "label": "gold.dim_van",
+      "sublabel": "SCD Type 2 from vans_cdc",
+      "tag": "dimensions",
+      "row": 0,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "van_key",
+          "type": "bigint",
+          "key": "pk"
+        },
+        {
+          "name": "van_id",
+          "type": "varchar"
+        },
+        {
+          "name": "depot_id",
+          "type": "varchar"
+        },
+        {
+          "name": "plate",
+          "type": "varchar"
+        },
+        {
+          "name": "capacity",
+          "type": "integer"
+        },
+        {
+          "name": "valid_from",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "valid_to",
+          "type": "timestamptz(6)"
+        }
+      ]
+    },
+    {
+      "id": "dim_depot",
+      "label": "gold.dim_depot",
+      "sublabel": "one row per depot",
+      "tag": "dimensions",
+      "row": 1,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "depot_id",
+          "type": "varchar",
+          "key": "pk"
+        },
+        {
+          "name": "name",
+          "type": "varchar"
+        },
+        {
+          "name": "lat",
+          "type": "double"
+        },
+        {
+          "name": "lon",
+          "type": "double"
+        }
+      ]
+    },
+    {
+      "id": "dim_date",
+      "label": "gold.dim_date",
+      "sublabel": "local day, Asia/Ho_Chi_Minh",
+      "tag": "dimensions",
+      "row": 2,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "local_date",
+          "type": "date",
+          "key": "pk"
+        }
+      ]
+    },
+    {
+      "id": "agg_depot_daily",
+      "label": "gold.agg_depot_daily",
+      "sublabel": "depot x local day",
+      "tag": "aggregates and close",
+      "row": 1,
+      "col": 2,
+      "attributes": [
+        {
+          "name": "depot_id",
+          "type": "varchar",
+          "key": [
+            "pk",
+            "fk"
+          ],
+          "references": "dim_depot.depot_id"
+        },
+        {
+          "name": "local_date",
+          "type": "date",
+          "key": [
+            "pk",
+            "fk"
+          ],
+          "references": "dim_date.local_date"
+        },
+        {
+          "name": "on_time_rate",
+          "type": "double"
+        },
+        {
+          "name": "is_final",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "closed_days",
+      "label": "gold.closed_days",
+      "sublabel": "one row per nightly close",
+      "tag": "aggregates and close",
+      "row": 2,
+      "col": 2,
+      "attributes": [
+        {
+          "name": "local_date",
+          "type": "date",
+          "key": [
+            "pk",
+            "fk"
+          ],
+          "references": "dim_date.local_date"
+        },
+        {
+          "name": "late_after_close",
+          "type": "bigint"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "r-f-van",
+      "from": "fct_delivery",
+      "to": "dim_van",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "version as of closed_at"
+    },
+    {
+      "id": "r-f-depot",
+      "from": "fct_delivery",
+      "to": "dim_depot",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "depot"
+    },
+    {
+      "id": "r-f-date",
+      "from": "fct_delivery",
+      "to": "dim_date",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "local day"
+    },
+    {
+      "id": "r-a-depot",
+      "from": "agg_depot_daily",
+      "to": "dim_depot",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "depot"
+    },
+    {
+      "id": "r-a-date",
+      "from": "agg_depot_daily",
+      "to": "dim_date",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "day"
+    },
+    {
+      "id": "r-c-date",
+      "from": "closed_days",
+      "to": "dim_date",
+      "fromCardinality": "one",
+      "toCardinality": "one",
+      "toOptional": false,
+      "fromOptional": true,
+      "label": "closed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Planned, not built",
+      "items": [
+        "Tables, keys and fct_delivery columns follow docs/requirements.md section 4",
+        "Other columns and all types are a draft until the feature 7 spec"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Why a star schema",
+      "items": [
+        "KPIs slice one fact by depot, van and day with simple joins",
+        "dim_van is SCD Type 2, so a van that changes depot does not rewrite history",
+        "is_final separates provisional (every 5 min) from final rows (nightly close)"
+      ]
+    }
+  ]
+}
