@@ -18,6 +18,7 @@ CREATE TEMPORARY TABLE gps_raw (
   'properties.group.id' = 'flink-bronze-gps',
   'properties.auto.offset.reset' = 'earliest',
   'scan.startup.mode' = 'group-offsets',
+  'scan.topic-partition-discovery.interval' = '1 min',
   'format' = 'raw'
 );
 
@@ -36,6 +37,7 @@ CREATE TEMPORARY TABLE gps_dlq_topic (
   'properties.bootstrap.servers' = '${KAFKA_BOOTSTRAP}',
   'format' = 'raw',
   'sink.delivery-guarantee' = 'exactly-once',
+  'properties.compression.type' = 'zstd',
   'sink.transactional-id-prefix' = 'bronze-gps-dlq',
   'properties.transaction.timeout.ms' = '900000'
 );

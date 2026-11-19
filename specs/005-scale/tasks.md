@@ -2,8 +2,8 @@
 From: plan.md (approved 2026-11-19). Tests first in every task.
 
 - [x] T1: spike S1–S4, outcome in plan.md
-- [ ] T2: Kafka 6 partitions, size bounds, partition discovery, producer zstd + Debezium compression (AC1, AC2, AC9)
-- [ ] T3: RocksDB + incremental checkpoints; `submit.sh` checkpoint resume + old-dir cleanup (AC4)
+- [x] T2: Kafka 6 partitions, size bounds, partition discovery, producer zstd + Debezium compression (AC1, AC2, AC9)
+- [x] T3: RocksDB + incremental checkpoints; `submit.sh` checkpoint resume + old-dir cleanup (AC4)
 - [ ] T4: unit tests, then `decode_gps_batch` + vectorized UDF (AC3)
 - [ ] T5: `table_admin.py` (unit tests first), silver GPS append + layout + lineage columns, GPS parallelism (AC11, AC12 props)
 - [ ] T6: unit tests, then `maintain.py`; compose service; `make maintain`; `ops.maintenance_runs` (AC5–AC8, AC14)

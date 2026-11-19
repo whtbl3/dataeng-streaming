@@ -15,7 +15,11 @@ x-flink-props: &flink-props |
   rest.address: jobmanager
   parallelism.default: 1
   taskmanager.numberOfTaskSlots: 4
-  state.backend.type: hashmap
+  # Keyed state (dedup, latest version) lives on disk in RocksDB, so its size is not capped by heap,
+  # and each checkpoint uploads only the files that changed (spec 005).
+  state.backend.type: rocksdb
+  execution.checkpointing.incremental: true
+  execution.checkpointing.num-retained: 2
   execution.checkpointing.dir: file:///opt/flink/checkpoints
   execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
   jobmanager.memory.process.size: 900m
@@ -134,6 +138,7 @@ services:
       STATUS_STORAGE_REPLICATION_FACTOR: "1"
       HEAP_OPTS: -Xms256m -Xmx512m
       # connector configs use $${env:...}, so no credentials live in the JSON file
+      CONNECT_PRODUCER_COMPRESSION_TYPE: zstd # batches to cdc.* topics are compressed (spec 005)
       CONNECT_CONFIG_PROVIDERS: env
       CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
       POSTGRES_USER: ${POSTGRES_USER:-ct}

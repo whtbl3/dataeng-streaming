@@ -19,6 +19,7 @@ CREATE TEMPORARY TABLE depots_raw (
   'properties.group.id' = 'flink-bronze-cdc',
   'properties.auto.offset.reset' = 'earliest',
   'scan.startup.mode' = 'group-offsets',
+  'scan.topic-partition-discovery.interval' = '1 min',
   'format' = 'raw'
 );
 
@@ -36,6 +37,7 @@ CREATE TEMPORARY TABLE depots_dlq_topic (
   'properties.bootstrap.servers' = '${KAFKA_BOOTSTRAP}',
   'format' = 'raw',
   'sink.delivery-guarantee' = 'exactly-once',
+  'properties.compression.type' = 'zstd',
   'sink.transactional-id-prefix' = 'bronze-cdc-depots-dlq',
   'properties.transaction.timeout.ms' = '900000'
 );
@@ -54,6 +56,7 @@ CREATE TEMPORARY TABLE vans_raw (
   'properties.group.id' = 'flink-bronze-cdc',
   'properties.auto.offset.reset' = 'earliest',
   'scan.startup.mode' = 'group-offsets',
+  'scan.topic-partition-discovery.interval' = '1 min',
   'format' = 'raw'
 );
 
@@ -71,6 +74,7 @@ CREATE TEMPORARY TABLE vans_dlq_topic (
   'properties.bootstrap.servers' = '${KAFKA_BOOTSTRAP}',
   'format' = 'raw',
   'sink.delivery-guarantee' = 'exactly-once',
+  'properties.compression.type' = 'zstd',
   'sink.transactional-id-prefix' = 'bronze-cdc-vans-dlq',
   'properties.transaction.timeout.ms' = '900000'
 );
@@ -89,6 +93,7 @@ CREATE TEMPORARY TABLE orders_raw (
   'properties.group.id' = 'flink-bronze-cdc',
   'properties.auto.offset.reset' = 'earliest',
   'scan.startup.mode' = 'group-offsets',
+  'scan.topic-partition-discovery.interval' = '1 min',
   'format' = 'raw'
 );
 
@@ -106,6 +111,7 @@ CREATE TEMPORARY TABLE orders_dlq_topic (
   'properties.bootstrap.servers' = '${KAFKA_BOOTSTRAP}',
   'format' = 'raw',
   'sink.delivery-guarantee' = 'exactly-once',
+  'properties.compression.type' = 'zstd',
   'sink.transactional-id-prefix' = 'bronze-cdc-orders-dlq',
   'properties.transaction.timeout.ms' = '900000'
 );

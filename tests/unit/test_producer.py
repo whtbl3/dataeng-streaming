@@ -222,3 +222,14 @@ def test_cli_late_delivery_rate_replaces_late_rate():
 def test_cli_seed_sql(capsys):
     assert main(["seed-sql"]) == 0
     assert "INSERT INTO depots" in capsys.readouterr().out
+
+
+def test_producer_batches_and_compresses():
+    """Spec 005 AC2: fewer, larger requests; zstd is about a third of the bytes of plain Avro."""
+    from simulator.producer import PRODUCER_CONFIG
+
+    assert PRODUCER_CONFIG["compression.type"] == "zstd"
+    assert PRODUCER_CONFIG["linger.ms"] >= 20
+    assert PRODUCER_CONFIG["batch.size"] >= 256 * 1024
+    assert PRODUCER_CONFIG["enable.idempotence"] is True
+    assert PRODUCER_CONFIG["acks"] == "all"
