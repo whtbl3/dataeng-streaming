@@ -1,5 +1,5 @@
 # Spec 006: Control tower (live ETA, SLA-risk and abnormal-stop alerts)
-Status: Draft · Intent: roadmap item 6 · Author: project owner + Claude
+Status: Approved (2026-11-19) · Intent: roadmap item 6 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -51,7 +51,8 @@ alert fires before a breach, and a van stuck somewhere it should not be goes unn
 - Postgres moves from the optional CDC profile to the core stack, because the serving tables live
   there (ADR 0007).
 
-## Open questions
+## Resolved questions (approved 2026-11-19)
+All seven recommendations were accepted as written.
 1. **Where does the alert job read?** *Recommended:* straight from Kafka (GPS and the order change
    topic), decoded with the same contract code as bronze. Silver is 1–2 minutes behind bronze and
    cannot meet 10 s. Bad messages are skipped here; bronze already sends them to the dead-letter table.
