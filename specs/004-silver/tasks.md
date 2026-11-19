@@ -3,8 +3,8 @@
 <!-- Small, independently testable. Test first. Tick as you go. -->
 - [x] T1: tests, then `simulator/chaos.py` (AC1)
 - [x] T2: CLI chaos flags + `--late-delivery-rate` rename; tests updated; `make check` green
-- [ ] T3: producer record timestamp = send time; unit test; e2e 001–003 green
-- [ ] T4: spike R1, with the outcome recorded in plan.md
+- [x] T3: producer record timestamp = send time; unit test; e2e 001–003 green
+- [x] T4: spike R1, with the outcome recorded in plan.md
 - [ ] T5: `004_silver.sql` + `silver_gps.sql` + compose submit; e2e AC2, AC3, AC4, AC9
 - [ ] T6: `silver_orders.sql`; e2e AC5, AC6
 - [ ] T7: `make silver-status` + e2e AC10

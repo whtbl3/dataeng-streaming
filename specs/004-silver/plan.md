@@ -17,7 +17,7 @@ These come out of reading the code. Each one keeps an acceptance criterion true 
    `event_ts_in_future`: a corrupted ping is still 10 min ahead of the wall clock.
 2. **Late = lateness > 30 s, taken from the data, not from the live watermark.** A flag based on
    `CURRENT_WATERMARK()` depends on the order Flink reads splits in, so a rebuild (AC8) could flag
-   different rows. `lateness_ms = ingest_ts − event_ts` and `is_late = lateness_ms > 30 000` give the
+   different rows. `lateness_s = ingest_ts − event_ts` (seconds; see the spike outcome) and `is_late = lateness_s > 30` give the
    same result on every run. The 30 s is the watermark allowance from ADR 0006. The silver GPS source
    still declares that 30 s watermark for later event-time operators (feature 6). See risk R1.
 3. **Among copies of one ping, the first arrival wins (smallest `ingest_ts`), not the last write**
@@ -25,14 +25,34 @@ These come out of reading the code. Each one keeps an acceptance criterion true 
    a copy comes back hours later, which breaks AC4. A Top-1 per key ordered by `ingest_ts`, with state
    TTL 24 h, emits each key once. The upsert sink on the primary key (resolved question 2b) stays as
    the backstop: a copy that arrives after the TTL still cannot create a second row, it can only
-   refresh the arrival columns. ADR 0011 documents both layers.
+   refresh the arrival columns. `ingest_ts` and `lateness_s` then change for that row, and
+   `make silver-status` counts it. ADR 0011 documents both layers.
+
+## Spike outcome (T4, 2026-11-19)
+Tried on the running stack with a throwaway `spike` schema (dropped afterwards):
+- **Watermark:** an `iceberg` connector table accepts a WATERMARK, but only on `TIMESTAMP_LTZ(3)` or
+  less. Bronze stores `TIMESTAMP_LTZ(6)`, so the source adds a computed column
+  `event_time AS CAST(event_ts AS TIMESTAMP_LTZ(3))` and the watermark goes on that column.
+- **Upsert key:** the sink does **not** take the key from the DDL `PRIMARY KEY` when the table already
+  exists. It fails with "Equality field columns shouldn't be empty". The key comes from the Iceberg
+  table's identifier fields, which Trino cannot set. Fallback R1 is used, with no new dependency:
+  `infra/local/iceberg/set_identifier_fields.py` (stdlib only) adds a schema with
+  `identifier-field-ids` through the REST catalog API. It is idempotent, and `flink-submit` runs it
+  before the silver jobs. Key columns are `NOT NULL` in the Trino DDL, because Iceberg requires
+  identifier fields to be required.
+- **Upsert works:** with `'upsert-enabled' = 'true'`, bronze had 2,682 rows and 2,662 distinct keys,
+  and silver came out at 2,662. Cancelling the job and resubmitting it without state reprocessed all
+  of bronze, and silver still had 2,662 rows. Every write adds an equality-delete file (31 data files
+  and 31 delete files per pass), which confirms R2.
+- **Lateness unit:** Flink 1.20 does not parse `TIMESTAMPDIFF(MILLISECOND, …)`, so the column is
+  `lateness_s` (seconds) and `is_late = lateness_s > 30`. Pings sit on 5 s ticks, so seconds are enough.
 
 ## Design
 **Tables** (`infra/local/trino/init/004_silver.sql`). Created in Trino, Iceberg format v2, because
 Flink DDL cannot declare partition transforms (same reason as `001_bronze.sql`).
 | Table | Columns (beyond the source fields) | Primary key (upsert) | Partition |
 |---|---|---|---|
-| `silver.gps_pings` | `ingest_ts`, `lateness_ms`, `is_late` | `(vehicle_id, event_ts)` | `day(event_ts)`, `bucket(16, vehicle_id)` |
+| `silver.gps_pings` | `ingest_ts`, `lateness_s`, `is_late` | `(vehicle_id, event_ts)` | `day(event_ts)`, `bucket(16, vehicle_id)` |
 | `silver.orders` | flattened `after` row + `last_lsn`, `last_commit_ts` | `(order_id, created_at)` | `month(created_at)` |
 | `silver.order_status_history` | `order_id, status, status_ts, source_lsn, commit_ts` | `(order_id, status, status_ts)` | `day(status_ts)` |
 
