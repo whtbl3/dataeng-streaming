@@ -8,5 +8,5 @@ From: plan.md (approved 2026-11-19). Tests first in every task.
 - [x] T5: `table_admin.py` (unit tests first), silver GPS layout (stays upsert, see plan departures), GPS parallelism (AC11, AC12 props)
 - [x] T6: unit tests, then `maintain.py`; compose service; `make maintain`; `ops.maintenance_runs` (AC5–AC8)
 - [x] T7: `make table-health` (AC10); expiry vs reader in `submit.sh` (AC13); memory (AC15)
-- [ ] T8: ADR 0012; ADR 0009/0010/0011, intent, requirements, project-spec, roadmap, README, flink.md, explainer
+- [x] T8: ADR 0012; ADR 0009/0010/0011, intent, requirements, project-spec, roadmap, README, flink.md, explainer
 - [ ] T9: `make check`, `make e2e`, `make e2e-restart` green; spec Implemented; PR

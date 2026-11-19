@@ -31,13 +31,13 @@ can reference it (for example, "covers BR-2, NFR-6").
 | NFR-2 | Correctness | Late or duplicate events do not change KPIs. |
 | NFR-3 | RPO | 0 events lost. |
 | NFR-4 | RTO | Alerts back within 15 min of a restart. |
-| NFR-5 | Retention | 7 days (Kafka) to 2 years (gold). |
+| NFR-5 | Retention | 7 days or a size bound (Kafka) to 2 years (gold). |
 | NFR-6 | Privacy | Customer coordinates never reach gold. |
 | NFR-7 | Security (AWS) | Least privilege, KMS, private subnets. |
 | NFR-8 | Availability | No HA commitment. |
 | NFR-9 | Cost | $0 local; < $5 per AWS demo. |
 | NFR-10 | Observability | Alerts on lag, checkpoints, slot, silence. |
-| NFR-11 | Volume | Built for ≈ 100M GPS events (30 days). |
+| NFR-11 | Volume | Designed for ≈ 100M GPS events (30 days); ADR 0012. |
 
 All items are **Approved** unless their section says **Final** (already fixed by the intent,
 an ADR or an implemented spec).
@@ -98,12 +98,14 @@ Duplicate or late events give **identical gold KPIs**:
 ### NFR-5 · Retention
 | Data | Kept for |
 |---|---|
-| Kafka topics | 7 days |
+| Kafka topics | 7 days, or a size bound per partition (GPS 1 GiB, CDC 256 MiB, DLQ 128 MiB), whichever first |
 | bronze GPS | 90 days |
 | bronze CDC | 1 year |
 | silver | 1 year |
 | gold | 2 years |
-| Iceberg snapshots | 7 days (scheduled `expire_snapshots`) |
+| Iceberg snapshots | 7 days (scheduled `expire_snapshots`); orphan files 7 days |
+
+Enforced by the maintenance service (spec 005, ADR 0012); partitions are dropped whole.
 
 ### NFR-6 · Privacy (PII)
 - `dest_lat` and `dest_lon` are personal data (a customer address).
@@ -131,8 +133,9 @@ Alert when:
 - replication slot lag > 500 MB;
 - bronze receives no rows for 2 min.
 
-### NFR-11 · Volume — *Final (ADR 0009); measured in feature 5*
-- Designed and benchmarked for the `standard` tier: ≈ 100M GPS events over 30 days.
+### NFR-11 · Volume — *Final (ADR 0009, 0012)*
+- Designed for the `standard` tier: ≈ 100M GPS events over 30 days. Spec 005 removed the limits
+  per layer (ADR 0012); a measured backfill and benchmark are a stretch item.
 - Measured event sizes replace the estimates. The CDC size (≈ 1.5 KB) is not yet measured.
 
 ---
@@ -246,8 +249,8 @@ it, and the test that proves it.
 
 **How long do we keep history?**
 - Requirement: NFR-5
-- Design: retention settings + snapshot expiry jobs
-- Proof: feature 5
+- Design: retention settings + snapshot expiry jobs (maintenance service, ADR 0012)
+- Proof: spec 005 e2e (`test_maintenance.py`: expiry, orphans, retention; `test_scale.py`: Kafka bounds)
 
 **Is the customer's location protected?**
 - Requirement: NFR-6

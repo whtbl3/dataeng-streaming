@@ -73,6 +73,17 @@ Run on the dev stack (Flink 1.20.5, Iceberg 1.10.1, Trino 484, Redpanda 26.1).
   `has-rows`), configured in one place (`FLINK_TABLES`, `TABLE_PROPERTIES`, `UPSERT_KEYS`).
 - The vectorized UDF returns `TIMESTAMP(3)` (UTC) for its timestamps; the SQL casts as before.
 - Spec 001 tests that hard-coded 3 GPS partitions now expect 6 (spec 005 AC1 changed the requirement).
+- **AC13 found no silent skip.** With intermediate bronze snapshots expired, the resumed silver job
+  fails loudly ("Starting snapshot (exclusive) … is not a parent ancestor of end snapshot …") and
+  restarts forever; with only one commit in between it continues correctly. `submit.sh` therefore
+  refuses a resume older than `SNAPSHOT_RETENTION` up front (savepoint or checkpoint age) and points
+  to `make silver-rebuild`, instead of watching the job fail.
+- Silver sources set `streaming-skip-delete-snapshots` / `-overwrite-snapshots`, so retention deletes
+  on bronze never reach silver (not in the original plan).
+- An idle Flink Iceberg sink commits an empty snapshot only every 10th checkpoint; the AC12 test
+  sends pings to force commits.
+- The explainer page (`docs/design/system-design-walkthrough.html`) was not updated: the file has
+  uncommitted edits made outside this session, left untouched.
 
 ## Design
 **Kafka** (`infra/local/redpanda/init.sh`)

@@ -30,9 +30,12 @@ from its checkpoint, and nothing good is dead-lettered.
 ## Consequences
 - \+ No message can stop a bronze job. Rejects are queryable with SQL and replayable from the topic.
 - − A Python worker runs beside the JVM (taskmanager memory 1.5 → 2 GB). Each record crosses the
-  JVM/Python boundary. That is fine for live load (about 40 events/s); the 100M backfill
-  (≥ 20k events/s) is measured in feature 5. If it is too slow, tune the bundle size first,
-  then move to a vectorized (pandas) UDF.
+  JVM/Python boundary. That is fine for live load (about 40 events/s).
+  *Update (spec 005, ADR 0012):* the GPS UDF is now vectorized (one call per batch of messages;
+  same output, unit-tested against the row-by-row result). Measured on 172,820 pings, one
+  subtask: decode about 8.5 s → 6.1 s (≈ 20k → 28k messages/s). Its timestamps come back as
+  `TIMESTAMP(3)` in UTC, because a vectorized UDF cannot return `TIMESTAMP_LTZ` inside a ROW.
+  The CDC UDFs stay row by row (low volume).
 - − Bronze sources have no `event_ts` column before decoding, so they declare no watermark.
   Bronze is append-only and uses no event time; silver (feature 4) declares the watermark.
 - − Sinks must keep reading only the UDF ROW. A sink that reads a source column directly

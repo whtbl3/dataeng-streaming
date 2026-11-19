@@ -1,7 +1,7 @@
 # Delivery Control Tower
 
 Real-time last-mile delivery tracking on a streaming lakehouse.
-It runs locally on Docker for $0, is designed and benchmarked for ~100M events, and
+It runs locally on Docker for $0, is designed for ~100M events (ADR 0012), and
 deploys to AWS managed services on demand with Terraform.
 
 > **Status:** in development. See [roadmap](docs/roadmap.md).
@@ -52,8 +52,8 @@ make silver-status            # silver: rows kept, duplicate copies removed, lat
 make silver-rebuild           # drop silver and rebuild it from bronze (same result)
 make down                     # stop jobs with a savepoint, then the stack (make up resumes)
 make e2e                      # acceptance tests against the running stack
-make backfill DAYS=30         # ~100M events      (roadmap feature 5)
-make bench                    # throughput report (roadmap feature 5)
+make maintain                 # table maintenance now: compaction, manifests, expiry, orphans, retention
+make table-health             # files, delete files, file size, snapshots and last maintenance per table
 ```
 Query the bronze table:
 ```bash

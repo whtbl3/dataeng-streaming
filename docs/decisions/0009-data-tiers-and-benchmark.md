@@ -1,5 +1,10 @@
 # 0009: Data volume tiers and the 100M-event benchmark
-Date: 2026-11-18 · Status: Final
+Date: 2026-11-18 · Status: Final; partly superseded by 0012 (spec 005)
+
+> **Spec 005 (2026-11-19):** the project owner dropped the runnable tiers, `make backfill`, `make bench`
+> and the `stress` run (stretch item). The tiers remain the design sizes. GPS partitioning changed
+> from `day + bucket(16)` to day only, sorted by van (ADR 0012), and Kafka retention is bounded by
+> size as decided here.
 
 ## Context
 The live rate is small (200 vans × 1 ping / 5 s ≈ 40 events/s ≈ 3.5M events/day), so it
