@@ -80,8 +80,56 @@ def run_orders_sim(prefix: str, *, vans: int = 4, orders_per_day: int = 20, hour
             ORDERS_DSN,
         ]
     )
-    changes, _, _ = run_day(args, _mp, connect)
+    changes, _, _, _ = run_day(args, _mp, connect)
     return changes
+
+
+def run_gps_sim(prefix: str, *extra: str, vans: int = 2, hours: float = 1.0, seed: int = 11):
+    """Send [now - hours, now] of GPS only, vehicle ids renamed to `prefix-NNNN`.
+
+    `extra` adds CLI flags such as "--chaos". Chaos decisions are made before the renaming, so
+    two prefixes with the same seed get the same day, clean or dirty. Returns (pings, chaos).
+    """
+    from simulator.__main__ import build_parser, run_day
+    from simulator.orders_db import connect
+    from simulator.producer import make_producer as _mp
+
+    argv = ["day", "--vans", str(vans), "--history-hours", str(hours), "--seed", str(seed)]
+    argv += ["--no-db", "--vehicle-prefix", prefix, "--registry", REGISTRY, *extra]
+    args = build_parser().parse_args(argv)
+    _, pings, _, chaos = run_day(args, _mp, connect, now=SIM_NOW)
+    return pings, chaos
+
+
+# Every GPS simulation in one test session ends at the same instant, so two runs with the same
+# seed produce identical pings (spec 004 AC2 compares a clean and a chaos run).
+SIM_NOW = datetime.now(UTC).replace(microsecond=0)
+
+
+def send_ping(ping, sent_at: datetime) -> None:
+    """Send one valid ping with an explicit send time (the Kafka record time)."""
+    from simulator.producer import send
+
+    producer = make_producer(BOOTSTRAP)
+    send(producer, TOPIC, ping, GpsEncoder.from_registry(REGISTRY), sent_at=sent_at)
+    assert producer.flush(10) == 0
+
+
+SILVER_GPS = "lakehouse.silver.gps_pings"
+
+
+def silver_gps_rows(prefix: str) -> list[tuple]:
+    """(van number, event_ts, lat, lon, speed, heading, ingest_ts, lateness_s, is_late)."""
+    return query(
+        f"SELECT split_part(vehicle_id, '-', 3), event_ts, lat, lon, speed_kmh, heading_deg, "
+        f"ingest_ts, lateness_s, is_late FROM {SILVER_GPS} WHERE vehicle_id LIKE ? "
+        "ORDER BY 1, 2",
+        (f"{prefix}-%",),
+    )
+
+
+def count_table(table: str, prefix: str) -> int:
+    return query(f"SELECT count(*) FROM {table} WHERE vehicle_id LIKE ?", (f"{prefix}-%",))[0][0]
 
 
 def compose(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:

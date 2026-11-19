@@ -279,22 +279,22 @@ table.wide { min-width: 620px; }
       <tr class="hl"><td>3 (bản trùng)</td><td class="m">08:07:00</td><td class="m">08:11:03</td></tr>
     </table></div>
     <p><b>Vấn đề:</b> nếu lấy "ping đến sau cùng" làm vị trí hiện tại, xe trên bản đồ nhảy lùi về 08:07. Nếu đếm cả bản trùng, quãng đường bị tính hai lần. Nếu KPI đã tính xong trước 08:11, ping 08:07 bị bỏ sót.</p>
-    <div class="dp plan">
-      <div class="hd">Thiết kế <span class="pn">Windowed Deduplicator</span><span class="st plan">Dự kiến · feature 4</span></div>
+    <div class="dp">
+      <div class="hd">Thiết kế <span class="pn">Windowed Deduplicator</span><span class="st ok">Đã chạy · spec 004</span></div>
       <dl class="pat">
-        <dt>Cách làm</dt><dd>Mỗi bảng silver có <b>khóa khử trùng</b> lấy từ nghiệp vụ: GPS là <code>(vehicle_id, event_ts)</code>, CDC là <code>(order_id, source_lsn, op)</code>. Không dùng offset Kafka vì offset đổi khi đọc lại. Flink nhớ các khóa đã thấy trong một cửa sổ thời gian; silver ghi bằng MERGE theo khóa nên bản trùng đến muộn hơn nữa cũng không tạo dòng mới.</dd>
-        <dt>Đánh đổi</dt><dd>Cửa sổ càng dài càng tốn bộ nhớ. Bronze vẫn giữ cả hai bản, vì bronze là bản ghi nguyên văn.</dd>
-        <dt>Kiểm chứng</dt><dd>Simulator có chế độ cố ý gửi trùng; dữ liệu sạch và dữ liệu có 5% trùng phải cho cùng số dòng silver.</dd>
+        <dt>Cách làm</dt><dd>Mỗi bảng silver có <b>khóa khử trùng</b> lấy từ nghiệp vụ: GPS là <code>(vehicle_id, event_ts)</code>, đơn là <code>order_id</code> (bản có <code>source_lsn</code> lớn nhất thắng). Không dùng offset Kafka vì offset đổi khi đọc lại. Flink đọc bronze, nhớ khóa đã thấy trong 24 giờ và giữ <b>bản đến đầu tiên</b> (<code>ingest_ts</code> nhỏ nhất). Silver ghi kiểu upsert theo khóa, nên bản trùng đến muộn hơn nữa cũng chỉ ghi đè đúng dòng đó, không tạo dòng mới (ADR 0011).</dd>
+        <dt>Đánh đổi</dt><dd>Mỗi lần upsert sinh thêm một file xóa, đọc chậm dần cho tới khi compaction (feature 5). Bản trùng đến sau 24 giờ thì làm mới <code>ingest_ts</code> của dòng đó. Bronze vẫn giữ cả hai bản, vì bronze là bản ghi nguyên văn.</dd>
+        <dt>Kiểm chứng</dt><dd><code>test_clean_and_chaos_runs_give_identical_silver</code>: cùng một ngày gửi sạch và gửi với <code>--chaos</code> (trùng, trễ, xáo thứ tự, mất sóng), silver ra giống hệt. <code>test_resending_pings_changes_no_silver_row</code>, <code>test_taskmanager_kill_mid_load_keeps_silver_exact</code>, <code>test_silver_rebuild_from_bronze_is_identical</code>.</dd>
       </dl>
     </div>
     <div class="dp plan">
-      <div class="hd">Thiết kế <span class="pn">Late Data Detector</span><span class="pn">Dynamic Late Data Integrator</span><span class="st plan">Dự kiến · feature 4, 7</span></div>
+      <div class="hd">Thiết kế <span class="pn">Late Data Detector</span><span class="pn">Dynamic Late Data Integrator</span><span class="st plan">Silver đã chạy (spec 004) · KPI ở feature 7</span></div>
       <dl class="pat">
         <dt>Cách làm</dt><dd>
           <ul>
             <li>Mọi logic dùng <code>event_ts</code>. <code>ingest_ts</code> chỉ để đo độ trễ.</li>
             <li>"Vị trí mới nhất" là ping có <code>event_ts</code> lớn nhất, nên ping 08:07 không làm xe lùi.</li>
-            <li>Flink chờ event chậm tối đa khoảng 30 giây (watermark). Ping 08:07 trễ hơn thế, nên không kích hoạt lại cảnh báo cũ, nhưng vẫn được lưu vào silver.</li>
+            <li>Flink chờ event chậm tối đa khoảng 30 giây (watermark). Ping 08:07 trễ hơn thế, nên không kích hoạt lại cảnh báo cũ, nhưng vẫn được lưu vào silver với <code>is_late = true</code> và <code>lateness_s</code> = 242 giây (08:11:02 − 08:07:00). Cờ này tính từ dữ liệu, nên dựng lại silver bao nhiêu lần cũng ra cùng kết quả.</li>
             <li>dbt tính lại KPI 2 giờ gần nhất mỗi 5 phút, nên ping 08:07 được đưa vào KPI ở lần chạy kế tiếp.</li>
           </ul></dd>
         <dt>Đánh đổi</dt><dd>KPI trong ngày là số <b>tạm</b>, có thể đổi trong 2 giờ; dashboard phải ghi rõ.</dd>
@@ -462,20 +462,20 @@ JOIN vehicle_latest AS v ON o.van_id = v.vehicle_id;</pre>
       <tr><td>Unit</td><td><code>make check</code>, CI mỗi PR</td><td>Decode, luật kiểm tra, simulator, tương thích schema. 77 test, dưới 5 giây</td><td><span class="st ok">Đã chạy</span></td></tr>
       <tr><td>End-to-end</td><td><code>make up</code> rồi <code>make e2e</code></td><td>Dữ liệu thật qua cả hệ thống Docker (chương 07:30 → 08:05)</td><td><span class="st ok">Đã chạy</span></td></tr>
       <tr><td>Sự cố</td><td><code>make e2e-restart</code></td><td>Dừng và chạy lại không mất, không trùng</td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td>Tương đương</td><td>Simulator chế độ hỗn loạn</td><td>Dữ liệu trễ, trùng, sai thứ tự cho cùng KPI (chương 08:07, 01:00)</td><td><span class="st plan">feature 4, 7</span></td></tr>
+      <tr><td>Tương đương</td><td>Simulator chế độ hỗn loạn</td><td>Dữ liệu trễ, trùng, sai thứ tự cho cùng silver (đã chạy, spec 004) và cùng KPI (feature 7) (chương 08:07, 01:00)</td><td><span class="st plan">silver xong · KPI feature 7</span></td></tr>
       <tr><td>Kịch bản cảnh báo</td><td>Test feature 6</td><td>Bảng event ở chương 08:10, độ trễ p95 &lt; 10 giây</td><td><span class="st plan">feature 6</span></td></tr>
       <tr><td>Hiệu năng</td><td><code>make bench</code></td><td>100 triệu event, kèm cấu hình máy</td><td><span class="st plan">feature 5</span></td></tr>
     </table></div>
     <p><b>Đã đo được:</b> ping vào bronze trong vòng 60 giây; 480 ping vào → đúng 480 dòng; N thay đổi đơn → đúng N dòng; 31 event lỗi → 31 dòng DLQ khớp từng loại; ping Avro 52 byte; cả hệ thống dùng 3,97 GiB RAM và dựng từ đầu trong khoảng 1 phút 21 giây.</p>
-    <p><b>Còn mở:</b> job e2e trên CI chưa chạy vì thiếu secret Docker Hub; tốc độ hàm decode Python với 100 triệu event chưa đo; phép nối ở chương 08:10 là đề xuất, chốt ở spec 006; database đơn hàng không ép thứ tự trạng thái nên silver phải tự kiểm tra.</p>
+    <p><b>Còn mở:</b> job e2e trên CI chưa chạy vì thiếu secret Docker Hub; tốc độ hàm decode Python với 100 triệu event chưa đo; phép nối ở chương 08:10 là đề xuất, chốt ở spec 006; database đơn hàng không ép thứ tự trạng thái, nên dbt phải kiểm tra (feature 7); <code>make down</code> dừng job bằng savepoint, nhưng nếu mất điện thật thì vài dòng bronze có thể bị ghi lặp (silver vẫn đúng, ADR 0011).</p>
     <p><b>Chạy ở đâu:</b> toàn bộ câu chuyện chạy trên máy cá nhân với $0. Khi demo, Terraform dựng bản AWS (MSK, MSK Connect, Managed Flink, S3 + Glue, Athena) rồi xóa ngay; khác biệt chỉ nằm trong file cấu hình (ADR 0005).</p>
     <div class="tw"><table>
       <tr><th>#</th><th>Feature</th><th>Chương</th><th>Trạng thái</th></tr>
       <tr><td>1</td><td>GPS → Kafka → Flink → Iceberg bronze</td><td>08:00, 08:05</td><td><span class="st ok">Xong</span></td></tr>
       <tr><td>2</td><td>Đơn hàng qua CDC</td><td>07:30</td><td><span class="st ok">Xong</span></td></tr>
       <tr><td>3</td><td>Hợp đồng dữ liệu và DLQ</td><td>08:00, 08:03</td><td><span class="st ok">Xong</span></td></tr>
-      <tr><td>4</td><td>Silver: khử trùng, watermark</td><td>08:07</td><td><span class="st plan">Tiếp theo</span></td></tr>
-      <tr><td>5</td><td>Quy mô 100 triệu event, benchmark</td><td>08:05</td><td><span class="st plan">Dự kiến</span></td></tr>
+      <tr><td>4</td><td>Silver: khử trùng, watermark</td><td>08:07</td><td><span class="st ok">Xong</span></td></tr>
+      <tr><td>5</td><td>Quy mô 100 triệu event, benchmark</td><td>08:05</td><td><span class="st plan">Tiếp theo</span></td></tr>
       <tr><td>6</td><td>ETA, cảnh báo, serving</td><td>08:10, 08:25</td><td><span class="st plan">Dự kiến</span></td></tr>
       <tr><td>7</td><td>Gold với dbt: KPI tạm và chốt</td><td>09:00, 01:00, tuần sau</td><td><span class="st plan">Dự kiến</span></td></tr>
       <tr><td>8</td><td>Grafana, giám sát pipeline</td><td>09:00</td><td><span class="st plan">Dự kiến</span></td></tr>

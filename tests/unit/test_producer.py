@@ -4,6 +4,8 @@ import json
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pytest
+
 from contracts.decode import decode_avro, decode_gps
 from contracts.wire import unframe
 from simulator.__main__ import main
@@ -29,10 +31,12 @@ class Reg:
 class FakeProducer:
     def __init__(self) -> None:
         self.messages: list[tuple[str, bytes, bytes]] = []
+        self.timestamps: list[int | None] = []
         self.flushed = False
 
-    def produce(self, topic: str, key: bytes, value: bytes) -> None:
+    def produce(self, topic: str, key: bytes, value: bytes, timestamp: int | None = None) -> None:
         self.messages.append((topic, key, value))
+        self.timestamps.append(timestamp)
 
     def poll(self, timeout: float) -> int:
         return 0
@@ -156,6 +160,63 @@ def test_cli_invalid_rate_reports_labelled_counts(capsys):
     ingest = datetime.now(UTC)  # future-time pings are relative to the wall clock
     bad = sum(1 for _, _, v in producer.messages if decode_gps(v, ingest, Reg())[1])
     assert 0.05 * 1442 < bad < 0.15 * 1442
+
+
+def _event_ms(value: bytes) -> int:
+    record, err = decode_avro(value, Reg())
+    assert err is None
+    return int(record["event_ts"].timestamp() * 1000)
+
+
+def test_record_timestamp_is_the_send_time():
+    """Spec 004: ingest_ts = when the device sent the ping, in history mode too."""
+    producer = FakeProducer()
+    argv = ["day", "--vans", "2", "--history-hours", "1", "--no-db"]
+    main(argv, lambda _b: producer, lambda _d: FakeDB(), now=NOW, encoder_factory=lambda _a: ENC)
+    assert producer.timestamps == [_event_ms(v) for _, _, v in producer.messages]
+
+
+def test_cli_chaos_resends_and_delays_but_keeps_the_same_pings(capsys):
+    """Spec 004 AC1 through the CLI: more messages, same distinct pings, labelled counts."""
+    base = ["day", "--vans", "4", "--history-hours", "3", "--no-db", "--seed", "5"]
+    clean, dirty = FakeProducer(), FakeProducer()
+    main(base, lambda _b: clean, lambda _d: FakeDB(), now=NOW, encoder_factory=lambda _a: ENC)
+    capsys.readouterr()
+    main(
+        [*base, "--chaos"],
+        lambda _b: dirty,
+        lambda _d: FakeDB(),
+        now=NOW,
+        encoder_factory=lambda _a: ENC,
+    )
+    out = capsys.readouterr().out
+    assert len(dirty.messages) > len(clean.messages)
+    assert {v for _, _, v in dirty.messages} == {v for _, _, v in clean.messages}
+    assert "chaos=" in out and "duplicate:" in out and "delayed:" in out
+    sent = [
+        (ts, _event_ms(v)) for ts, (_, _, v) in zip(dirty.timestamps, dirty.messages, strict=True)
+    ]
+    assert [ts for ts, _ in sent] == sorted(ts for ts, _ in sent)
+    assert all(ev <= ts <= int(NOW.timestamp() * 1000) for ts, ev in sent)
+    assert any(ts - ev > 60_000 for ts, ev in sent)  # some pings really arrive late
+
+
+def test_cli_chaos_shares_can_be_set_one_by_one(capsys):
+    producer = FakeProducer()
+    argv = ["day", "--vans", "2", "--history-hours", "1", "--no-db", "--dup-rate", "0.2"]
+    main(argv, lambda _b: producer, lambda _d: FakeDB(), now=NOW, encoder_factory=lambda _a: ENC)
+    out = capsys.readouterr().out
+    assert "delayed:0" in out and "offline:0" in out
+    assert len(producer.messages) > 1442
+
+
+def test_cli_late_delivery_rate_replaces_late_rate():
+    from simulator.__main__ import build_parser
+
+    args = build_parser().parse_args(["day", "--late-delivery-rate", "0.3"])
+    assert args.late_delivery_rate == 0.3
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["day", "--late-rate", "0.3"])
 
 
 def test_cli_seed_sql(capsys):

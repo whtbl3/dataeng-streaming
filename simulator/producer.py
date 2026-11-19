@@ -36,7 +36,9 @@ LOCAL_UTC_OFFSET = timedelta(hours=7)
 
 
 class ProducerLike(Protocol):
-    def produce(self, topic: str, key: bytes, value: bytes) -> None: ...
+    def produce(
+        self, topic: str, key: bytes, value: bytes, timestamp: int | None = None
+    ) -> None: ...
     def poll(self, timeout: float) -> int: ...
     def flush(self, timeout: float | None = None) -> int: ...
 
@@ -135,10 +137,18 @@ def make_producer(bootstrap: str) -> ProducerLike:
     )
 
 
-def send_raw(producer: ProducerLike, topic: str, key: bytes, value: bytes) -> None:
+def _ms(ts: datetime) -> int:
+    return int(ts.timestamp() * 1000)
+
+
+def send_raw(
+    producer: ProducerLike, topic: str, key: bytes, value: bytes, timestamp_ms: int | None = None
+) -> None:
+    """Produce one message. `timestamp_ms` sets the Kafka record time (= bronze `ingest_ts`)."""
+    kwargs = {} if timestamp_ms is None else {"timestamp": timestamp_ms}
     while True:
         try:
-            producer.produce(topic, key=key, value=value)
+            producer.produce(topic, key=key, value=value, **kwargs)
             break
         except BufferError:  # local queue full: let deliveries drain, then retry
             producer.poll(0.5)
@@ -151,9 +161,11 @@ def send(
     ping: Ping,
     encoder: GpsEncoder,
     corrupter: Corrupter | None = None,
+    sent_at: datetime | None = None,
 ) -> None:
+    """Send one ping; the record time is when the device sent it (default: its event time)."""
     key, value = corrupter.encode(ping, encoder) if corrupter else encoder.encode(ping)
-    send_raw(producer, topic, key, value)
+    send_raw(producer, topic, key, value, _ms(sent_at or ping.event_ts))
 
 
 def produce_all(
