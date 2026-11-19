@@ -76,6 +76,31 @@ else
   read -r RESUME_JID RESUME <<< "$(latest_checkpoint)" || true
   [ -n "$RESUME" ] && echo "job '${JOB_NAME}': no savepoint; resuming from retained checkpoint $RESUME"
 fi
+# A job that reads an Iceberg table incrementally keeps its read position as a snapshot id. Expiry
+# (maintenance, SNAPSHOT_RETENTION) removes snapshots older than the retention, so a job stopped
+# longer than that cannot continue: Iceberg would fail with "Starting snapshot ... is not a parent
+# ancestor" and the job would restart forever. Refuse up front and say how to recover (spec 005).
+to_seconds() {
+  local v="$1"
+  case "$v" in
+    *d) echo $(( ${v%d} * 86400 )) ;;
+    *h) echo $(( ${v%h} * 3600 )) ;;
+    *m) echo $(( ${v%m} * 60 )) ;;
+    *s) echo "${v%s}" ;;
+    *) echo "$v" ;;
+  esac
+}
+if [ -n "$RESUME" ] && grep -q "'streaming' = 'true'" "$SQL_FILE"; then
+  saved="${RESUME#file:}"
+  age=$(( $(date +%s) - $(stat -c %Y "$saved/_metadata") ))
+  limit="$(to_seconds "${SNAPSHOT_RETENTION:-7d}")"
+  if [ "$age" -gt "$limit" ]; then
+    echo "job '${JOB_NAME}' was stopped $((age / 3600)) h ago, longer than the snapshot retention" \
+      "(${SNAPSHOT_RETENTION:-7d}): the Iceberg snapshot it would continue from may be gone." >&2
+    echo "Rebuild it from bronze instead: make silver-rebuild" >&2
+    exit 1
+  fi
+fi
 if [ -n "$RESUME" ]; then
   {
     echo "SET 'execution.state-recovery.path' = '$RESUME';"

@@ -268,6 +268,7 @@ services:
       SCHEMA_REGISTRY_URL: http://redpanda:8081
       CHECKPOINT_INTERVAL: ${CHECKPOINT_INTERVAL:-30 s}
       GPS_PARALLELISM: ${GPS_PARALLELISM:-2}
+      SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d} # same as maintenance: how long a reader may stop
       FRESH_JOBS: ${FRESH_JOBS:-}
     volumes:
       - ../../flink/jobs:/opt/flink/jobs:ro
