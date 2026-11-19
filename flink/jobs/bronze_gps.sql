@@ -1,7 +1,8 @@
 -- bronze_gps: registry-framed Avro GPS pings → Iceberg bronze (append-only, exactly-once).
 -- Bad messages never stop the job (spec 003, ADR 0010): the source reads raw bytes, a Python
 -- UDF decodes and validates them, and the statement set routes rejects to the dead-letter
--- table and topic. Catalog, checkpointing and Python settings come from _init_catalog.sql.
+-- table and topic. The UDF is vectorized: it decodes a batch of messages per call (spec 005).
+-- Catalog, checkpointing and Python settings come from _init_catalog.sql.
 SET 'pipeline.name' = 'bronze_gps';
 
 CREATE TEMPORARY FUNCTION decode_gps AS 'contracts.udf.decode_gps_udf' LANGUAGE PYTHON;

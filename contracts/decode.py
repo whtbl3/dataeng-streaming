@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import json
 import os
+from collections.abc import Sequence
 from datetime import datetime
 from functools import cache
 from pathlib import Path
@@ -92,3 +93,31 @@ def decode_gps(raw: bytes | None, ingest_ts: datetime, registry: SchemaSource) -
         schema_id = unframe(raw)[0]
         return None, (broken[0], broken[1], schema_id)
     return row, None
+
+
+# ---- Result shape for the Flink UDFs (ADR 0010, spec 005) ------------------------------------
+# One flat tuple per message: the ping fields (None for a reject), then why it was rejected and
+# its raw bytes (None for a good ping). Pure Python, so it is tested without Flink.
+GPS_FIELDS = ["vehicle_id", "event_ts", "lat", "lon", "speed_kmh", "heading_deg"]
+ERROR_FIELDS = ["error_reason", "error_detail", "schema_id", "raw_value"]
+GPS_RESULT_FIELDS = [*GPS_FIELDS, *ERROR_FIELDS]
+
+
+def gps_result(raw: bytes | None, ingest_ts: datetime, registry: SchemaSource) -> tuple:
+    """Decode one message into the flat result tuple."""
+    row, err = decode_gps(raw, ingest_ts, registry)
+    if err:
+        return (*([None] * len(GPS_FIELDS)), err[0], err[1], err[2], raw)
+    return (*(row[f] for f in GPS_FIELDS), None, None, None, None)
+
+
+def gps_result_columns(
+    raws: Sequence[bytes | None], ingest_ts: Sequence[datetime], registry: SchemaSource
+) -> dict[str, list]:
+    """Decode a batch into one list per result field (the shape a vectorized UDF returns)."""
+    columns: dict[str, list] = {f: [] for f in GPS_RESULT_FIELDS}
+    lists = list(columns.values())
+    for raw, ts in zip(raws, ingest_ts, strict=True):
+        for col, value in zip(lists, gps_result(raw, ts, registry), strict=True):
+            col.append(value)
+    return columns
