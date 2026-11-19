@@ -9,7 +9,7 @@ The interactive HTML viewers are generated and not committed (`.gitignore`).
 | `gps-ping.svg` | `gps-ping.sequence.json` | sequence | What happens to one ping, a duplicate and a bad message? |
 | `order-lifecycle.svg` | `order-lifecycle.lifecycle.json` | lifecycle | Which statuses can an order reach, and in what order? |
 | `model-silver.svg` | `model-silver.erd.json` | erd | Which columns and keys do the source and silver tables have? |
-| `model-gold.svg` | `model-gold.erd.json` | erd | How will the gold star schema join (planned, feature 7)? |
+| `model-gold.svg` | `model-gold.erd.json` | erd | How does the gold star schema join (spec 007; `dbt/models/marts` is the reference for columns)? |
 
 Facts come from the code: `infra/local/postgres/init/001_schema.sql`, `infra/local/trino/init/*.sql`,
 `flink/jobs/*.sql`, `contracts/` and `simulator/orders_db.py`. The gold model follows

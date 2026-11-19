@@ -73,6 +73,11 @@ events therefore cannot skew the final numbers.
   - `silver.order_status_history` (spec 004): one row per status reached, with `status_ts` (the order system's business time) and the first `source_lsn` that recorded it. Partitioned by `day(status_ts)`.
   - `ops.maintenance_runs` (spec 005): one row per maintenance task run (task, table, start, end, status, metrics). The `maintenance` service compacts silver every 30 min and bronze hourly, and daily merges manifests, expires snapshots and orphan files (7 days) and drops partitions past their retention (ADR 0012).
   - How silver is written: Flink jobs `silver_gps` and `silver_orders` read bronze incrementally, keep the first arrival or latest commit (Top-1), and upsert on Iceberg identifier fields (ADR 0011). `make silver-status` shows rows kept, copies removed and late rows per day. `make silver-rebuild` rebuilds silver from bronze.
+- **Gold (spec 007, ADR 0014):** `lakehouse.gold`, built by dbt (`dbt/`) on Trino:
+  - `fct_delivery` (one row per closed order: local day, outcome, `is_on_time`, `minutes_late`, ETA error at T-30/T-15, first alert, alert lead, van version, `dest_area`, `is_final`);
+  - `agg_depot_daily` (depot × local day: on-time and failure rate, stops per hour, ETA MAE/p90, alert precision/recall);
+  - `dim_van` (SCD2), `dim_depot`, `dim_date`, `closed_days` (closed_at, late events absorbed, late after close, restatements).
+  The `dbt` service builds the open days every 5 min (orders changed in the last 2 h of commit time) and closes each past day after 01:00 local. The control tower appends `bronze.alert_events` and `bronze.eta_marks` for it.
 - **Order DB (CDC source, spec 002):** Postgres `public.{depots,vans,orders}`, publication `ct_cdc`, slot `ct_cdc_slot`; written by `python -m simulator day`.
 - **Serving DB (spec 006):** Postgres schema `serving`, written by the Flink job `control_tower` (one state per van, ADR 0013) with idempotent upserts, read by Grafana:
   - `vehicle_latest`: one row per van, its newest ping (an older ping never overwrites it);
@@ -80,7 +85,7 @@ events therefore cannot skew the final numbers.
   - `alerts`: one row per alert: `type` (SLA_RISK, ABNORMAL_STOP), van, order, `raised_at` / `resolved_at` (event time), `raised_written_at` (wall clock);
   - `alerts.v1` topic: one registry-framed Avro message per raise and per resolve (exactly-once), key `alert_id`.
   Postgres runs in the core stack (serving), the Debezium connector in the `cdc` profile.
-- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`, `make maintain [TASK=… TABLE=…]`, `make table-health` (spec 005), `make tower-status` (spec 006); `make aws-up|aws-down` (managed).
+- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`, `make maintain [TASK=… TABLE=…]`, `make table-health` (spec 005), `make tower-status` (spec 006), `make gold`, `make close DAY=…`, `make reclose DAY=…`, `make gold-status`, `make gold-test`, `make dbt-ci` (spec 007); `make aws-up|aws-down` (managed).
 - **Simulator:** `python -m simulator day [--abnormal-stops N] [--chaos] [--dup-rate --delay-rate --max-delay-min --jitter-rate --offline] [--late-delivery-rate] [--invalid-rate]`. Chaos sends valid but dirty GPS (duplicates, delays up to 2 h, jitter, offline bursts) in exactly known amounts (spec 004).
 
 ## 6. Non-functional requirements
@@ -125,3 +130,4 @@ Business definitions (BR-*), non-functional requirements (NFR-*) and data-modeli
 | [0011](decisions/0011-silver-upsert-first-arrival.md) | Silver from bronze: first-arrival Top-1 + Iceberg upserts; savepoint on `make down` | Final |
 | [0012](decisions/0012-scale-and-table-maintenance.md) | Scale by design: 6 GPS partitions, batched decode, RocksDB, hash writes, table maintenance service | Final |
 | [0013](decisions/0013-control-tower-keyed-state.md) | Control tower: one state per van, distance/speed ETA, alerts from Kafka | Final |
+| [0014](decisions/0014-gold-dbt-intraday-and-close.md) | Gold with dbt on Trino: commit-time intraday window, nightly close, restatements | Final |

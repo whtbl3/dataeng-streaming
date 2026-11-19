@@ -1116,7 +1116,7 @@ been cleared for every commercial, promotional, or redistributive use.</metadata
         </g>
 
         <g id="node-gold" data-node-id="gold" data-node-label="Iceberg gold" tabindex="0" role="button" aria-label="Focus Iceberg gold, KPIs, star schema, 04 / Lakehouse and serving" aria-pressed="false" data-node-kind="database" data-node-sublabel="KPIs, star schema" data-node-tag="planned" data-node-context="04 / Lakehouse and serving">
-          <title>Iceberg gold · KPIs, star schema · 04 / Lakehouse and serving · planned</title>
+          <title>Iceberg gold · KPIs, star schema · 04 / Lakehouse and serving · built</title>
           <rect x="689" y="356" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="689" y="356" width="112" height="58" rx="6" class="c-database" data-animate="node" style="--step: 9; --flow-node-name: archify-relay-node-9;" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(695 362) scale(0.6875)">
@@ -1125,7 +1125,7 @@ been cleared for every commercial, promotional, or redistributive use.</metadata
           </g>
           <text data-node-label="" x="745" y="377" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Iceberg gold</text>
           <text x="745" y="393" class="t-muted" font-size="7" text-anchor="middle">KPIs, star schema</text>
-        <text x="745" y="403" class="t-database" font-size="7" text-anchor="middle">planned</text>
+        <text x="745" y="403" class="t-database" font-size="7" text-anchor="middle">built</text>
         </g>
 
         <g id="node-serving" data-node-id="serving" data-node-label="Postgres serving" tabindex="0" role="button" aria-label="Focus Postgres serving, ETA, alerts, 04 / Lakehouse and serving" aria-pressed="false" data-node-kind="database" data-node-sublabel="ETA, alerts" data-node-tag="planned" data-node-context="04 / Lakehouse and serving">

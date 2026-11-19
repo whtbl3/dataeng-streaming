@@ -40,6 +40,9 @@ def test_every_flink_written_table_is_compacted_silver_more_often():
         "silver.gps_pings",
         "silver.orders",
         "silver.order_status_history",
+        "gold.fct_delivery",
+        "gold.agg_depot_daily",
+        "gold.closed_days",
     }
     assert set(m.COMPACT["bronze"].tables) == {
         "bronze.gps_pings",

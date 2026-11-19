@@ -4,12 +4,12 @@ Streaming writers commit every 30 s, so tables collect small files, upsert delet
 and snapshots. This loop keeps them healthy:
 
   task        tables                         every    what
-  compact     silver (3 tables)              30 min   rewrite small files, apply deletes, sort
-  compact     bronze (5 tables)              60 min   same
+  compact     silver and gold (6 tables)     30 min   rewrite small files, apply deletes, sort
+  compact     bronze (7 tables)              60 min   same
   manifests   all                            daily    merge manifests
   expire      all                            daily    drop snapshots older than 7 days
   orphans     all                            daily    delete unreferenced files older than 7 days
-  retention   tables with a rule (NFR-5)     daily    drop whole partitions past their retention
+  retention   tables with a rule (NFR-5)     daily    drop whole partitions (gold: 2 years)
 
 Each run is logged to lakehouse.ops.maintenance_runs. A failed run (for example a commit conflict
 with a streaming writer) is logged and retried at the next interval; it never stops the loop.
@@ -63,10 +63,11 @@ BRONZE = (
     "bronze.alert_events",
     "bronze.eta_marks",
 )
-ALL_TABLES = (*SILVER, *BRONZE, "ops.maintenance_runs")
+GOLD = ("gold.fct_delivery", "gold.agg_depot_daily", "gold.closed_days")  # spec 007, dbt
+ALL_TABLES = (*SILVER, *BRONZE, *GOLD, "ops.maintenance_runs")
 DAILY = timedelta(days=1)
 COMPACT = {
-    "silver": Schedule(SILVER, _minutes("COMPACT_SILVER_MINUTES", 30)),
+    "silver": Schedule((*SILVER, *GOLD), _minutes("COMPACT_SILVER_MINUTES", 30)),
     "bronze": Schedule(BRONZE, _minutes("COMPACT_BRONZE_MINUTES", 60)),
 }
 # NFR-5. depots_cdc and vans_cdc are unpartitioned and tiny: their whole history is kept.
@@ -79,6 +80,8 @@ RETENTION = {
     "silver.gps_pings": Retention("event_ts", 365, "day"),
     "silver.orders": Retention("created_at", 365, "month"),
     "silver.order_status_history": Retention("status_ts", 365, "day"),
+    "gold.fct_delivery": Retention("local_date", 730, "day"),
+    "gold.agg_depot_daily": Retention("local_date", 730, "day"),
 }
 SCHEDULES = {
     "compact:silver": COMPACT["silver"],

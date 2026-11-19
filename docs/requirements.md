@@ -113,7 +113,8 @@ Enforced by the maintenance service (spec 005, ADR 0012); partitions are dropped
 ### NFR-6 · Privacy (PII)
 - `dest_lat` and `dest_lon` are personal data (a customer address).
 - They are read-restricted in bronze and silver.
-- Gold stores only `dest_area`: a 7-character geohash (≈ 150 m).
+- Gold stores only `dest_area`: a Bing tile quadkey at zoom 18 (≈ 150 m; Trino and Athena have it
+  built in, unlike geohash; spec 007).
 
 ### NFR-7 · Security on AWS — *feature 10*
 - Least-privilege IAM per service.
@@ -170,7 +171,7 @@ These rules apply to every table from silver onward. A batch-only design could s
 |---|---|---|
 | bronze | Flink | append-only, exactly-once |
 | silver | Flink or dbt | MERGE on dedup key, guarded by the ordering key |
-| gold (provisional) | dbt, every 5 min | incremental MERGE over a 2 h look-back |
+| gold (provisional) | dbt, every 5 min | incremental MERGE of the orders changed in the last 2 h of commit time (spec 007, ADR 0014) |
 | gold (final) | dbt, nightly | overwrite the closed day's partitions |
 | serving | Flink | upsert by key, only if the event is newer |
 
@@ -189,7 +190,7 @@ These rules apply to every table from silver onward. A batch-only design could s
 > `created_at` / `status_ts`. Both are set once per order or status, so the grain is unchanged
 > (spec 004, ADR 0011). For GPS copies, the first arrival (smallest `ingest_ts`) wins.
 
-### Gold (feature 7)
+### Gold (spec 007, ADR 0014)
 | Table | One row = | Key | Partition |
 |---|---|---|---|
 | `gold.fct_delivery` | a closed order | `order_id` | `local_date` |
@@ -235,17 +236,17 @@ it, and the test that proves it.
 **Do late or duplicate events change the numbers?**
 - Requirement: NFR-2, rules 2 and 4
 - Design: dedup keys, 2 h look-back, nightly close (ADR 0006)
-- Proof: spec 001 AC3, spec 002 AC5 and AC7, feature 7 tests
+- Proof: spec 001 AC3, spec 002 AC5 and AC7, spec 007 `test_dirty_cdc_gives_the_same_gold_kpis_as_clean`
 
 **Does a failed order count as late?**
 - Requirement: BR-2
 - Design: `fct_delivery.is_on_time`
-- Proof: dbt test (feature 7)
+- Proof: dbt unit test `fct_delivery_outcomes_eta_error_alert_lead_and_van_version` (spec 007)
 
 **Which day does 06:30 local belong to?**
 - Requirement: BR-4
 - Design: `local_date` partitions in gold
-- Proof: dbt test with events around 00:00 local (feature 7)
+- Proof: dbt unit test `stg_orders_closed_local_day_at_midnight` (spec 007 AC5)
 
 **Can we lose data if the pipeline stops?**
 - Requirement: NFR-3, NFR-4
@@ -260,7 +261,7 @@ it, and the test that proves it.
 **Is the customer's location protected?**
 - Requirement: NFR-6
 - Design: `dest_area` in gold; bronze and silver restricted
-- Proof: dbt test that gold has no `dest_lat` or `dest_lon`
+- Proof: dbt test `gold_has_no_exact_destination` (spec 007 AC3)
 
 **Does a van changing depot rewrite history?**
 - Requirement: rule 2, `dim_van` SCD2

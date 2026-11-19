@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild dbt-ci tower-status maintain table-health aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild gold close reclose gold-status gold-test dbt-ci tower-status maintain table-health aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -62,8 +62,23 @@ silver-status:    # per silver table and local day: rows kept, copies removed, l
 silver-rebuild:   # drop silver and rebuild it from bronze with the same jobs (spec 004 AC8)
 	COMPOSE="$(COMPOSE)" infra/local/silver_rebuild.sh
 
+gold:             # build gold now: provisional rows for open days, last 2 h of commits (spec 007)
+	$(COMPOSE) run --rm --no-deps dbt --once
+
+close:            # close a local day: make close DAY=2026-11-18 (final rows, closed_days; idempotent)
+	$(COMPOSE) run --rm --no-deps dbt --close $(DAY)
+
+reclose:          # restate a closed day, logged in closed_days.restatements: make reclose DAY=…
+	$(COMPOSE) run --rm --no-deps dbt --reclose $(DAY)
+
+gold-status:      # per local day: closed orders, on-time rate, final rows, close and late counts
+	@$(COMPOSE) exec -T trino trino --output-format ALIGNED < infra/local/trino/gold_status.sql
+
 dbt-ci:           # dbt unit tests + SQL lint on a throwaway Trino, no stack needed (CI, spec 007)
 	scripts/dbt_ci.sh
+
+gold-test:        # dbt data tests on the real gold tables (fails on a broken model, spec 007 AC11)
+	$(COMPOSE) run --rm --no-deps dbt --test
 
 tower-status:     # control tower: open orders with an ETA, open alerts by type, newest position per van (spec 006)
 	@$(COMPOSE) exec -T postgres psql -X -q -A -F ' | ' -P footer=off -U ct -d control_tower \
