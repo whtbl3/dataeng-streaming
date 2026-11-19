@@ -7,6 +7,8 @@
 --      row instead of adding one.
 -- Lateness comes from the data (ingest_ts - event_ts), so every rebuild flags the same rows.
 SET 'pipeline.name' = 'silver_gps';
+-- GPS jobs can read with as many parallel readers as the topic has partitions (6, spec 005).
+SET 'parallelism.default' = '${GPS_PARALLELISM}';
 SET 'table.exec.state.ttl' = '24 h';
 
 -- A connector table (not the catalog table) so the source can declare a watermark. The watermark
@@ -40,7 +42,11 @@ CREATE TEMPORARY TABLE bronze_gps (
   'catalog-table' = 'gps_pings',
   'streaming' = 'true',
   'monitor-interval' = '10s',
-  'starting-strategy' = 'TABLE_SCAN_THEN_INCREMENTAL'
+  'starting-strategy' = 'TABLE_SCAN_THEN_INCREMENTAL',
+  -- Bronze is append-only; its only other snapshots come from maintenance (spec 005): compaction
+  -- ("replace", always skipped) and retention deletes, which must not reach silver.
+  'streaming-skip-delete-snapshots' = 'true',
+  'streaming-skip-overwrite-snapshots' = 'true'
 );
 
 INSERT INTO lakehouse.silver.gps_pings /*+ OPTIONS('upsert-enabled' = 'true') */

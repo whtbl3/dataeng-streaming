@@ -15,5 +15,6 @@ CREATE TABLE IF NOT EXISTS lakehouse.bronze.gps_pings (
 )
 WITH (
     format = 'PARQUET',
-    partitioning = ARRAY['day(event_ts)']
+    partitioning = ARRAY['day(event_ts)'],
+    sorted_by = ARRAY['vehicle_id', 'event_ts']  -- applied when compacted (spec 005)
 );

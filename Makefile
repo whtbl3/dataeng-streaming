@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild maintain table-health aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -62,6 +62,13 @@ silver-status:    # per silver table and local day: rows kept, copies removed, l
 
 silver-rebuild:   # drop silver and rebuild it from bronze with the same jobs (spec 004 AC8)
 	COMPOSE="$(COMPOSE)" infra/local/silver_rebuild.sh
+
+maintain:         # run table maintenance now: make maintain [TASK=compact|manifests|expire|orphans|retention] [TABLE=ns.t]
+	$(COMPOSE) run --rm --no-deps -e SNAPSHOT_RETENTION -e ORPHAN_RETENTION maintenance --once \
+	  $(if $(TASK),--task $(TASK)) $(if $(TABLE),--table $(TABLE))
+
+table-health:     # per table: data files, delete files, average file size, snapshots, last maintenance (spec 005)
+	@$(COMPOSE) exec -T trino trino --output-format ALIGNED < infra/local/trino/table_health.sql
 
 psql:
 	$(COMPOSE) exec postgres psql -U ct -d control_tower

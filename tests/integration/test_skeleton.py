@@ -40,7 +40,7 @@ def test_stack_healthy_topic_and_table_exist():
 
     topics = AdminClient({"bootstrap.servers": BOOTSTRAP}).list_topics(timeout=10).topics
     assert TOPIC in topics
-    assert len(topics[TOPIC].partitions) == 3
+    assert len(topics[TOPIC].partitions) == 6  # spec 005: room for 6 parallel readers
     assert ("gps_pings",) in query("SHOW TABLES FROM lakehouse.bronze")
 
 
@@ -91,7 +91,7 @@ def test_bronze_schema_and_partitioning(prefix):
     )
     for ingest_after_event, partition, offset in rows:
         assert ingest_after_event
-        assert partition in (0, 1, 2)
+        assert partition in range(6)
         assert offset >= 0
 
 

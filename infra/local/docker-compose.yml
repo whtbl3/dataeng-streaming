@@ -14,12 +14,17 @@ x-flink-props: &flink-props |
   jobmanager.rpc.address: jobmanager
   rest.address: jobmanager
   parallelism.default: 1
-  taskmanager.numberOfTaskSlots: 4
-  state.backend.type: hashmap
+  # 6 slots: 2 GPS jobs x GPS_PARALLELISM (2) + 2 order jobs. No trailing comments in these lines.
+  taskmanager.numberOfTaskSlots: 6
+  # Keyed state (dedup, latest version) lives on disk in RocksDB, so its size is not capped by heap,
+  # and each checkpoint uploads only the files that changed (spec 005).
+  state.backend.type: rocksdb
+  execution.checkpointing.incremental: true
+  execution.checkpointing.num-retained: 2
   execution.checkpointing.dir: file:///opt/flink/checkpoints
   execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
   jobmanager.memory.process.size: 900m
-  taskmanager.memory.process.size: 1900m
+  taskmanager.memory.process.size: 2400m
 
 services:
   # ---- Object storage (S3 API) -------------------------------------------------
@@ -134,6 +139,7 @@ services:
       STATUS_STORAGE_REPLICATION_FACTOR: "1"
       HEAP_OPTS: -Xms256m -Xmx512m
       # connector configs use $${env:...}, so no credentials live in the JSON file
+      CONNECT_PRODUCER_COMPRESSION_TYPE: zstd # batches to cdc.* topics are compressed (spec 005)
       CONNECT_CONFIG_PROVIDERS: env
       CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
       POSTGRES_USER: ${POSTGRES_USER:-ct}
@@ -207,6 +213,19 @@ services:
           trino --server http://trino:8080 --file "$$f" || exit 1
         done
 
+  # ---- Table maintenance (spec 005, ADR 0012) ------------------------------------------
+  maintenance: # compaction, manifests, snapshot expiry, orphan files, retention; through Trino
+    image: python:3.11.11-slim
+    depends_on:
+      trino-init: { condition: service_completed_successfully }
+    environment:
+      TRINO_URL: http://trino:8080
+      SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d}
+      ORPHAN_RETENTION: ${ORPHAN_RETENTION:-7d}
+    volumes: ["./maintenance:/opt/maintenance:ro"]
+    entrypoint: ["python", "-u", "/opt/maintenance/maintain.py"]
+    mem_limit: 64m
+
   # ---- Flink ----------------------------------------------------------------------
   jobmanager:
     build: ./flink
@@ -231,7 +250,7 @@ services:
     environment:
       FLINK_PROPERTIES: *flink-props
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
-    mem_limit: 2g # JVM + one Python UDF worker per job (ADR 0010)
+    mem_limit: 2560m # JVM + RocksDB + one Python UDF worker per GPS subtask and CDC job (ADR 0010)
 
   flink-submit: # one-shot, idempotent; run by `make up` via `docker compose run`
     image: control-tower/flink:1.20.5
@@ -248,6 +267,8 @@ services:
       GPS_TOPIC: ${GPS_TOPIC:-gps.pings.v1}
       SCHEMA_REGISTRY_URL: http://redpanda:8081
       CHECKPOINT_INTERVAL: ${CHECKPOINT_INTERVAL:-30 s}
+      GPS_PARALLELISM: ${GPS_PARALLELISM:-2}
+      SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d} # same as maintenance: how long a reader may stop
       FRESH_JOBS: ${FRESH_JOBS:-}
     volumes:
       - ../../flink/jobs:/opt/flink/jobs:ro
@@ -256,15 +277,13 @@ services:
       - ./iceberg:/opt/iceberg:ro
       - flink-checkpoints:/opt/flink/checkpoints # savepoint pointers (stop_jobs.sh / submit.sh)
     entrypoint: ["/bin/bash", "-c"]
-    # Silver upserts key on Iceberg identifier fields, which Trino cannot set (spec 004, ADR 0011).
+    # Trino creates the tables but cannot set identifier fields (the upsert key) or write.* properties
+    # (hash distribution, metadata cleanup), so table_admin.py sets them first (ADR 0011, spec 005).
     command:
       - >-
+        python /opt/iceberg/table_admin.py "$$ICEBERG_CATALOG_URI" apply &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_gps.sql bronze_gps &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_cdc.sql bronze_cdc &&
-        python /opt/iceberg/set_identifier_fields.py "$$ICEBERG_CATALOG_URI"
-        silver.gps_pings=vehicle_id,event_ts
-        silver.orders=order_id,created_at
-        silver.order_status_history=order_id,status,status_ts &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/silver_gps.sql silver_gps &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/silver_orders.sql silver_orders
 

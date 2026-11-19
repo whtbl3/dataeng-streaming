@@ -10,8 +10,14 @@ paths: ["flink/**"]
   Never use PROCTIME() for business logic.
 - Dedup and "latest" rank by data (`ingest_ts` + offset, `source_lsn`), never by processing order.
 - Silver and serving sinks upsert on a key. For Iceberg, the key is the table's identifier fields,
-  set by `infra/local/iceberg/set_identifier_fields.py`; a Flink DDL PRIMARY KEY is ignored.
-- Keyed state that can grow (dedup, latest position) must set a state TTL.
+  set by `infra/local/iceberg/table_admin.py` (with the `write.*` properties); a Flink DDL PRIMARY KEY
+  is ignored. A Top-1 ordered by data emits updates, so it cannot feed an append sink (ADR 0012).
+- Keyed state that can grow (dedup, latest position) must set a state TTL. State lives in RocksDB
+  with incremental checkpoints (ADR 0012).
+- A streaming Iceberg source sets `streaming-skip-delete-snapshots` and
+  `streaming-skip-overwrite-snapshots`: maintenance deletes (retention) must not reach the reader.
+  A reader may be stopped at most `SNAPSHOT_RETENTION` (7 d); `submit.sh` refuses older resumes.
+- Parallelism comes from config (`GPS_PARALLELISM`), never from the SQL; keep it ≤ topic partitions.
 - Sinks must be exactly-once (Iceberg append), or idempotent upserts (Iceberg identifier fields, JDBC primary key).
 - Connection settings come from config/env only, so the same job runs locally and on Managed Flink.
 - Pure Python logic used only by Flink (haversine, ETA) lives in `flink/udf/`; logic shared with

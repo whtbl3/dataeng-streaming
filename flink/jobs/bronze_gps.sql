@@ -1,8 +1,11 @@
 -- bronze_gps: registry-framed Avro GPS pings → Iceberg bronze (append-only, exactly-once).
 -- Bad messages never stop the job (spec 003, ADR 0010): the source reads raw bytes, a Python
 -- UDF decodes and validates them, and the statement set routes rejects to the dead-letter
--- table and topic. Catalog, checkpointing and Python settings come from _init_catalog.sql.
+-- table and topic. The UDF is vectorized: it decodes a batch of messages per call (spec 005).
+-- Catalog, checkpointing and Python settings come from _init_catalog.sql.
 SET 'pipeline.name' = 'bronze_gps';
+-- GPS jobs can read with as many parallel readers as the topic has partitions (6, spec 005).
+SET 'parallelism.default' = '${GPS_PARALLELISM}';
 
 CREATE TEMPORARY FUNCTION decode_gps AS 'contracts.udf.decode_gps_udf' LANGUAGE PYTHON;
 
@@ -18,6 +21,7 @@ CREATE TEMPORARY TABLE gps_raw (
   'properties.group.id' = 'flink-bronze-gps',
   'properties.auto.offset.reset' = 'earliest',
   'scan.startup.mode' = 'group-offsets',
+  'scan.topic-partition-discovery.interval' = '1 min',
   'format' = 'raw'
 );
 
@@ -36,6 +40,7 @@ CREATE TEMPORARY TABLE gps_dlq_topic (
   'properties.bootstrap.servers' = '${KAFKA_BOOTSTRAP}',
   'format' = 'raw',
   'sink.delivery-guarantee' = 'exactly-once',
+  'properties.compression.type' = 'zstd',
   'sink.transactional-id-prefix' = 'bronze-gps-dlq',
   'properties.transaction.timeout.ms' = '900000'
 );

@@ -60,13 +60,17 @@ analysts (about 2 minutes) and stay cheap at the 100M-event tier (ADR 0009).
 - \+ Dirty input gives the same silver rows: clean vs chaos run (AC2), a resend (AC4), a
   taskmanager kill (AC7) and a rebuild (AC8) are all tested.
 - − Every upsert writes an equality-delete file next to its data file, so Trino reads slow down
-  until compaction. Compaction and the read cost are measured in feature 5.
+  until compaction. *Update (spec 005, ADR 0012):* the maintenance service compacts silver every
+  30 minutes, which applies and drops the delete files; compaction is safe while Flink upserts.
 - − A copy arriving after the TTL refreshes `ingest_ts` and `lateness_s` of its row. It is
   counted by `make silver-status`, but the first-arrival guarantee only holds within the TTL.
-- − Resubmitting without a savepoint (hard kill, rebuild) re-reads all of bronze. The result is
-  correct, but slow at the 100M tier (feature 5). GPS Top-1 state is about 3.5M keys a day at the
-  standard tier, so it moves to RocksDB if the heap backend is too small.
-- − A full power loss can still rewrite a few messages into bronze, because there is no HA. Silver
-  and gold are unaffected. Flink HA (ZooKeeper) was rejected for now: one more container
-  (about 300 MB) and more configuration for a local demo.
+- − A rebuild re-reads all of bronze. The result is correct, but slow at the 100M tier.
+  *Update (spec 005):* state is in RocksDB with incremental checkpoints, so the GPS Top-1 state
+  (about 3.5M keys a day at the standard tier) is not capped by the heap.
+- − Without HA a killed JobManager does not recover its jobs. *Update (spec 005):* `submit.sh` now
+  resumes each job from its newest retained checkpoint when there is no savepoint, so a hard kill
+  neither loses nor rewrites bronze messages (tested). Flink HA (ZooKeeper) is still not used: one
+  more container (about 300 MB) for a local demo.
+- − Silver GPS stays upsert. Spec 005 considered append + dedup, but Flink SQL cannot emit an
+  insert-only first-arrival stream (ADR 0012).
 - Reverse: drop the `silver` schema and the two jobs; bronze is untouched.

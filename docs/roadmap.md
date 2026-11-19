@@ -9,7 +9,7 @@ Items marked *(cut if late)* can move to "Stretch" without breaking the story.
 | 2 | 2 | Order domain: Postgres schema + seed (depots, vans), order simulator, Debezium CDC → Kafka → bronze | Implemented | [002](../specs/002-orders-cdc/spec.md) |
 | 3 | 2 | Data contracts: Avro schemas + Schema Registry (FULL_TRANSITIVE), invalid events → DLQ | Implemented | [003](../specs/003-data-contracts/spec.md) |
 | 4 | 3 | Silver: dedup + event-time watermarks; simulator chaos mode (late, out-of-order, duplicate events); tests | Implemented | [004](../specs/004-silver/spec.md) |
-| 5 | 3 | Scale: data tiers (`dev` / `standard` 100M / `stress`), `make backfill DAYS=N`, Iceberg partitioning + compaction, bounded Kafka retention, `make bench` → `bench/results/` | Planned | — |
+| 5 | 3 | Scale: more GPS partitions, batched decode, state on disk, Iceberg layout + compaction + expiry, bounded Kafka retention + table maintenance service | Implemented | [005](../specs/005-scale/spec.md) |
 | 6 | 3–4 | Control tower job: latest position ⋈ active orders → ETA, SLA-risk + abnormal-stop alerts → Postgres serving + `alerts.v1` | Planned | — |
 | 7 | 4 | Gold with dbt: `fct_delivery`, `agg_depot_daily`, ETA error; dbt tests + source freshness; intraday run (5 min, 2 h look-back) + nightly reconciliation (close previous day, `is_final`, `closed_days`) | Planned | — |
 | 8 | 4 | Grafana: live map, alerts, KPI (provisional vs final) and pipeline-health dashboards (Prometheus) | Planned | — |
@@ -17,6 +17,6 @@ Items marked *(cut if late)* can move to "Stretch" without breaking the story.
 | 10 | 5 | Managed deploy: Terraform (MSK Serverless, MSK Connect, Managed Flink, RDS, ECS); `make aws-up` / `aws-down` *(cut if late: keep the Terraform + one recorded demo)* | Planned | — |
 | 11 | 6 | Hardening and story: replay from offsets, `stress` run, README (architecture, trade-offs, benchmark, cost), demo video | Planned | — |
 
-**Stretch (after v1):** ML-based ETA, EC2 devbox for repeatable benchmarks, Kinesis vs MSK cost/latency comparison, OpenLineage.
+**Stretch (after v1):** data tiers + `make backfill` + `make bench` (dropped from feature 5, ADR 0012), ML-based ETA, EC2 devbox for repeatable benchmarks, Kinesis vs MSK cost/latency comparison, OpenLineage.
 
 Status: Planned · In spec · In progress · Implemented

@@ -123,18 +123,21 @@ class Corrupter:
         return key, encoder.encode_record(rec)
 
 
+# Batched and compressed (spec 005 AC2): wait up to 20 ms to fill a batch of up to 512 KiB, then
+# compress the whole batch. zstd shrinks a batch of Avro pings to about a third of its size.
+PRODUCER_CONFIG = {
+    "acks": "all",
+    "enable.idempotence": True,
+    "linger.ms": 20,
+    "batch.size": 512 * 1024,
+    "compression.type": "zstd",
+}
+
+
 def make_producer(bootstrap: str) -> ProducerLike:
     from confluent_kafka import Producer  # imported lazily so unit tests need no broker
 
-    return Producer(
-        {
-            "bootstrap.servers": bootstrap,
-            "acks": "all",
-            "enable.idempotence": True,
-            "linger.ms": 20,
-            "compression.type": "lz4",
-        }
-    )
+    return Producer({"bootstrap.servers": bootstrap, **PRODUCER_CONFIG})
 
 
 def _ms(ts: datetime) -> int:

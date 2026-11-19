@@ -46,8 +46,9 @@ nightly batch job, one day late.
 ## Success measures
 - `make up` + `make demo` starts the whole pipeline locally in under 10 minutes on a
   fresh machine.
-- The design handles a 30-day backfill (~100M GPS events) through Kafka → Flink → Iceberg;
-  throughput is measured and published with the hardware it ran on (ADR 0009).
+- The design scales to ~100M GPS events (30 days): every layer that would stop it from growing is
+  fixed and explained (ADR 0012). *Changed 2026-11-19 (spec 005): a measured 30-day backfill and
+  benchmark were dropped; they are a stretch item.*
 - End-to-end latency (GPS event → alert) p95 under 10 seconds locally.
 - Duplicate and late events give the same gold KPIs as clean data: intraday for events
   up to 2 h late, and in the nightly final close for anything that arrived that day (proven by tests).
@@ -58,5 +59,5 @@ nightly batch job, one day late.
 ## Resolved questions
 - Simulated city: a real bounding box (Ho Chi Minh City, OpenStreetMap road data).
 - Scale target: 200 vans, ~5k orders/day, 1 GPS ping per van every 5 s (live).
-- Data tiers (ADR 0009): `dev` ≈ 350k, `standard` = 30 days ≈ 100M, `stress` = backfill + 2,000 vans live.
+- Data tiers (ADR 0009): `dev` ≈ 350k, `standard` = 30 days ≈ 100M, `stress` = backfill + 2,000 vans live. Since spec 005 these are design sizes, not runnable tiers (stretch).
 - Runtime: local-first on this laptop; managed AWS services once stable (ADR 0005).

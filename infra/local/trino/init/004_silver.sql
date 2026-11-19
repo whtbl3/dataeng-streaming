@@ -1,6 +1,6 @@
 -- Silver layer DDL (spec 004). Created in Trino because Flink DDL cannot declare partition
 -- transforms. Flink writes upserts keyed by each table's Iceberg identifier fields, which Trino
--- cannot set: flink-submit sets them with infra/local/iceberg/set_identifier_fields.py (ADR 0011).
+-- cannot set: flink-submit sets them with infra/local/iceberg/table_admin.py (ADR 0011).
 -- Key columns are NOT NULL because Iceberg identifier fields must be required. Idempotent.
 CREATE SCHEMA IF NOT EXISTS lakehouse.silver;
 
@@ -19,7 +19,10 @@ CREATE TABLE IF NOT EXISTS lakehouse.silver.gps_pings (
 WITH (
     format = 'PARQUET',
     format_version = 2,
-    partitioning = ARRAY['day(event_ts)', 'bucket(vehicle_id, 16)']
+    -- One partition a day (about 80 MB at 200 vans), files sorted by van then time when compacted,
+    -- so a one-van query skips most files by their min/max stats (spec 005, ADR 0012).
+    partitioning = ARRAY['day(event_ts)'],
+    sorted_by = ARRAY['vehicle_id', 'event_ts']
 );
 
 -- One row per order: the version with the highest commit position (source_lsn).
