@@ -42,7 +42,11 @@ CREATE TEMPORARY TABLE bronze_gps (
   'catalog-table' = 'gps_pings',
   'streaming' = 'true',
   'monitor-interval' = '10s',
-  'starting-strategy' = 'TABLE_SCAN_THEN_INCREMENTAL'
+  'starting-strategy' = 'TABLE_SCAN_THEN_INCREMENTAL',
+  -- Bronze is append-only; its only other snapshots come from maintenance (spec 005): compaction
+  -- ("replace", always skipped) and retention deletes, which must not reach silver.
+  'streaming-skip-delete-snapshots' = 'true',
+  'streaming-skip-overwrite-snapshots' = 'true'
 );
 
 INSERT INTO lakehouse.silver.gps_pings /*+ OPTIONS('upsert-enabled' = 'true') */

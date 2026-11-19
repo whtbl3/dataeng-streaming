@@ -26,7 +26,9 @@ SELECT `after`.order_id            AS order_id,
        commit_ts
 FROM lakehouse.bronze.orders_cdc
      /*+ OPTIONS('streaming' = 'true', 'monitor-interval' = '10s',
-                 'starting-strategy' = 'TABLE_SCAN_THEN_INCREMENTAL') */
+                 'starting-strategy' = 'TABLE_SCAN_THEN_INCREMENTAL',
+                 'streaming-skip-delete-snapshots' = 'true',
+                 'streaming-skip-overwrite-snapshots' = 'true') */
 -- Orders are never deleted, and a delete would carry no after image.
 WHERE `after` IS NOT NULL;
 

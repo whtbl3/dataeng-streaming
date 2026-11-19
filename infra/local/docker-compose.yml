@@ -213,6 +213,19 @@ services:
           trino --server http://trino:8080 --file "$$f" || exit 1
         done
 
+  # ---- Table maintenance (spec 005, ADR 0012) ------------------------------------------
+  maintenance: # compaction, manifests, snapshot expiry, orphan files, retention; through Trino
+    image: python:3.11.11-slim
+    depends_on:
+      trino-init: { condition: service_completed_successfully }
+    environment:
+      TRINO_URL: http://trino:8080
+      SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d}
+      ORPHAN_RETENTION: ${ORPHAN_RETENTION:-7d}
+    volumes: ["./maintenance:/opt/maintenance:ro"]
+    entrypoint: ["python", "-u", "/opt/maintenance/maintain.py"]
+    mem_limit: 64m
+
   # ---- Flink ----------------------------------------------------------------------
   jobmanager:
     build: ./flink
