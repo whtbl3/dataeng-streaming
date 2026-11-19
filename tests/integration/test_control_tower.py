@@ -46,14 +46,14 @@ def now() -> datetime:
 class ReservedVan:
     """One reserved van: its depot, orders this test creates, and pings sent now.
 
-    A test that sends pings dated in the past passes `pings_from`: it gets a van whose newest
-    position is older than that, because a van never moves back to an older ping (AC3)."""
+    The van has no ping newer than `pings_from` (default: 11 min ago), so its speed window is
+    empty and the test's pings are never older than its latest position (AC3)."""
 
     def __init__(self, pings_from: datetime | None = None) -> None:
+        # No ping in the last 11 min either: the speed window (10 min) starts empty.
+        pings_from = min(pings_from or now(), now() - timedelta(minutes=11))
         for _ in range(len(_POOL)):
             self.van = next(_RESERVED)
-            if pings_from is None:
-                break
             rows = pg(
                 "SELECT event_ts FROM serving.vehicle_latest WHERE van_id = %s", (self.van.van_id,)
             )
@@ -65,7 +65,7 @@ class ReservedVan:
         self.id = self.van.van_id
         self.orders: list[str] = []
         self.tag = uuid.uuid4().hex[:6].upper()
-        self.started = pings_from or now()
+        self.started = pings_from
 
     def place(self, north_km: float) -> tuple[float, float]:
         return (self.depot.lat + north_km / 111.2, self.depot.lon)
@@ -119,8 +119,8 @@ def van():
 
 def eta_row(oid: str):
     rows = pg(
-        "SELECT status, eta, promised_end, distance_km, written_at FROM serving.order_eta "
-        "WHERE order_id = %s",
+        "SELECT status, eta, promised_end, distance_km, written_at, event_ts "
+        "FROM serving.order_eta WHERE order_id = %s",
         (oid,),
     )
     return rows[0] if rows else None
@@ -140,8 +140,8 @@ def test_open_order_gets_an_eta_within_10s(van):
     oid = van.order(north_km=8, promised_in_min=600)
     time.sleep(3)  # let the order change reach the job first (CDC)
     sent = van.ping(van.place(0), 30.0)
-    row, _ = wait_for(lambda: eta_row(oid), lambda r: r is not None and r[1] is not None, TIMEOUT_S)
-    status, eta, _, km, written = row
+    row, _ = wait_for(lambda: eta_row(oid), lambda r: r is not None and r[5] == sent, TIMEOUT_S)
+    status, eta, _, km, written, _ = row
     expected, expected_km = route_eta(sent, van.place(0), 30.0, [van.place(8)])
     assert status == "out_for_delivery"
     assert abs((eta - expected).total_seconds()) < 60 and km == pytest.approx(expected_km, 0.01)
@@ -254,7 +254,12 @@ def test_each_alert_event_is_published_once_to_the_alerts_topic(van):
         TIMEOUT_S,
     )
     # exactly-once Kafka sinks commit with the checkpoint (30 s)
-    messages, _ = wait_for(lambda: _alert_messages(van.id), lambda m: len(m) >= 2, 120, every_s=10)
+    messages, _ = wait_for(
+        lambda: [m for m in _alert_messages(van.id) if m["order_id"] == oid],
+        lambda m: len(m) >= 2,
+        120,
+        every_s=10,
+    )
     events = sorted((m["alert_id"], m["event"]) for m in messages)
     assert events == [(rows[0][0], "raised"), (rows[0][0], "resolved")]
     assert all(m["order_id"] == oid and m["type"] == "SLA_RISK" for m in messages)
@@ -304,4 +309,5 @@ def test_tower_status_matches_the_serving_tables(van):
     )[0]
     assert f"open orders with an ETA | {with_eta}" in out
     assert f"open SLA_RISK alerts | {open_sla}" in out
-    assert van.id in out  # newest position per van
+    (newest,) = pg("SELECT van_id FROM serving.vehicle_latest ORDER BY event_ts DESC LIMIT 1")[0]
+    assert "== newest position per van" in out and f"\n{newest} | " in out
