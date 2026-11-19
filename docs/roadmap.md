@@ -1,6 +1,6 @@
 # Roadmap
 
-Target: 6 weeks, part-time. Each row becomes `specs/NNN-*/` via `/new-feature`.
+Target: 6 weeks, part-time. Each row becomes `specs/NNN-*/`.
 Items marked *(cut if late)* can move to "Stretch" without breaking the story.
 
 | # | Week | Feature | Status | Spec |

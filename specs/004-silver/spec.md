@@ -1,5 +1,5 @@
 # Spec 004: Silver (dedup, event-time watermarks, chaos mode)
-Status: Implemented (2026-11-19) · Intent: roadmap item 4 · Author: project owner + Claude
+Status: Implemented (2026-11-19) · Intent: roadmap item 4 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 

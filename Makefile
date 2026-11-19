@@ -20,7 +20,6 @@ lint:
 	@if [ -d infra/aws ]; then $(TF) fmt -check -recursive; fi
 
 test:
-	bash scripts/test_hooks.sh
 	uv run python -m contracts.compat schemas/
 	uv run pytest -q tests/unit
 

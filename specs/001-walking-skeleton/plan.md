@@ -34,7 +34,7 @@ code on branch `feat/001-walking-skeleton`. On approval, this plan is saved as
 - `infra/local/flink/submit.sh`: renders the job SQL from env and submits it with `sql-client.sh -f`. It **skips the submit when a RUNNING job named `bronze_gps` already exists** (checked through the REST API).
 - `flink/jobs/bronze_gps.sql` (the job):
   - The Iceberg REST catalog is set up with S3FileIO.
-  - The Kafka source uses the JSON format, `event_ts TIMESTAMP_LTZ(3)` with a WATERMARK (−30 s, per `.claude/rules/flink.md`), and metadata columns `timestamp` (→ `ingest_ts`), `partition` and `offset`. It reads from `group-offsets` and falls back to `earliest`.
+  - The Kafka source uses the JSON format, `event_ts TIMESTAMP_LTZ(3)` with a WATERMARK (−30 s, per the Flink rules), and metadata columns `timestamp` (→ `ingest_ts`), `partition` and `offset`. It reads from `group-offsets` and falls back to `earliest`.
   - Checkpointing runs every 30 s, exactly-once.
   - The job does `INSERT INTO lakehouse.bronze.gps_pings`.
 - `infra/local/trino/catalog/lakehouse.properties` and `jvm.config` (`-Xmx1G`).

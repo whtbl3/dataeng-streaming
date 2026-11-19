@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Delivery Control Tower: data flow",
+    "locale": "en",
+    "output": "docs/diagrams/data-flow.html",
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "label": "Sources"
+    },
+    {
+      "label": "Ingest"
+    },
+    {
+      "label": "Stream processing"
+    },
+    {
+      "label": "Lakehouse and serving"
+    },
+    {
+      "label": "Consumers"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sim",
+      "type": "external",
+      "label": "Simulator",
+      "sublabel": "200 vans, HCMC",
+      "stage": 0,
+      "row": 0,
+      "tag": "built"
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Postgres",
+      "sublabel": "orders, vans, depots",
+      "stage": 0,
+      "row": 1,
+      "tag": "built"
+    },
+    {
+      "id": "dbz",
+      "type": "backend",
+      "label": "Debezium",
+      "sublabel": "Kafka Connect",
+      "stage": 1,
+      "row": 1,
+      "tag": "built"
+    },
+    {
+      "id": "kafka",
+      "type": "messagebus",
+      "label": "Kafka",
+      "sublabel": "Redpanda + Avro",
+      "stage": 1,
+      "row": 0,
+      "tag": "built"
+    },
+    {
+      "id": "flink",
+      "type": "backend",
+      "label": "Flink jobs",
+      "sublabel": "bronze + silver",
+      "stage": 2,
+      "row": 0,
+      "tag": "built"
+    },
+    {
+      "id": "tower",
+      "type": "backend",
+      "label": "Flink alert job",
+      "sublabel": "ETA, SLA risk",
+      "stage": 2,
+      "row": 3,
+      "tag": "planned"
+    },
+    {
+      "id": "bronze",
+      "type": "database",
+      "label": "Iceberg bronze",
+      "sublabel": "raw + DLQ",
+      "stage": 3,
+      "row": 0,
+      "tag": "built"
+    },
+    {
+      "id": "silver",
+      "type": "database",
+      "label": "Iceberg silver",
+      "sublabel": "deduplicated",
+      "stage": 3,
+      "row": 1,
+      "tag": "built"
+    },
+    {
+      "id": "gold",
+      "type": "database",
+      "label": "Iceberg gold",
+      "sublabel": "KPIs, star schema",
+      "stage": 3,
+      "row": 2,
+      "tag": "planned"
+    },
+    {
+      "id": "serving",
+      "type": "database",
+      "label": "Postgres serving",
+      "sublabel": "ETA, alerts",
+      "stage": 3,
+      "row": 3,
+      "tag": "planned"
+    },
+    {
+      "id": "trino",
+      "type": "backend",
+      "label": "Trino",
+      "sublabel": "analyst SQL",
+      "stage": 4,
+      "row": 0,
+      "tag": "built"
+    },
+    {
+      "id": "grafana",
+      "type": "frontend",
+      "label": "Grafana",
+      "sublabel": "dispatch + KPIs",
+      "stage": 4,
+      "row": 2,
+      "tag": "planned"
+    }
+  ],
+  "flows": [
+    {
+      "id": "f-orders",
+      "from": "sim",
+      "to": "pg",
+      "label": "orders",
+      "variant": "default"
+    },
+    {
+      "id": "f-gps",
+      "from": "sim",
+      "to": "kafka",
+      "label": "GPS pings",
+      "classification": "Avro, every 5 s",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f-wal",
+      "from": "pg",
+      "to": "dbz",
+      "label": "WAL",
+      "classification": "replication slot",
+      "variant": "default"
+    },
+    {
+      "id": "f-cdc",
+      "from": "dbz",
+      "to": "kafka",
+      "label": "CDC changes",
+      "variant": "default"
+    },
+    {
+      "id": "f-topics",
+      "from": "kafka",
+      "to": "flink",
+      "label": "GPS + CDC topics",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f-alerts-in",
+      "from": "kafka",
+      "to": "tower",
+      "label": "GPS + orders",
+      "variant": "default"
+    },
+    {
+      "id": "f-append",
+      "from": "flink",
+      "to": "bronze",
+      "label": "append",
+      "classification": "exactly-once",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f-dedup",
+      "from": "bronze",
+      "to": "silver",
+      "label": "dedup, upsert",
+      "classification": "Flink silver jobs",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f-dbt",
+      "from": "silver",
+      "to": "gold",
+      "label": "dbt",
+      "classification": "every 5 min + nightly close",
+      "variant": "dashed"
+    },
+    {
+      "id": "f-serve",
+      "from": "tower",
+      "to": "serving",
+      "label": "ETA, alerts",
+      "classification": "upsert, p95 < 10 s",
+      "variant": "default"
+    },
+    {
+      "id": "f-sql",
+      "from": "bronze",
+      "to": "trino",
+      "label": "SQL",
+      "variant": "default"
+    },
+    {
+      "id": "f-kpi",
+      "from": "gold",
+      "to": "grafana",
+      "label": "KPIs",
+      "variant": "default"
+    },
+    {
+      "id": "f-live",
+      "from": "serving",
+      "to": "grafana",
+      "label": "live alerts",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Stream for freshness, batch for correctness",
+      "items": [
+        "Flink raises alerts within seconds from Kafka",
+        "dbt recomputes KPIs every 5 minutes over a 2 h look-back (provisional)",
+        "A nightly job closes the previous local day (final, is_final)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Built and planned",
+      "items": [
+        "Built: features 1 to 5 (bronze, CDC, data contracts and DLQ, silver, scale)",
+        "Planned: alert job (6), gold with dbt (7), Grafana (8), AWS (9 and 10)"
+      ]
+    }
+  ]
+}

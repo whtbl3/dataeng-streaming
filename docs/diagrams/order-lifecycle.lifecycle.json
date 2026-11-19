@@ -1,0 +1,42 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Order status lifecycle",
+    "locale": "en",
+    "output": "docs/diagrams/order-lifecycle.html",
+    "quality_profile": "showcase"
+  },
+  "mainPath": ["created", "assigned", "out_for_delivery", "delivered"],
+  "states": [
+    { "id": "created", "type": "start", "label": "created", "sublabel": "sets created_at", "tag": "INSERT", "step": "01" },
+    { "id": "assigned", "type": "waiting", "label": "assigned", "sublabel": "van_id, stop_seq", "tag": "assigned_at", "step": "02" },
+    { "id": "out_for_delivery", "type": "active", "label": "out_for_delivery", "sublabel": "van left the depot", "tag": "out_for_delivery_at", "step": "03" },
+    { "id": "delivered", "type": "success", "label": "delivered", "sublabel": "late if after promised_end", "tag": "delivered_at", "step": "04" },
+    { "id": "failed", "type": "failure", "label": "failed", "sublabel": "failure_reason", "tag": "failed_at" }
+  ],
+  "transitions": [
+    { "id": "t-assign", "from": "created", "to": "assigned", "label": "assign van" },
+    { "id": "t-out", "from": "assigned", "to": "out_for_delivery", "label": "leave depot" },
+    { "id": "t-deliver", "from": "out_for_delivery", "to": "delivered", "label": "hand over", "variant": "emphasis" },
+    { "id": "t-fail", "from": "out_for_delivery", "to": "failed", "label": "customer absent", "variant": "security", "note": "counts as not on time (BR-2)" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Guarded, idempotent updates",
+      "items": [
+        "Each UPDATE applies only when the order is in the previous status, so a re-run adds no CDC events",
+        "Every change reaches Kafka through Debezium CDC (REPLICA IDENTITY FULL)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "In silver",
+      "items": [
+        "silver.orders keeps the latest version (highest source_lsn)",
+        "silver.order_status_history keeps one row per status reached, with its timestamp"
+      ]
+    }
+  ]
+}

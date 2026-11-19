@@ -1,0 +1,437 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "Source and silver tables (built)",
+    "locale": "en",
+    "output": "docs/diagrams/model-silver.html",
+    "quality_profile": "standard"
+  },
+  "layout": {
+    "mode": "grid",
+    "gapX": 96,
+    "gapY": 40
+  },
+  "entities": [
+    {
+      "id": "depots",
+      "label": "depots",
+      "sublabel": "Postgres (OLTP)",
+      "tag": "Postgres source",
+      "row": 0,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "depot_id",
+          "type": "text",
+          "key": "pk"
+        },
+        {
+          "name": "name",
+          "type": "text"
+        },
+        {
+          "name": "lat",
+          "type": "double precision"
+        },
+        {
+          "name": "lon",
+          "type": "double precision"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ]
+    },
+    {
+      "id": "vans",
+      "label": "vans",
+      "sublabel": "van_id = GPS vehicle_id",
+      "tag": "Postgres source",
+      "row": 1,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "van_id",
+          "type": "text",
+          "key": "pk"
+        },
+        {
+          "name": "depot_id",
+          "type": "text",
+          "key": "fk",
+          "references": "depots.depot_id"
+        },
+        {
+          "name": "plate",
+          "type": "text",
+          "key": "uk"
+        },
+        {
+          "name": "capacity",
+          "type": "integer"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "label": "orders",
+      "sublabel": "REPLICA IDENTITY FULL",
+      "tag": "Postgres source",
+      "row": 2,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "order_id",
+          "type": "text",
+          "key": "pk"
+        },
+        {
+          "name": "depot_id",
+          "type": "text",
+          "key": "fk",
+          "references": "depots.depot_id"
+        },
+        {
+          "name": "van_id",
+          "type": "text",
+          "key": "fk",
+          "references": "vans.van_id"
+        },
+        {
+          "name": "stop_seq",
+          "type": "integer"
+        },
+        {
+          "name": "dest_lat",
+          "type": "double precision"
+        },
+        {
+          "name": "dest_lon",
+          "type": "double precision"
+        },
+        {
+          "name": "promised_start",
+          "type": "timestamptz"
+        },
+        {
+          "name": "promised_end",
+          "type": "timestamptz"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "failure_reason",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "out_for_delivery_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "failed_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ],
+      "width": 260
+    },
+    {
+      "id": "s_gps",
+      "label": "silver.gps_pings",
+      "sublabel": "one row per real ping, day(event_ts)",
+      "tag": "Iceberg silver",
+      "row": 1,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "vehicle_id",
+          "type": "varchar",
+          "key": [
+            "pk",
+            "fk"
+          ],
+          "references": "vans.van_id"
+        },
+        {
+          "name": "event_ts",
+          "type": "timestamptz(6)",
+          "key": "pk"
+        },
+        {
+          "name": "lat",
+          "type": "double"
+        },
+        {
+          "name": "lon",
+          "type": "double"
+        },
+        {
+          "name": "speed_kmh",
+          "type": "double"
+        },
+        {
+          "name": "heading_deg",
+          "type": "double"
+        },
+        {
+          "name": "ingest_ts",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "lateness_s",
+          "type": "bigint"
+        },
+        {
+          "name": "is_late",
+          "type": "boolean"
+        }
+      ],
+      "width": 250
+    },
+    {
+      "id": "s_orders",
+      "label": "silver.orders",
+      "sublabel": "latest version, month(created_at)",
+      "tag": "Iceberg silver",
+      "row": 2,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "order_id",
+          "type": "varchar",
+          "key": "pk"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "key": "pk"
+        },
+        {
+          "name": "depot_id",
+          "type": "varchar",
+          "key": "fk",
+          "references": "depots.depot_id"
+        },
+        {
+          "name": "van_id",
+          "type": "varchar",
+          "key": "fk",
+          "references": "vans.van_id"
+        },
+        {
+          "name": "stop_seq",
+          "type": "integer"
+        },
+        {
+          "name": "dest_lat",
+          "type": "double"
+        },
+        {
+          "name": "dest_lon",
+          "type": "double"
+        },
+        {
+          "name": "promised_start",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "promised_end",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "status",
+          "type": "varchar"
+        },
+        {
+          "name": "failure_reason",
+          "type": "varchar"
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "out_for_delivery_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "failed_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)"
+        },
+        {
+          "name": "last_lsn",
+          "type": "bigint"
+        },
+        {
+          "name": "last_commit_ts",
+          "type": "timestamptz(6)"
+        }
+      ],
+      "width": 280
+    },
+    {
+      "id": "s_status",
+      "label": "silver.order_status_history",
+      "sublabel": "one row per status, day(status_ts)",
+      "tag": "Iceberg silver",
+      "row": 3,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "order_id",
+          "type": "varchar",
+          "key": [
+            "pk",
+            "fk"
+          ],
+          "references": "s_orders.order_id"
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "key": "pk"
+        },
+        {
+          "name": "status_ts",
+          "type": "timestamptz(6)",
+          "key": "pk"
+        },
+        {
+          "name": "source_lsn",
+          "type": "bigint"
+        },
+        {
+          "name": "commit_ts",
+          "type": "timestamptz(6)"
+        }
+      ],
+      "width": 250
+    }
+  ],
+  "relationships": [
+    {
+      "id": "r-van-depot",
+      "from": "vans",
+      "to": "depots",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "based at"
+    },
+    {
+      "id": "r-order-depot",
+      "from": "orders",
+      "to": "depots",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "label": "from depot"
+    },
+    {
+      "id": "r-order-van",
+      "from": "orders",
+      "to": "vans",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "toOptional": true,
+      "label": "assigned to"
+    },
+    {
+      "id": "r-gps-van",
+      "from": "s_gps",
+      "to": "vans",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "identifying": false,
+      "variant": "dashed",
+      "label": "vehicle_id = van_id"
+    },
+    {
+      "id": "r-sorder-van",
+      "from": "s_orders",
+      "to": "vans",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "toOptional": true,
+      "identifying": false,
+      "variant": "dashed",
+      "label": "van_id"
+    },
+    {
+      "id": "r-sorder-depot",
+      "from": "s_orders",
+      "to": "depots",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "identifying": false,
+      "variant": "dashed",
+      "label": "depot_id"
+    },
+    {
+      "id": "r-status-order",
+      "from": "s_status",
+      "to": "s_orders",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "identifying": false,
+      "variant": "dashed",
+      "label": "status reached"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Keys in the lakehouse are logical",
+      "items": [
+        "Iceberg enforces no foreign keys; dashed links are join keys",
+        "Silver primary keys are the Iceberg identifier fields that Flink upserts on (ADR 0011)",
+        "created_at and status_ts are in the stored keys only because Iceberg upserts need the partition column"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Not shown",
+      "items": [
+        "Bronze keeps the raw rows: gps_pings, orders_cdc, vans_cdc, depots_cdc (Debezium envelopes) and dlq_events",
+        "dest_lat and dest_lon are personal data: read-restricted, never copied to gold (NFR-6)"
+      ]
+    }
+  ]
+}

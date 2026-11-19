@@ -12,10 +12,38 @@ managers get delivery KPIs a day late. This project predicts SLA breaches **befo
 and keeps KPIs correct even when GPS data arrives late or duplicated.
 
 ## Architecture
-```
-Simulator (HCMC, 200 vans) ── GPS ───────────────> Kafka ──> Flink ──> Iceberg bronze/silver ─dbt─> gold
-          └── orders ─> Postgres ─ Debezium CDC ─┘           └──> Postgres serving (ETA, alerts) ──> Grafana
-```
+![Data flow: simulator and Postgres CDC into Kafka, Flink into Iceberg bronze and silver, dbt into gold, a Flink alert job into Postgres serving, and Trino and Grafana as consumers](docs/diagrams/data-flow.svg)
+
+Nodes marked *built* run today (features 1–5); *planned* nodes are features 6–8 on the
+[roadmap](docs/roadmap.md). More diagrams (click to open):
+
+<details>
+<summary><b>One GPS ping</b>: first copy, duplicate copy and a bad message</summary>
+
+![Sequence: a ping goes from the van to Kafka, is decoded by bronze_gps with the Schema Registry, appended to bronze, then upserted to silver by silver_gps; a duplicate is appended to bronze but produces no silver row; a ping outside the city goes to the dead-letter table and topic](docs/diagrams/gps-ping.svg)
+</details>
+
+<details>
+<summary><b>Order status lifecycle</b>: created → assigned → out_for_delivery → delivered or failed</summary>
+
+![Lifecycle: created, assigned, out_for_delivery, then delivered or failed (customer absent)](docs/diagrams/order-lifecycle.svg)
+</details>
+
+<details>
+<summary><b>Data model, built</b>: Postgres source tables and Iceberg silver</summary>
+
+![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
+</details>
+
+<details>
+<summary><b>Data model, planned</b>: gold star schema (feature 7)</summary>
+
+![ERD: fct_delivery joined to dim_van (SCD Type 2), dim_depot and dim_date; agg_depot_daily and closed_days](docs/diagrams/model-gold.svg)
+</details>
+
+The diagrams are drawn with [Archify](https://github.com/tt-a1i/archify) from the JSON files in
+[`docs/diagrams/`](docs/diagrams/), which also explains how to regenerate them.
+
 **Stream for freshness, batch for correctness:**
 - Flink raises alerts within seconds.
 - dbt recomputes KPIs every 5 minutes (provisional).
@@ -77,5 +105,5 @@ UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://
 - Feature specs: [`specs/`](specs/)
 
 ## How this repo is built
-The project follows a spec-driven workflow with Claude Code: intent → spec → plan → tasks → PR.
-See `CLAUDE.md`, `.claude/` and `specs/README.md`.
+The project follows a spec-driven workflow: intent → spec → plan → tasks → PR.
+See [`specs/README.md`](specs/README.md).

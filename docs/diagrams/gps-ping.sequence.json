@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "One GPS ping, its duplicate and a bad message",
+    "locale": "en",
+    "output": "docs/diagrams/gps-ping.html",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "sim",
+      "type": "external",
+      "label": "Van (simulator)",
+      "sublabel": "VAN-0001"
+    },
+    {
+      "id": "kafka",
+      "type": "messagebus",
+      "label": "Kafka",
+      "sublabel": "gps.pings.v1"
+    },
+    {
+      "id": "sr",
+      "type": "security",
+      "label": "Schema Registry",
+      "sublabel": "Avro contracts"
+    },
+    {
+      "id": "bjob",
+      "type": "backend",
+      "label": "bronze_gps",
+      "sublabel": "Flink + Python UDF"
+    },
+    {
+      "id": "bronze",
+      "type": "database",
+      "label": "Iceberg bronze",
+      "sublabel": "gps_pings, dlq_events"
+    },
+    {
+      "id": "sjob",
+      "type": "backend",
+      "label": "silver_gps",
+      "sublabel": "Flink, Top-1"
+    },
+    {
+      "id": "silver",
+      "type": "database",
+      "label": "Iceberg silver",
+      "sublabel": "gps_pings"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 450,
+      "label": "First copy"
+    },
+    {
+      "from": 462,
+      "to": 672,
+      "label": "Duplicate copy"
+    },
+    {
+      "from": 684,
+      "to": 830,
+      "label": "Bad message"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m-send",
+      "from": "sim",
+      "to": "kafka",
+      "y": 165,
+      "label": "ping (Avro)",
+      "variant": "emphasis",
+      "note": "event_ts 08:07:00, sent 08:11:02 after a tunnel"
+    },
+    {
+      "id": "m-read",
+      "from": "kafka",
+      "to": "bjob",
+      "y": 218,
+      "label": "raw bytes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-schema",
+      "from": "bjob",
+      "to": "sr",
+      "y": 248,
+      "label": "schema by id",
+      "variant": "security"
+    },
+    {
+      "id": "m-schema-r",
+      "from": "sr",
+      "to": "bjob",
+      "y": 276,
+      "label": "writer schema",
+      "variant": "return",
+      "note": "cached per schema id"
+    },
+    {
+      "id": "m-append",
+      "from": "bjob",
+      "to": "bronze",
+      "y": 328,
+      "label": "append row",
+      "variant": "emphasis",
+      "note": "committed at the checkpoint (exactly-once)"
+    },
+    {
+      "id": "m-poll",
+      "from": "sjob",
+      "to": "bronze",
+      "y": 380,
+      "label": "poll snapshots",
+      "variant": "default"
+    },
+    {
+      "id": "m-rows",
+      "from": "bronze",
+      "to": "sjob",
+      "y": 410,
+      "label": "new rows",
+      "variant": "return"
+    },
+    {
+      "id": "m-upsert",
+      "from": "sjob",
+      "to": "silver",
+      "y": 440,
+      "label": "upsert first copy",
+      "variant": "emphasis",
+      "note": "lateness_s 242, is_late true"
+    },
+    {
+      "id": "m-dup",
+      "from": "sim",
+      "to": "kafka",
+      "y": 490,
+      "label": "same ping again",
+      "variant": "default",
+      "note": "same event_ts, sent 08:11:03"
+    },
+    {
+      "id": "m-dup-read",
+      "from": "kafka",
+      "to": "bjob",
+      "y": 542,
+      "label": "raw bytes",
+      "variant": "default"
+    },
+    {
+      "id": "m-dup-append",
+      "from": "bjob",
+      "to": "bronze",
+      "y": 570,
+      "label": "append row",
+      "variant": "default",
+      "note": "bronze keeps every copy"
+    },
+    {
+      "id": "m-dup-poll",
+      "from": "sjob",
+      "to": "bronze",
+      "y": 620,
+      "label": "poll snapshots",
+      "variant": "default"
+    },
+    {
+      "id": "m-dup-rows",
+      "from": "bronze",
+      "to": "sjob",
+      "y": 650,
+      "label": "new rows",
+      "variant": "return",
+      "note": "key already in state (TTL 24 h): no output"
+    },
+    {
+      "id": "m-bad",
+      "from": "sim",
+      "to": "kafka",
+      "y": 712,
+      "label": "ping outside HCMC",
+      "variant": "default"
+    },
+    {
+      "id": "m-bad-read",
+      "from": "kafka",
+      "to": "bjob",
+      "y": 740,
+      "label": "raw bytes",
+      "variant": "default"
+    },
+    {
+      "id": "m-bad-dlq",
+      "from": "bjob",
+      "to": "bronze",
+      "y": 768,
+      "label": "reject to DLQ",
+      "variant": "security",
+      "note": "dlq_events + dlq.gps.pings.v1, reason out_of_bbox; the job keeps running"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One row per real ping",
+      "items": [
+        "Silver keys on (vehicle_id, event_ts); the first copy to arrive wins",
+        "A copy after the 24 h state TTL replaces the same row (upsert), so silver stays unique"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Bad data never stops the job",
+      "items": [
+        "Rejects: unknown_schema_id, out_of_bbox, speed_out_of_range and decode errors",
+        "Each reject keeps its raw bytes and reason for SQL and replay"
+      ]
+    }
+  ]
+}
