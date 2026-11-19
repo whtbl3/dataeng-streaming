@@ -1,5 +1,5 @@
 # Spec 006: Control tower (live ETA, SLA-risk and abnormal-stop alerts)
-Status: Approved (2026-11-19) · Intent: roadmap item 6 · Author: project owner
+Status: Implemented (2026-11-19) · Intent: roadmap item 6 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -26,18 +26,18 @@ alert fires before a breach, and a van stuck somewhere it should not be goes unn
 - **Interviewer:** a simulated late order raises its alert well before its window closes.
 
 ## Acceptance criteria
-- [ ] AC1: Given a seed and a number of abnormal stops, when a day is simulated, then exactly that many stops of known place, start and length are injected (long enough to alert, away from every stop and depot), and the clean day is otherwise unchanged (unit test).
-- [ ] AC2: Given a van out for delivery with open orders, when a ping arrives, then each of those orders has an ETA that follows the agreed formula (unit tests on known routes), visible in the serving database within 10 s.
-- [ ] AC3: Given a ping older than the van's latest position, then the latest position does not move backwards, and ETAs are not recomputed from it.
-- [ ] AC4: Given an open order whose ETA passes its promised end by the agreed margin, then one SLA-risk alert is raised; it is not raised again until it has been resolved for at least 10 min (BR-3); it is resolved when the ETA is back inside the window or the order is delivered or failed.
-- [ ] AC5: Given a simulated day with late deliveries, then the share of late orders alerted at least 15 min before their promised end (recall), counted over late orders whose promised end is at least 15 min after dispatch, and the share of alerts whose order was really late (precision) meet the agreed targets; recall over all late orders is reported too.
-- [ ] AC6: Given an injected abnormal stop, then exactly one abnormal-stop alert is raised within the agreed idle time plus 10 s of event time, and resolved when the van moves; normal dwells at stops and parking at the depot never alert (zero on a clean day).
-- [ ] AC7: Given live mode, when a ping that changes an alert is produced, then the alert is in the serving database within 10 s at p95 (NFR-1).
-- [ ] AC8: Given the same day sent clean and with chaos (duplicates, delays, jitter, offline bursts), then the same alerts are raised (same type, order or van, and event time).
-- [ ] AC9: Given the job stopped for 30 min while data keeps arriving, when it restarts, then events older than the alert horizon update positions and ETAs but raise no alert (NFR-4), the alert path is current within 15 min, and no alert raised before the stop is raised again.
-- [ ] AC10: Given an alert is raised or resolved, then it is published exactly once to the alerts topic as registry-framed Avro under the existing compatibility rules (ADR 0008).
-- [ ] AC11: Given the developer asks for control tower status, then they see open orders with an ETA, open alerts by type, and the newest position time per van.
-- [ ] AC12: Given the core and CDC stack with all jobs, maintenance and the control tower running at dev size, then total container memory stays under 6 GB.
+- [x] AC1: Given a seed and a number of abnormal stops, when a day is simulated, then exactly that many stops of known place, start and length are injected (long enough to alert, away from every stop and depot), and the clean day is otherwise unchanged (unit test).
+- [x] AC2: Given a van out for delivery with open orders, when a ping arrives, then each of those orders has an ETA that follows the agreed formula (unit tests on known routes), visible in the serving database within 10 s.
+- [x] AC3: Given a ping older than the van's latest position, then the latest position does not move backwards, and ETAs are not recomputed from it.
+- [x] AC4: Given an open order whose ETA passes its promised end by the agreed margin, then one SLA-risk alert is raised; it is not raised again until it has been resolved for at least 10 min (BR-3); it is resolved when the ETA is back inside the window or the order is delivered or failed.
+- [x] AC5: Given a simulated day with late deliveries, then the share of late orders alerted at least 15 min before their promised end (recall), counted over late orders whose promised end is at least 15 min after dispatch, and the share of alerts whose order was really late (precision) meet the agreed targets; recall over all late orders is reported too.
+- [x] AC6: Given an injected abnormal stop, then exactly one abnormal-stop alert is raised within the agreed idle time plus 10 s of event time, and resolved when the van moves; normal dwells at stops and parking at the depot never alert (zero on a clean day).
+- [x] AC7: Given live mode, when a ping that changes an alert is produced, then the alert is in the serving database within 10 s at p95 (NFR-1).
+- [x] AC8: Given the same day sent clean and with chaos (duplicates, delays, jitter, offline bursts), then the same alerts are raised (same type, order or van, and event time).
+- [x] AC9: Given the job stopped for 30 min while data keeps arriving, when it restarts, then events older than the alert horizon update positions and ETAs but raise no alert (NFR-4), the alert path is current within 15 min, and no alert raised before the stop is raised again.
+- [x] AC10: Given an alert is raised or resolved, then it is published exactly once to the alerts topic as registry-framed Avro under the existing compatibility rules (ADR 0008).
+- [x] AC11: Given the developer asks for control tower status, then they see open orders with an ETA, open alerts by type, and the newest position time per van.
+- [x] AC12: Given the core and CDC stack with all jobs, maintenance and the control tower running at dev size, then total container memory stays under 6 GB.
 
 ## Out of scope
 - Dashboards and the live map (feature 8); alert precision and recall as gold KPIs (feature 7).

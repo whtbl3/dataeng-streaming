@@ -8,4 +8,4 @@ From: plan.md (approved 2026-11-19). Tests first in every task.
 - [x] T5: `control_tower.py`; e2e AC2, AC3, AC4, AC6, AC10
 - [x] T6: latency AC7, `make tower-status` AC11, restart AC9, memory AC12
 - [x] T7: ADR 0013 + docs
-- [ ] T8: `make check`, `make e2e`, `make e2e-restart` green; spec Implemented; PR
+- [x] T8: `make check`, `make e2e`, `make e2e-restart` green; spec Implemented; PR
