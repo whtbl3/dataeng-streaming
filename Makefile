@@ -38,8 +38,8 @@ down:             # stops the Flink jobs with a savepoint first, so `make up` re
 clean:            # also deletes local data volumes
 	$(COMPOSE) --profile jobs down -v
 
-demo:             # live delivery day at dev size (20 vans, 500 orders/day); Ctrl-C to stop
-	uv run python -m simulator day --realtime --vans 20
+demo:             # live delivery day at dev size (20 vans, 500 orders/day, 2 abnormal stops); Ctrl-C to stop
+	uv run python -m simulator day --realtime --vans 20 --abnormal-stops 2
 
 e2e:              # needs `make up`
 	uv run pytest -q tests/integration -m "e2e and not restart"

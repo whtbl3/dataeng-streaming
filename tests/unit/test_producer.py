@@ -233,3 +233,16 @@ def test_producer_batches_and_compresses():
     assert PRODUCER_CONFIG["batch.size"] >= 256 * 1024
     assert PRODUCER_CONFIG["enable.idempotence"] is True
     assert PRODUCER_CONFIG["acks"] == "all"
+
+
+def test_cli_abnormal_stops_are_passed_to_the_day_and_reported(capsys):
+    """Spec 006 AC1: `--abnormal-stops N` injects N still periods per simulated day."""
+    argv = ["day", "--vans", "4", "--orders-per-day", "40", "--history-hours", "1", "--seed", "3"]
+    clean = FakeProducer()
+    main(argv, lambda _b: clean, lambda _d: FakeDB(), now=NOW, encoder_factory=lambda _a: ENC)
+    assert "abnormal_stops" not in capsys.readouterr().out
+    dirty = FakeProducer()
+    main([*argv, "--abnormal-stops", "2"], lambda _b: dirty, lambda _d: FakeDB(), now=NOW,
+         encoder_factory=lambda _a: ENC)  # fmt: skip
+    assert "abnormal_stops=2/day" in capsys.readouterr().out
+    assert len(dirty.messages) == len(clean.messages)  # same pings, some of them standing still

@@ -9,6 +9,9 @@ windows), then exposed as time-ordered order events and GPS pings. Pure logic, n
   at each stop, return to the depot, and park there (speed 0) for the rest of the day.
 - Exactly `round(fail_rate * n)` orders fail and `round(late_rate * delivered)` delivered
   orders close after their promised window (the window is set from the true arrival).
+- `abnormal_stops` vans (spec 006) stand still 12-25 min on their last way back to the depot, at a
+  point more than 150 m from every stop and the depot. It comes after the last delivery, so the
+  orders and every other van are exactly as in the clean day; only the depot arrival moves.
 """
 
 from __future__ import annotations
@@ -36,6 +39,8 @@ JAM_FACTOR = (0.2, 0.4)
 DWELL_S = (120, 360)
 JITTER_M = 7.0  # per axis -> at most ~10 m
 WINDOW_S = 2 * 3600
+ABNORMAL_MIN = (12, 25)
+ABNORMAL_AWAY_KM = 0.15
 KIND_RANK = {"created": 0, "assigned": 1, "out_for_delivery": 2, "delivered": 3, "failed": 3}
 
 
@@ -63,6 +68,17 @@ class OrderTruth:
     outcome: str  # delivered | failed
     promised_start: datetime
     promised_end: datetime
+
+
+@dataclass(frozen=True)
+class AbnormalStop:
+    """An injected stop where a van stands still away from every stop and its depot."""
+
+    van_id: str
+    lat: float
+    lon: float
+    start: datetime  # UTC
+    minutes: int
 
 
 @dataclass(frozen=True)
@@ -141,6 +157,7 @@ class DayPlan:
     orders: dict[str, OrderTruth]
     events: list[OrderEvent]
     segments: dict[str, list[_Segment]]
+    abnormal_stops: tuple[AbnormalStop, ...] = ()
 
     @property
     def start(self) -> datetime:
@@ -210,6 +227,7 @@ def simulate_day(
     fail_rate: float = 0.02,
     prefix: str = "ORD",
     interval_s: int = 5,
+    abnormal_stops: int = 0,
 ) -> DayPlan:
     if not 1 <= vans <= len(VANS):
         raise ValueError(f"vans must be between 1 and {len(VANS)}")
@@ -356,6 +374,10 @@ def simulate_day(
             ),
         ]
     events.sort(key=lambda e: (e.ts, e.order_id, KIND_RANK[e.kind]))
+    injected = _inject_abnormal_stops(
+        segments, orders, abnormal_stops, random.Random(f"{seed}|{local_date}|abnormal"),
+        day_start,
+    )  # fmt: skip
     return DayPlan(
         seed=seed,
         local_date=local_date,
@@ -365,7 +387,64 @@ def simulate_day(
         orders=orders,
         events=events,
         segments=segments,
+        abnormal_stops=injected,
     )
+
+
+def _inject_abnormal_stops(
+    segments: dict[str, list[_Segment]],
+    orders: dict[str, OrderTruth],
+    n: int,
+    rng: random.Random,
+    day_start: int,
+) -> tuple[AbnormalStop, ...]:
+    """Split the last drive back to the depot of `n` vans with a still period (in place)."""
+    if n == 0:
+        return ()
+    if not 0 <= n <= len(segments):
+        raise ValueError(
+            f"abnormal_stops must be between 0 and the number of vans ({len(segments)})"
+        )
+    stops_of: dict[str, list[tuple[float, float]]] = {}
+    for o in orders.values():
+        stops_of.setdefault(o.van_id, []).append((o.dest_lat, o.dest_lon))
+    candidates = []
+    for van_id in sorted(segments):
+        segs = segments[van_id]
+        # the last moving segment is the drive back to the depot; the parking segment follows it
+        idx = max((i for i, s in enumerate(segs) if s.speed_kmh > 0), default=None)
+        if idx is None or idx != len(segs) - 2:
+            continue
+        hop, home = segs[idx], (segs[-1].lat0, segs[-1].lon0)
+        for frac in (0.5, 0.4, 0.6, 0.3, 0.7):
+            point = (
+                hop.lat0 + (hop.lat1 - hop.lat0) * frac,
+                hop.lon0 + (hop.lon1 - hop.lon0) * frac,
+            )
+            places = [*stops_of.get(van_id, []), home]
+            if all(_km(*point, *p) > ABNORMAL_AWAY_KM for p in places):
+                candidates.append((van_id, idx, frac, point))
+                break
+    if len(candidates) < n:
+        raise ValueError(f"abnormal_stops={n}, but only {len(candidates)} vans have room for one")
+    injected = []
+    for van_id, idx, frac, point in sorted(rng.sample(candidates, n)):
+        segs = segments[van_id]
+        hop, park = segs[idx], segs[-1]
+        minutes = rng.randint(*ABNORMAL_MIN)
+        still = minutes * 60
+        t_mid = hop.t0 + round((hop.t1 - hop.t0) * frac)
+        if park.t0 + still >= park.t1:
+            raise ValueError(f"{van_id}: no room left in the day for an abnormal stop")
+        segs[idx:] = [
+            _Segment(hop.t0, t_mid, hop.lat0, hop.lon0, *point, hop.speed_kmh, hop.heading_deg),
+            _Segment(t_mid, t_mid + still, *point, *point, 0.0, 0.0),
+            _Segment(t_mid + still, hop.t1 + still, *point, hop.lat1, hop.lon1, hop.speed_kmh,
+                     hop.heading_deg),
+            _Segment(park.t0 + still, park.t1, park.lat0, park.lon0, park.lat1, park.lon1, 0, 0),
+        ]  # fmt: skip
+        injected.append(AbnormalStop(van_id, point[0], point[1], _utc(t_mid), minutes))
+    return tuple(injected)
 
 
 def local_dates(start: datetime, end: datetime) -> list[date]:

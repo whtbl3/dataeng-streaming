@@ -131,3 +131,60 @@ def test_invalid_arguments():
         simulate_day(seed=1, local_date=DAY, vans=201, orders_per_day=10)
     with pytest.raises(ValueError):
         simulate_day(seed=1, local_date=DAY, vans=1, orders_per_day=10, late_rate=1.5)
+
+
+# ---- spec 006 AC1: injected abnormal stops ---------------------------------------------------
+def _dist(a, b):
+    return _km(*a, *b)
+
+
+def test_abnormal_stops_are_injected_in_known_number_place_and_length():
+    clean = simulate_day(seed=5, local_date=date(2026, 11, 18), vans=20, orders_per_day=500)
+    dirty = simulate_day(
+        seed=5, local_date=date(2026, 11, 18), vans=20, orders_per_day=500, abnormal_stops=3
+    )
+    assert clean.abnormal_stops == ()
+    assert len(dirty.abnormal_stops) == 3
+    assert len({s.van_id for s in dirty.abnormal_stops}) == 3  # one per van
+    for stop in dirty.abnormal_stops:
+        assert 12 <= stop.minutes <= 25
+        here = (stop.lat, stop.lon)
+        depot = DEPOT_BY_ID[next(v.depot_id for v in VANS if v.van_id == stop.van_id)]
+        assert _dist(here, (depot.lat, depot.lon)) > 0.15
+        for o in dirty.orders.values():
+            if o.van_id == stop.van_id:
+                assert _dist(here, (o.dest_lat, o.dest_lon)) > 0.15
+                assert o.closed_at <= stop.start  # after the last delivery: orders unaffected
+        pings = [
+            p
+            # inside the stop: a ping exactly on a boundary belongs to the drive (as everywhere)
+            for p in dirty.pings(
+                start=stop.start + timedelta(seconds=5),
+                end=stop.start + timedelta(minutes=stop.minutes, seconds=-5),
+            )
+            if p.vehicle_id == stop.van_id
+        ]
+        assert pings and all(p.speed_kmh == 0 for p in pings)
+        assert all(_dist((p.lat, p.lon), here) < 0.02 for p in pings)  # GPS jitter only
+
+
+def test_abnormal_stops_leave_orders_and_other_vans_unchanged():
+    clean = simulate_day(seed=5, local_date=date(2026, 11, 18), vans=10, orders_per_day=250)
+    dirty = simulate_day(
+        seed=5, local_date=date(2026, 11, 18), vans=10, orders_per_day=250, abnormal_stops=2
+    )
+    assert dirty.orders == clean.orders and dirty.events == clean.events
+    stopped = {s.van_id for s in dirty.abnormal_stops}
+    for van in clean.van_ids:
+        if van not in stopped:
+            assert dirty.segments[van] == clean.segments[van]
+
+
+def test_abnormal_stops_are_deterministic_and_bounded():
+    kw = dict(seed=9, local_date=date(2026, 11, 18), vans=4, orders_per_day=100)
+    assert (
+        simulate_day(**kw, abnormal_stops=2).abnormal_stops
+        == simulate_day(**kw, abnormal_stops=2).abnormal_stops
+    )
+    with pytest.raises(ValueError, match="abnormal_stops"):
+        simulate_day(**kw, abnormal_stops=5)  # at most one per van
