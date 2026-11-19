@@ -14,7 +14,7 @@ and keeps KPIs correct even when GPS data arrives late or duplicated.
 ## Architecture
 ![Data flow: simulator and Postgres CDC into Kafka, Flink into Iceberg bronze and silver, dbt into gold, a Flink alert job into Postgres serving, and Trino and Grafana as consumers](docs/diagrams/data-flow.svg)
 
-Nodes marked *built* run today (features 1–5); *planned* nodes are features 6–8 on the
+Nodes marked *built* run today (features 1–6); *planned* nodes are features 7–8 on the
 [roadmap](docs/roadmap.md).
 
 **Stream for freshness, batch for correctness:**
@@ -72,6 +72,7 @@ make down                     # stop jobs with a savepoint, then the stack (make
 make e2e                      # acceptance tests against the running stack
 make maintain                 # table maintenance now: compaction, manifests, expiry, orphans, retention
 make table-health             # files, delete files, file size, snapshots and last maintenance per table
+make tower-status             # control tower: open orders with an ETA, open alerts, newest ping per van
 ```
 Query the bronze table:
 ```bash

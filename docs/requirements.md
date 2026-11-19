@@ -54,10 +54,13 @@ A delivered order is late when `closed_at > promised_end`.
 - A failed order counts as **not on time**.
 - The failure rate is reported separately.
 
-### BR-3 · At-risk order — *feature 6 refines*
+### BR-3 · At-risk order — *Final (spec 006, ADR 0013)*
 - An open order whose predicted ETA is later than `promised_end`.
 - **Fires** when the ETA exceeds `promised_end` by ≥ 1 min.
 - **Once per order.** It is raised again only after it was resolved for ≥ 10 min.
+- **Resolved** when the ETA is back at or before `promised_end`, or the order is delivered or failed.
+- The ETA exists from dispatch (out for delivery); an order whose window ends less than 15 min
+  after dispatch cannot be warned 15 min ahead (BR-5 recall counts the orders that can).
 
 ### BR-4 · Business day
 - The local calendar day in **Asia/Ho_Chi_Minh** (UTC+7).
@@ -196,7 +199,7 @@ These rules apply to every table from silver onward. A batch-only design could s
 | `gold.agg_depot_daily` | depot × local day | `(depot_id, local_date)` | `local_date` |
 | `gold.closed_days` | a closed local day | `local_date` | — |
 
-### Serving (feature 6, Postgres)
+### Serving (spec 006, Postgres)
 | Table | One row = | Key | Ordering key |
 |---|---|---|---|
 | `serving.vehicle_latest` | a van | `van_id` | `event_ts` |
@@ -213,7 +216,9 @@ These rules apply to every table from silver onward. A batch-only design could s
 | Other | `dest_area` (NFR-6), `is_final` |
 
 > **Join rule:** facts join dimensions **as of the event time**, never on the current row.
-> `dim_van` versions are matched on `closed_at`; the alert path uses a temporal join.
+> `dim_van` versions are matched on `closed_at`. The alert path keeps one state per van
+> (positions + open orders, ADR 0013) instead of a temporal join: a temporal join must key on
+> the order, and "idle for 10 min" needs the van's own history.
 
 ---
 
@@ -225,7 +230,7 @@ it, and the test that proves it.
 **How fast must dispatchers know?**
 - Requirement: NFR-1
 - Design: Flink alert path + Postgres serving (ADR 0006, 0007)
-- Proof: feature 6 latency test
+- Proof: spec 006 `test_alert_latency_p95_under_10s` (p95 1.5 s locally)
 
 **Do late or duplicate events change the numbers?**
 - Requirement: NFR-2, rules 2 and 4
@@ -245,7 +250,7 @@ it, and the test that proves it.
 **Can we lose data if the pipeline stops?**
 - Requirement: NFR-3, NFR-4
 - Design: Kafka retention, replication slot, alert horizon
-- Proof: e2e restart tests (spec 002 AC7; feature 6 catch-up test)
+- Proof: e2e restart tests (spec 002 AC7; spec 006 `test_catch_up_raises_no_stale_alert_and_none_twice`)
 
 **How long do we keep history?**
 - Requirement: NFR-5
@@ -267,7 +272,7 @@ it, and the test that proves it.
 ## 6. Resolved questions
 *Approved 2026-11-18.*
 
-1. **Alert horizon during catch-up:** 10 min for v1; measured in feature 6.
+1. **Alert horizon during catch-up:** 10 min (processing time − event time), spec 006 AC9.
 2. **When ETA error is measured:** at T-30 and T-15 min **before `promised_end`**, when the dispatcher acts.
 3. **Provisional numbers on dashboards:** show the latest value with a visible "provisional"
    marker; reports use final-only views.

@@ -74,9 +74,14 @@ events therefore cannot skew the final numbers.
   - `ops.maintenance_runs` (spec 005): one row per maintenance task run (task, table, start, end, status, metrics). The `maintenance` service compacts silver every 30 min and bronze hourly, and daily merges manifests, expires snapshots and orphan files (7 days) and drops partitions past their retention (ADR 0012).
   - How silver is written: Flink jobs `silver_gps` and `silver_orders` read bronze incrementally, keep the first arrival or latest commit (Top-1), and upsert on Iceberg identifier fields (ADR 0011). `make silver-status` shows rows kept, copies removed and late rows per day. `make silver-rebuild` rebuilds silver from bronze.
 - **Order DB (CDC source, spec 002):** Postgres `public.{depots,vans,orders}`, publication `ct_cdc`, slot `ct_cdc_slot`; written by `python -m simulator day`.
-- **Serving DB:** Postgres schema `serving` (read by Grafana).
-- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`, `make maintain [TASK=… TABLE=…]`, `make table-health` (spec 005); `make aws-up|aws-down` (managed).
-- **Simulator:** `python -m simulator day [--chaos] [--dup-rate --delay-rate --max-delay-min --jitter-rate --offline] [--late-delivery-rate] [--invalid-rate]`. Chaos sends valid but dirty GPS (duplicates, delays up to 2 h, jitter, offline bursts) in exactly known amounts (spec 004).
+- **Serving DB (spec 006):** Postgres schema `serving`, written by the Flink job `control_tower` (one state per van, ADR 0013) with idempotent upserts, read by Grafana:
+  - `vehicle_latest`: one row per van, its newest ping (an older ping never overwrites it);
+  - `order_eta`: one row per open order on a van: status, `eta` (NULL until dispatched), `distance_km`; deleted when the order closes;
+  - `alerts`: one row per alert: `type` (SLA_RISK, ABNORMAL_STOP), van, order, `raised_at` / `resolved_at` (event time), `raised_written_at` (wall clock);
+  - `alerts.v1` topic: one registry-framed Avro message per raise and per resolve (exactly-once), key `alert_id`.
+  Postgres runs in the core stack (serving), the Debezium connector in the `cdc` profile.
+- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`, `make maintain [TASK=… TABLE=…]`, `make table-health` (spec 005), `make tower-status` (spec 006); `make aws-up|aws-down` (managed).
+- **Simulator:** `python -m simulator day [--abnormal-stops N] [--chaos] [--dup-rate --delay-rate --max-delay-min --jitter-rate --offline] [--late-delivery-rate] [--invalid-rate]`. Chaos sends valid but dirty GPS (duplicates, delays up to 2 h, jitter, offline bursts) in exactly known amounts (spec 004).
 
 ## 6. Non-functional requirements
 - **Latency:** GPS event → alert in `serving.alerts`, p95 < 10 s (local, live load).
@@ -119,3 +124,4 @@ Business definitions (BR-*), non-functional requirements (NFR-*) and data-modeli
 | [0010](decisions/0010-dlq-raw-source-python-udf.md) | Dead-letter routing: raw-bytes sources + Python decode UDF | Final |
 | [0011](decisions/0011-silver-upsert-first-arrival.md) | Silver from bronze: first-arrival Top-1 + Iceberg upserts; savepoint on `make down` | Final |
 | [0012](decisions/0012-scale-and-table-maintenance.md) | Scale by design: 6 GPS partitions, batched decode, RocksDB, hash writes, table maintenance service | Final |
+| [0013](decisions/0013-control-tower-keyed-state.md) | Control tower: one state per van, distance/speed ETA, alerts from Kafka | Final |

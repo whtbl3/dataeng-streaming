@@ -1078,7 +1078,7 @@ been cleared for every commercial, promotional, or redistributive use.</metadata
         </g>
 
         <g id="node-tower" data-node-id="tower" data-node-label="Flink alert job" tabindex="0" role="button" aria-label="Focus Flink alert job, ETA, SLA risk, 03 / Stream processing" aria-pressed="false" data-node-kind="backend" data-node-sublabel="ETA, SLA risk" data-node-tag="planned" data-node-context="03 / Stream processing">
-          <title>Flink alert job · ETA, SLA risk · 03 / Stream processing · planned</title>
+          <title>Flink alert job · ETA, SLA risk · 03 / Stream processing · built</title>
           <rect x="474" y="470" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="474" y="470" width="112" height="58" rx="6" class="c-backend" data-animate="node" style="--step: 6; --flow-node-name: archify-relay-node-5;" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(480 471) scale(0.375)">
@@ -1086,7 +1086,7 @@ been cleared for every commercial, promotional, or redistributive use.</metadata
           </g>
           <text data-node-label="" x="530" y="491" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Flink alert job</text>
           <text x="530" y="507" class="t-muted" font-size="7" text-anchor="middle">ETA, SLA risk</text>
-        <text x="530" y="517" class="t-backend" font-size="7" text-anchor="middle">planned</text>
+        <text x="530" y="517" class="t-backend" font-size="7" text-anchor="middle">built</text>
         </g>
 
         <g id="node-bronze" data-node-id="bronze" data-node-label="Iceberg bronze" tabindex="0" role="button" aria-label="Focus Iceberg bronze, raw + DLQ, 04 / Lakehouse and serving" aria-pressed="false" data-node-kind="database" data-node-sublabel="raw + DLQ" data-node-tag="built" data-node-context="04 / Lakehouse and serving">
@@ -1129,7 +1129,7 @@ been cleared for every commercial, promotional, or redistributive use.</metadata
         </g>
 
         <g id="node-serving" data-node-id="serving" data-node-label="Postgres serving" tabindex="0" role="button" aria-label="Focus Postgres serving, ETA, alerts, 04 / Lakehouse and serving" aria-pressed="false" data-node-kind="database" data-node-sublabel="ETA, alerts" data-node-tag="planned" data-node-context="04 / Lakehouse and serving">
-          <title>Postgres serving · ETA, alerts · 04 / Lakehouse and serving · planned</title>
+          <title>Postgres serving · ETA, alerts · 04 / Lakehouse and serving · built</title>
           <rect x="689" y="470" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="689" y="470" width="112" height="58" rx="6" class="c-database" data-animate="node" style="--step: 10; --flow-node-name: archify-relay-node-10;" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(695 471) scale(0.375)">
@@ -1138,7 +1138,7 @@ been cleared for every commercial, promotional, or redistributive use.</metadata
           </g>
           <text data-node-label="" x="745" y="491" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Postgres serving</text>
           <text x="745" y="507" class="t-muted" font-size="7" text-anchor="middle">ETA, alerts</text>
-        <text x="745" y="517" class="t-database" font-size="7" text-anchor="middle">planned</text>
+        <text x="745" y="517" class="t-database" font-size="7" text-anchor="middle">built</text>
         </g>
 
         <g id="node-trino" data-node-id="trino" data-node-label="Trino" tabindex="0" role="button" aria-label="Focus Trino, analyst SQL, 05 / Consumers" aria-pressed="false" data-node-kind="backend" data-node-sublabel="analyst SQL" data-node-tag="built" data-node-context="05 / Consumers">

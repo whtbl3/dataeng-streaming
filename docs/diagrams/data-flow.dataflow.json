@@ -77,7 +77,7 @@
       "sublabel": "ETA, SLA risk",
       "stage": 2,
       "row": 3,
-      "tag": "planned"
+      "tag": "built"
     },
     {
       "id": "bronze",
@@ -113,7 +113,7 @@
       "sublabel": "ETA, alerts",
       "stage": 3,
       "row": 3,
-      "tag": "planned"
+      "tag": "built"
     },
     {
       "id": "trino",
