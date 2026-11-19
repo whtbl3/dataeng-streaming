@@ -1,0 +1,27 @@
+# Gold layer (spec 007, ADR 0014): silver and bronze → star schema in lakehouse.gold, on Trino.
+name: control_tower
+version: "1.0.0"
+config-version: 2
+profile: ct
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: ["target", "logs"]
+
+vars:
+  mode: intraday        # intraday: provisional, last `lookback_hours` of commits; close: one day, final
+  day: null             # the local day (YYYY-MM-DD) that `close` recomputes
+  lookback_hours: 2     # ADR 0006
+  restatement: false    # true for `make reclose`: an explicit, logged restatement of a closed day
+  local_tz: Asia/Ho_Chi_Minh  # BR-4
+
+models:
+  control_tower:
+    staging:
+      +schema: gold_staging
+      +materialized: view
+    marts:
+      +schema: gold
+      +materialized: table

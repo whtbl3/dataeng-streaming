@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: silver
+    description: Deduplicated tables written by Flink (spec 004, ADR 0011).
+    freshness:  # AC12: silver stops receiving data
+      warn_after: {count: 10, period: minute}
+      error_after: {count: 30, period: minute}
+    tables:
+      - name: orders
+        loaded_at_field: last_commit_ts
+      - name: order_status_history
+        loaded_at_field: commit_ts
+      - name: gps_pings
+        loaded_at_field: ingest_ts
+  - name: bronze
+    description: Append-only changelogs and control tower history (specs 002, 007).
+    tables:
+      - name: vans_cdc
+      - name: depots_cdc
+      - name: alert_events
+      - name: eta_marks
