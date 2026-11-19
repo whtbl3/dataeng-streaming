@@ -1,5 +1,5 @@
 # Spec 004: Silver (dedup, event-time watermarks, chaos mode)
-Status: Approved (2026-11-19) · Intent: roadmap item 4 · Author: project owner + Claude
+Status: Implemented (2026-11-19) · Intent: roadmap item 4 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -28,17 +28,17 @@ none of this is tested.
 - **Interviewer:** sees the same day sent clean and dirty, and silver comes out identical.
 
 ## Acceptance criteria
-- [ ] AC1: Given a seed and chaos settings (duplicate share, delayed share with a maximum delay up to 2 h, out-of-order jitter, offline bursts), when a day is simulated, then the exact number of events of each kind is known, and the set of distinct pings equals the clean run with the same seed (unit test).
-- [ ] AC2: Given the same simulated day sent once clean and once with chaos, when both reach silver, then silver GPS has identical rows for both (same keys and values), while bronze for the chaos run has more rows.
-- [ ] AC3: Given a ping that arrives after the watermark has passed its event time (for example 2 h late), when it is processed, then it is in silver, marked late, with its lateness (arrival time minus event time) stored.
-- [ ] AC4: Given pings already in silver, when the same pings arrive again hours later, then silver gets no new or changed rows.
-- [ ] AC5: Given N changes to an order, including duplicates and changes that reach the job out of commit order, when they are processed, then silver holds exactly one row for that order, equal to the change with the highest commit position.
-- [ ] AC6: Given a delivered order, then its status history has one row each for created, assigned, out for delivery and delivered, with the time of each change, ordered by commit position; a failed order ends with failed.
-- [ ] AC7: Given a silver job is stopped hard in the middle of a load, when it recovers, then silver is identical to a run without the failure (no loss, no duplicates).
-- [ ] AC8: Given silver is dropped, when it is rebuilt from bronze, then it is identical to the silver built live.
-- [ ] AC9: Given live mode, when a ping is produced, then it is queryable in silver within 2 minutes.
-- [ ] AC10: Given the developer asks for silver status, then they see, per table and day, bronze rows, silver rows, duplicates removed and late rows.
-- [ ] AC11: Given the core and CDC components plus the silver jobs run with the dev-size simulation, then total container memory stays under 6 GB.
+- [x] AC1: Given a seed and chaos settings (duplicate share, delayed share with a maximum delay up to 2 h, out-of-order jitter, offline bursts), when a day is simulated, then the exact number of events of each kind is known, and the set of distinct pings equals the clean run with the same seed (unit test).
+- [x] AC2: Given the same simulated day sent once clean and once with chaos, when both reach silver, then silver GPS has identical rows for both (same keys and values), while bronze for the chaos run has more rows.
+- [x] AC3: Given a ping that arrives after the watermark has passed its event time (for example 2 h late), when it is processed, then it is in silver, marked late, with its lateness (arrival time minus event time) stored.
+- [x] AC4: Given pings already in silver, when the same pings arrive again hours later, then silver gets no new or changed rows.
+- [x] AC5: Given N changes to an order, including duplicates and changes that reach the job out of commit order, when they are processed, then silver holds exactly one row for that order, equal to the change with the highest commit position.
+- [x] AC6: Given a delivered order, then its status history has one row each for created, assigned, out for delivery and delivered, with the time of each change, ordered by commit position; a failed order ends with failed.
+- [x] AC7: Given a silver job is stopped hard in the middle of a load, when it recovers, then silver is identical to a run without the failure (no loss, no duplicates).
+- [x] AC8: Given silver is dropped, when it is rebuilt from bronze, then it is identical to the silver built live.
+- [x] AC9: Given live mode, when a ping is produced, then it is queryable in silver within 2 minutes.
+- [x] AC10: Given the developer asks for silver status, then they see, per table and day, bronze rows, silver rows, duplicates removed and late rows.
+- [x] AC11: Given the core and CDC components plus the silver jobs run with the dev-size simulation, then total container memory stays under 6 GB.
 
 ## Out of scope
 - Gold KPIs and the "dirty input ⇒ identical KPIs" test on gold (feature 7). This feature proves it on silver.

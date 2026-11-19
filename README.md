@@ -48,6 +48,9 @@ make up                       # core + CDC stack, Flink jobs (~1 min with images
 make demo                     # live delivery day, 20 vans: orders → Postgres, GPS → Kafka
 make cdc-status               # Debezium connector state + replication slot lag
 make dlq-status               # rejected events per source topic and reason
+make silver-status            # silver: rows kept, duplicate copies removed, late rows per day
+make silver-rebuild           # drop silver and rebuild it from bronze (same result)
+make down                     # stop jobs with a savepoint, then the stack (make up resumes)
 make e2e                      # acceptance tests against the running stack
 make backfill DAYS=30         # ~100M events      (roadmap feature 5)
 make bench                    # throughput report (roadmap feature 5)
@@ -62,6 +65,9 @@ docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
    WHERE after.order_id = 'ORD-20261118-00001' ORDER BY source_lsn"
 ```
 Try the dead-letter path: `uv run python -m simulator day --invalid-rate 0.05`, then `make dlq-status`.
+Try dirty data: `uv run python -m simulator day --chaos` sends duplicates, pings up to 2 h late,
+jitter and offline bursts; `make silver-status` shows bronze has more rows than silver, which
+keeps one row per real ping (spec 004).
 
 UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001 · Kafka Connect http://localhost:8083 · Schema Registry http://localhost:18081 · Postgres `localhost:15432` (`make psql`)
 

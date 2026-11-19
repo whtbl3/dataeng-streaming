@@ -176,8 +176,12 @@ These rules apply to every table from silver onward. A batch-only design could s
 | Table | One row = | Dedup key | Ordering key | Partition |
 |---|---|---|---|---|
 | `silver.gps_pings` | a unique ping | `(vehicle_id, event_ts)` | `event_ts` | `day(event_ts)`, `bucket(16, vehicle_id)` |
-| `silver.orders` | an order, latest state | `order_id` | `last_lsn` | `month(created_at)` |
-| `silver.order_status_history` | a status change | `(order_id, status)` | `source_lsn` | `day(status_ts)` |
+| `silver.orders` | an order, latest state | `order_id` (stored key `(order_id, created_at)`) | `last_lsn` | `month(created_at)` |
+| `silver.order_status_history` | a status reached | `(order_id, status)` (stored key adds `status_ts`) | `source_lsn` (first) | `day(status_ts)` |
+
+> Iceberg upserts need the partition source column in the key, so the stored keys add
+> `created_at` / `status_ts`. Both are set once per order or status, so the grain is unchanged
+> (spec 004, ADR 0011). For GPS copies, the first arrival (smallest `ingest_ts`) wins.
 
 ### Gold (feature 7)
 | Table | One row = | Key | Partition |

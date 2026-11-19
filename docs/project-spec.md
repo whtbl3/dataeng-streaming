@@ -67,10 +67,15 @@ events therefore cannot skew the final numbers.
 - **Lakehouse:** Iceberg namespaces `bronze`, `silver`, `gold`, queried with SQL (Trino locally, Athena on AWS).
   - `bronze.{depots,vans,orders}_cdc` (spec 002): append-only Debezium changelogs: `op` (c/u/r), typed `before`/`after` rows (full before-images for orders), `source_lsn`, `source_txid`, `commit_ts`, `capture_ts`, Kafka partition/offset, `ingest_ts`; `orders_cdc` partitioned by `day(commit_ts)`; Flink job `bronze_cdc`.
   - `bronze.dlq_events` (spec 003): every rejected message from every bronze job: source topic, partition, offset, `ingest_ts`, `reason` (`not_decodable`, `unknown_schema_id`, `schema_mismatch`, or a GPS rule), `detail`, `schema_id`, raw bytes; partitioned by `day(ingest_ts)`. `make dlq-status` summarises it (ADR 0010).
-  - `bronze.gps_pings` (spec 001): raw ping fields + `ingest_ts` (Kafka record time) + `kafka_partition`/`kafka_offset`; partitioned by `day(event_ts)`; written by Flink job `bronze_gps` (exactly-once, commit every 30 s checkpoint).
+  - `bronze.gps_pings` (spec 001): raw ping fields + `ingest_ts` (Kafka record time = when the device sent the ping; the simulator sets it, spec 004) + `kafka_partition`/`kafka_offset`; partitioned by `day(event_ts)`; written by Flink job `bronze_gps` (exactly-once, commit every 30 s checkpoint).
+  - `silver.gps_pings` (spec 004): one row per `(vehicle_id, event_ts)`. The first copy to arrive wins. It adds `ingest_ts`, `lateness_s` and `is_late` (late = arrived more than 30 s after it happened). Partitioned by `day(event_ts)` and `bucket(16, vehicle_id)`.
+  - `silver.orders` (spec 004): one row per order, the version with the highest `source_lsn` (`last_lsn`, `last_commit_ts`). Key `(order_id, created_at)`, partitioned by `month(created_at)`.
+  - `silver.order_status_history` (spec 004): one row per status reached, with `status_ts` (the order system's business time) and the first `source_lsn` that recorded it. Partitioned by `day(status_ts)`.
+  - How silver is written: Flink jobs `silver_gps` and `silver_orders` read bronze incrementally, keep the first arrival or latest commit (Top-1), and upsert on Iceberg identifier fields (ADR 0011). `make silver-status` shows rows kept, copies removed and late rows per day. `make silver-rebuild` rebuilds silver from bronze.
 - **Order DB (CDC source, spec 002):** Postgres `public.{depots,vans,orders}`, publication `ct_cdc`, slot `ct_cdc_slot`; written by `python -m simulator day`.
 - **Serving DB:** Postgres schema `serving` (read by Grafana).
-- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make backfill DAYS=N`, `make bench`, `make down`; `make aws-up|aws-down` (managed).
+- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make backfill DAYS=N`, `make bench`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`; `make aws-up|aws-down` (managed).
+- **Simulator:** `python -m simulator day [--chaos] [--dup-rate --delay-rate --max-delay-min --jitter-rate --offline] [--late-delivery-rate] [--invalid-rate]`. Chaos sends valid but dirty GPS (duplicates, delays up to 2 h, jitter, offline bursts) in exactly known amounts (spec 004).
 
 ## 6. Non-functional requirements
 - **Latency:** GPS event → alert in `serving.alerts`, p95 < 10 s (local, live load).
@@ -110,3 +115,4 @@ Business definitions (BR-*), non-functional requirements (NFR-*) and data-modeli
 | [0008](decisions/0008-avro-schema-registry.md) | Avro + Schema Registry, FULL_TRANSITIVE (Glue SR on AWS) | Final locally; AWS side Proposed |
 | [0009](decisions/0009-data-tiers-and-benchmark.md) | Data tiers (dev / standard 100M / stress) + benchmark | Final |
 | [0010](decisions/0010-dlq-raw-source-python-udf.md) | Dead-letter routing: raw-bytes sources + Python decode UDF | Final |
+| [0011](decisions/0011-silver-upsert-first-arrival.md) | Silver from bronze: first-arrival Top-1 + Iceberg upserts; savepoint on `make down` | Final |

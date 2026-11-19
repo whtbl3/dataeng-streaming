@@ -47,6 +47,27 @@ Tried on the running stack with a throwaway `spike` schema (dropped afterwards):
 - **Lateness unit:** Flink 1.20 does not parse `TIMESTAMPDIFF(MILLISECOND, …)`, so the column is
   `lateness_s` (seconds) and `is_late = lateness_s > 30`. Pings sit on 5 s ticks, so seconds are enough.
 
+## Departures from the plan (during build)
+- **Graceful stop with savepoints** (approved by the project owner, 2026-11-19, option A).
+  - What happened: `make e2e-restart` showed that `docker compose down` doubled some bronze rows
+    (spec 001 AC7). This was not new: a row set from feature 003 was doubled too.
+  - Why: without HA, a killed JobManager discards its checkpoints. The resubmitted job then starts
+    from Kafka group offsets, which can lag behind the last Iceberg commit.
+  - Fix:
+    - `make down` runs `infra/local/flink/stop_jobs.sh`, which takes a stop-with-savepoint for
+      every job.
+    - `submit.sh` resumes from that savepoint (`execution.state-recovery.path`, unclaimed state
+      ignored).
+    - `FRESH_JOBS` skips the resume (`make silver-rebuild` uses it).
+    - The spec 001 restart test now stops the stack with `make down`.
+  - What is still not covered: a hard power loss can still rewrite a few bronze rows, which silver
+    absorbs. Flink HA is rejected for now (ADR 0011).
+- **New files beyond the list:**
+  - `infra/local/iceberg/set_identifier_fields.py` + `tests/unit/test_identifier_fields.py` (spike outcome)
+  - `infra/local/silver_rebuild.sh`, `infra/local/flink/stop_jobs.sh`
+  - `tests/integration/test_silver_restart.py` (AC7, AC8)
+- **ADR file name:** `docs/decisions/0011-silver-upsert-first-arrival.md`.
+
 ## Design
 **Tables** (`infra/local/trino/init/004_silver.sql`). Created in Trino, Iceberg format v2, because
 Flink DDL cannot declare partition transforms (same reason as `001_bronze.sql`).
