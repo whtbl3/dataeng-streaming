@@ -17,7 +17,6 @@ from conftest import (
     SILVER_GPS,
     TABLE,
     count_table,
-    job_states,
     query,
     run_gps_sim,
     run_orders_sim,
@@ -31,6 +30,13 @@ pytestmark = pytest.mark.e2e
 
 SILVER_TIMEOUT_S = 240
 JOBS = {"bronze_gps", "bronze_cdc", "silver_gps", "silver_orders"}
+
+
+def running_jobs() -> set[str]:
+    # job_states() keeps one state per name, and an earlier run stopped with a savepoint is
+    # FINISHED under the same name; ask which names have a RUNNING run.
+    with urllib.request.urlopen("http://localhost:8081/jobs/overview", timeout=5) as r:
+        return {j["name"] for j in json.load(r)["jobs"] if j["state"] == "RUNNING"}
 
 
 def maintain(task: str, table: str | None = None, **env: str) -> str:
@@ -150,7 +156,7 @@ def test_compaction_during_live_writes_keeps_silver_exact(prefix):
         "AND started_at > current_timestamp - INTERVAL '30' MINUTE"
     )[0][0]
     assert ok_runs >= 3
-    assert all(job_states().get(j) == "RUNNING" for j in JOBS)
+    assert running_jobs() >= JOBS
 
 
 def _aws(*args: str) -> str:
@@ -216,7 +222,7 @@ def test_retention_drops_partitions_past_their_age_and_jobs_keep_running(prefix)
     later = Ping(f"{prefix}-0002", now, 10.78, 106.69, 20.0, 90.0)
     send_ping(later, now)
     wait_for(lambda: count_table(SILVER_GPS, prefix), lambda n: n == 2, SILVER_TIMEOUT_S)
-    assert all(job_states().get(j) == "RUNNING" for j in JOBS)
+    assert running_jobs() >= JOBS
 
 
 def _catalog(name: str) -> dict:

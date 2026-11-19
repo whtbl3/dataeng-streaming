@@ -1,5 +1,5 @@
 # Spec 005: Scale (parallelism, cheaper per-event work, table maintenance, bounded storage)
-Status: Approved (2026-11-19) · Intent: roadmap item 5 · Author: project owner + Claude
+Status: Implemented (2026-11-19) · Intent: roadmap item 5 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -29,21 +29,21 @@ and adding machines would not help:
 - **Interviewer:** reads one ADR that explains, per layer, what limits scale and what was done.
 
 ## Acceptance criteria
-- [ ] AC1: Given the GPS topic, then it has more partitions than today, all pings of one van land on one partition, and the jobs that read it can run with that many parallel readers.
-- [ ] AC2: Given producers send batched and compressed, when a simulated day is sent, then bronze holds exactly the same messages as without compression.
-- [ ] AC3: Given a mix of valid and invalid GPS messages, when they are decoded in batches, then bronze and the dead-letter table hold exactly the same rows and reasons as with the per-row decode (spec 003 tests still pass).
-- [ ] AC4: Given dedup state on disk with incremental checkpoints, when a job is stopped hard and recovers, then silver is identical to a run without the failure (spec 004 AC7 still passes).
-- [ ] AC5: Given GPS tables after maintenance, when one van's pings for one day are queried, then fewer files are read than before maintenance (shown by the query statistics), and the result is unchanged.
-- [ ] AC6: Given a table with small data files and delete files, when maintenance runs, then file and delete-file counts drop, and the rows are identical before and after (checksum).
-- [ ] AC7: Given silver jobs writing live, when maintenance runs at the same time, then no write fails permanently and silver stays identical to a run without maintenance.
-- [ ] AC8: Given snapshots older than 7 days, unreferenced files, and partitions older than their retention (NFR-5), when maintenance runs, then they are removed, and current data and running jobs are unaffected.
-- [ ] AC9: Given a topic at its size bound, when more messages arrive, then the oldest segments are removed and its disk use stays under the bound.
-- [ ] AC10: Given the developer asks for table health, then they see per table: data files, delete files, average file size, snapshots, and when each maintenance task last ran.
-- [ ] AC11: Given a table written by parallel writers, when a commit is made, then each partition gets files from one writer, not one file per writer (write distribution by partition).
-- [ ] AC12: Given a table committed every 30 s for a day, then the number of metadata files and manifests stays bounded (old metadata versions removed, manifests rewritten), not one more per commit forever.
-- [ ] AC13: Given a streaming job that reads a table incrementally and is stopped, when snapshot expiry runs, then the snapshots that job still needs are kept within the documented limit, and if the job stays stopped longer than that limit, it says so clearly on restart instead of silently skipping data.
+- [x] AC1: Given the GPS topic, then it has more partitions than today, all pings of one van land on one partition, and the jobs that read it can run with that many parallel readers.
+- [x] AC2: Given producers send batched and compressed, when a simulated day is sent, then bronze holds exactly the same messages as without compression.
+- [x] AC3: Given a mix of valid and invalid GPS messages, when they are decoded in batches, then bronze and the dead-letter table hold exactly the same rows and reasons as with the per-row decode (spec 003 tests still pass).
+- [x] AC4: Given dedup state on disk with incremental checkpoints, when a job is stopped hard and recovers, then silver is identical to a run without the failure (spec 004 AC7 still passes).
+- [x] AC5: Given GPS tables after maintenance, when one van's pings for one day are queried, then fewer files are read than before maintenance (shown by the query statistics), and the result is unchanged.
+- [x] AC6: Given a table with small data files and delete files, when maintenance runs, then file and delete-file counts drop, and the rows are identical before and after (checksum).
+- [x] AC7: Given silver jobs writing live, when maintenance runs at the same time, then no write fails permanently and silver stays identical to a run without maintenance.
+- [x] AC8: Given snapshots older than 7 days, unreferenced files, and partitions older than their retention (NFR-5), when maintenance runs, then they are removed, and current data and running jobs are unaffected.
+- [x] AC9: Given a topic at its size bound, when more messages arrive, then the oldest segments are removed and its disk use stays under the bound.
+- [x] AC10: Given the developer asks for table health, then they see per table: data files, delete files, average file size, snapshots, and when each maintenance task last ran.
+- [x] AC11: Given a table written by parallel writers, when a commit is made, then each partition gets files from one writer, not one file per writer (write distribution by partition).
+- [x] AC12: Given a table committed every 30 s for a day, then the number of metadata files and manifests stays bounded (old metadata versions removed, manifests rewritten), not one more per commit forever.
+- [x] AC13: Given a streaming job that reads a table incrementally and is stopped, when snapshot expiry runs, then the snapshots that job still needs are kept within the documented limit, and if the job stays stopped longer than that limit, it says so clearly on restart instead of silently skipping data.
 - [ ] ~~AC14~~: dropped (2026-11-19). Silver GPS keeps upserts, so a late copy can never add a row (resolved question 6, revised).
-- [ ] AC15: Given the core and CDC stack with maintenance running, then total container memory stays under 6 GB.
+- [x] AC15: Given the core and CDC stack with maintenance running, then total container memory stays under 6 GB.
 
 ## Out of scope
 - Data tiers, `make backfill`, `make bench`, and the `stress` run (removed, see below).
