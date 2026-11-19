@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Scale: Kafka and Flink",
+    "locale": "en",
+    "output": "docs/diagrams/patterns-scale-stream.html",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "problem fixed by"
+        },
+        "emphasis": {
+          "label": "result"
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "label": "Before: what breaks"
+    },
+    {
+      "label": "Pattern"
+    },
+    {
+      "label": "After: what you get"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "part-b",
+      "type": "external",
+      "label": "3 GPS partitions",
+      "sublabel": "at most 3 parallel readers",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "part-p",
+      "type": "backend",
+      "label": "6 partitions",
+      "sublabel": "keyed by vehicle_id",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "part-a",
+      "type": "frontend",
+      "label": "Up to 6 readers",
+      "sublabel": "each van stays in order",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "kafka-b",
+      "type": "external",
+      "label": "Kafka fills the disk",
+      "sublabel": "retention by time only",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "kafka-p",
+      "type": "backend",
+      "label": "Time + size retention",
+      "sublabel": "GPS 1 GiB per partition",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "kafka-a",
+      "type": "frontend",
+      "label": "Bounded disk",
+      "sublabel": "7 days or size, first",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "udf-b",
+      "type": "external",
+      "label": "Python call per message",
+      "sublabel": "decode is the bottleneck",
+      "stage": 0,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "udf-p",
+      "type": "backend",
+      "label": "Vectorized UDF",
+      "sublabel": "one call per batch",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "udf-a",
+      "type": "frontend",
+      "label": "28k msg/s, was 20k",
+      "sublabel": "same output, unit-tested",
+      "stage": 2,
+      "row": 2,
+      "width": 150
+    },
+    {
+      "id": "rocks-b",
+      "type": "external",
+      "label": "State on the heap",
+      "sublabel": "capped by RAM",
+      "stage": 0,
+      "row": 3,
+      "width": 150
+    },
+    {
+      "id": "rocks-p",
+      "type": "backend",
+      "label": "RocksDB state",
+      "sublabel": "incremental checkpoints",
+      "stage": 1,
+      "row": 3,
+      "width": 150,
+      "tag": "spec 005"
+    },
+    {
+      "id": "rocks-a",
+      "type": "frontend",
+      "label": "State on local disk",
+      "sublabel": "resumes after a kill",
+      "stage": 2,
+      "row": 3,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "id": "part-fix",
+      "from": "part-b",
+      "to": "part-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "part-res",
+      "from": "part-p",
+      "to": "part-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "kafka-fix",
+      "from": "kafka-b",
+      "to": "kafka-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "kafka-res",
+      "from": "kafka-p",
+      "to": "kafka-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "udf-fix",
+      "from": "udf-b",
+      "to": "udf-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "udf-res",
+      "from": "udf-p",
+      "to": "udf-a",
+      "label": "gives",
+      "variant": "emphasis"
+    },
+    {
+      "id": "rocks-fix",
+      "from": "rocks-b",
+      "to": "rocks-p",
+      "label": "fix",
+      "variant": "default"
+    },
+    {
+      "id": "rocks-res",
+      "from": "rocks-p",
+      "to": "rocks-a",
+      "label": "gives",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Read each row left to right",
+      "items": [
+        "Before: what goes wrong without the pattern",
+        "Pattern: what the pipeline does",
+        "After: what you get, proven by a test"
+      ]
+    }
+  ]
+}

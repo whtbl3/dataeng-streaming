@@ -10,6 +10,10 @@ The interactive HTML viewers are generated and not committed (`.gitignore`).
 | `order-lifecycle.svg` | `order-lifecycle.lifecycle.json` | lifecycle | Which statuses can an order reach, and in what order? |
 | `model-silver.svg` | `model-silver.erd.json` | erd | Which columns and keys do the source and silver tables have? |
 | `model-gold.svg` | `model-gold.erd.json` | erd | How will the gold star schema join (planned, feature 7)? |
+| `patterns-ingest.svg` | `patterns-ingest.dataflow.json` | dataflow | Which failures can hit ingestion and storage, and which pattern fixes each? |
+| `patterns-clean.svg` | `patterns-clean.dataflow.json` | dataflow | Which failures can hit cleaning (silver), and which pattern fixes each? |
+| `patterns-scale-stream.svg` | `patterns-scale-stream.dataflow.json` | dataflow | What limited Kafka and Flink, and what changed (ADR 0012)? |
+| `patterns-scale-tables.svg` | `patterns-scale-tables.dataflow.json` | dataflow | What limited the Iceberg tables, and what changed (ADR 0012)? |
 
 Facts come from the code: `infra/local/postgres/init/001_schema.sql`, `infra/local/trino/init/*.sql`,
 `flink/jobs/*.sql`, `contracts/` and `simulator/orders_db.py`. The gold model follows
