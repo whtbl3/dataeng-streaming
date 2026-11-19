@@ -1,5 +1,5 @@
 # Spec 005: Scale (parallelism, cheaper per-event work, table maintenance, bounded storage)
-Status: Draft · Intent: roadmap item 5 · Author: project owner + Claude
+Status: Approved (2026-11-19) · Intent: roadmap item 5 · Author: project owner + Claude
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -62,7 +62,8 @@ and adding machines would not help:
   deliberate trade-offs against the usual advice: Python stays in the decode path (batched), and
   bronze GPS stays partitioned by event time rather than arrival time (lateness is at most about 2 h).
 
-## Open questions
+## Resolved questions (approved 2026-11-19)
+All six recommendations were accepted as written.
 1. **How many GPS partitions?** *Recommended:* 6. Room for 6 readers (the laptop has 8 cores) without
    tiny batches. Local jobs keep parallelism 1–2 by config. Existing data is unaffected; only the
    pings sent during the switch may cross partitions, and dedup ranks by data, not order.
