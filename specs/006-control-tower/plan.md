@@ -57,6 +57,20 @@ On approval this becomes `specs/006-control-tower/plan.md` + `tasks.md`.
   - Tried and not taken: a lateness margin proportional to time-to-arrival (precision +5-10 pts,
     recall -3-6 pts), a 30 min speed window, 28/30 km/h typical speed (fits the simulator, not a fleet).
 
+## Departures from the plan (build, 2026-11-19)
+- **AC8 tolerance, made explicit** (refinement 3). The demo day with default chaos gives the same
+  alerts except borderline SLA cases: after an offline burst the flushed pings arrive *after* the
+  order changes that happened meanwhile, so their ETAs use a route without the stop just delivered.
+  The test allows an SLA alert in one run only if the other run came within 2 min of the threshold
+  (at most 5 % of alerts), and a raise up to 2 min earlier or 15 min later.
+- **Still periods must be continuous.** The chaos replay found a false abnormal stop: two short
+  stops around a 13 min offline burst were joined into one 16 min "stop" at a place whose order was
+  already delivered. A gap over 2 min between pings, or a move over 150 m, now starts a new period.
+- **Out-of-order pings count for the speed window** (they still never move the van back).
+- **Open orders without a position** are listed in `order_eta` with no ETA (found by comparing the
+  DB with `serving.order_eta` after a fresh start).
+- The depot view is `serving.van_depots` (not `public`): it belongs to the serving layer.
+
 ## Design
 **Simulator** (`simulator/day.py`, `simulator/__main__.py`): `simulate_day(..., abnormal_stops=0)`
 picks vans by seed, splits their return hop at a point > 150 m from every stop and the depot, and

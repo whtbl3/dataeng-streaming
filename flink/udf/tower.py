@@ -12,8 +12,9 @@ Rules (spec 006 resolved questions 3, 4 and 6; BR-3):
   the typical fleet speed.
 - SLA risk: ETA >= promised_end + 1 min. Raised once per order; raised again only after it has
   been resolved for >= 10 min. Resolved when ETA <= promised_end, or the order is delivered/failed.
-- Abnormal stop: speed < 3 km/h for >= 10 min, more than 150 m from the depot and from every stop
-  of the van's open orders. Resolved when the van moves again.
+- Abnormal stop: speed < 3 km/h for >= 10 min without a break (no gap over 2 min between pings,
+  no move over 150 m), more than 150 m from the depot and from every stop of the van's open
+  orders. Resolved when the van moves again.
 - Alert horizon: an event older than 10 min (now - event_ts) updates state but raises no alert.
   `now` is processing time in Flink and event time in an offline replay.
 """
@@ -32,6 +33,7 @@ IDLE_KMH = 3.0
 IDLE_AFTER = timedelta(minutes=10)
 AWAY_KM = 0.150
 SPEED_WINDOW = timedelta(minutes=10)
+MAX_GAP = timedelta(minutes=2)  # a longer gap between pings breaks a still period (offline)
 HORIZON = timedelta(minutes=10)
 SLA_RISK, ABNORMAL_STOP = "SLA_RISK", "ABNORMAL_STOP"
 OPEN = ("assigned", "out_for_delivery")
@@ -211,26 +213,43 @@ def _away(state: VanState, point: tuple[float, float]) -> bool:
     return all(haversine_km(*point, *p) > AWAY_KM for p in places)
 
 
+def _add_speed(state: VanState, ping: Ping, newest: datetime) -> None:
+    """Keep the moving speeds of the last 10 min of event time, one per ping time."""
+    if ping.speed_kmh >= IDLE_KMH and newest - ping.event_ts <= SPEED_WINDOW:
+        times = {ts for ts, _ in state.speeds}
+        if ping.event_ts not in times:
+            state.speeds.append((ping.event_ts, ping.speed_kmh))
+            state.speeds = deque(sorted(state.speeds))
+    while state.speeds and newest - state.speeds[0][0] > SPEED_WINDOW:
+        state.speeds.popleft()
+
+
 def _on_ping(state: VanState, ping: Ping, now: datetime) -> list:
     latest = state.latest
     if latest is not None and ping.event_ts <= latest.event_ts:
-        return []  # older or duplicate: never move the van back (AC3)
+        # Older or duplicate: never move the van back (AC3). An out-of-order ping still counts
+        # for the recent speed, so jitter does not change the ETA (AC8).
+        _add_speed(state, ping, latest.event_ts)
+        return []
     state.latest = ping
     if ping.depot is not None:
         state.depot = ping.depot
-    while state.speeds and ping.event_ts - state.speeds[0][0] > SPEED_WINDOW:
-        state.speeds.popleft()
+    _add_speed(state, ping, ping.event_ts)
     out: list = [VehicleLatest(ping.van_id, ping.event_ts, ping.lat, ping.lon, ping.speed_kmh)]
 
     if ping.speed_kmh >= IDLE_KMH:
-        state.speeds.append((ping.event_ts, ping.speed_kmh))
         state.still_since, state.still_at, state.stop_alerted = None, None, False
         if state.stop_alert is not None:
             out.append(_resolve(state.stop_alert, ping.event_ts))
             state.stop_alert = None
     else:
-        if state.still_since is None:
-            state.still_since, state.still_at = ping.event_ts, (ping.lat, ping.lon)
+        here = (ping.lat, ping.lon)
+        # Still means still, continuously: a gap without pings (offline) or a new place starts
+        # a new still period (otherwise two short stops around an offline burst add up).
+        gap = latest is None or ping.event_ts - latest.event_ts > MAX_GAP
+        moved = state.still_at is not None and haversine_km(*here, *state.still_at) > AWAY_KM
+        if state.still_since is None or gap or moved:
+            state.still_since, state.still_at, state.stop_alerted = ping.event_ts, here, False
         idle = ping.event_ts - state.still_since
         if (
             idle >= IDLE_AFTER
