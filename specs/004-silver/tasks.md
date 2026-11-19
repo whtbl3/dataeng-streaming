@@ -7,7 +7,7 @@
 - [x] T4: spike R1, with the outcome recorded in plan.md
 - [x] T5: `004_silver.sql` + `silver_gps.sql` + compose submit; e2e AC2, AC3, AC4, AC9
 - [x] T6: `silver_orders.sql`; e2e AC5, AC6
-- [ ] T7: `make silver-status` + e2e AC10
+- [x] T7: `make silver-status` + e2e AC10
 - [ ] T8: restart AC7, `make silver-rebuild` + AC8, memory AC11
 - [ ] T9: ADR 0011, project-spec, requirements, roadmap, README, explainer status
 - [ ] T10: `make check`, `make e2e`, `make e2e-restart` green; spec Implemented; PR

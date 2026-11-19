@@ -18,6 +18,7 @@ from conftest import (
     wait_for,
 )
 
+from simulator.day import LOCAL_TZ
 from simulator.fleet import Ping
 
 pytestmark = pytest.mark.e2e
@@ -202,3 +203,54 @@ def test_status_history_one_row_per_status_in_commit_order(orders_prefix):
         (f"{orders_prefix}-%",),
     )
     assert sample and all(ok for (ok,) in sample)
+
+
+def _status_rows() -> dict[tuple[str, str], list[str]]:
+    import subprocess
+
+    from conftest import ROOT
+
+    out = subprocess.run(
+        ["make", "-s", "silver-status"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout
+    lines = [ln for ln in out.splitlines() if "|" in ln]
+    header = [c.strip() for c in lines[0].split("|")]
+    assert header == [
+        "silver_table",
+        "local_day",
+        "bronze_rows",
+        "silver_rows",
+        "removed",
+        "late_rows",
+        "conflicting",
+    ]
+    rows = [[c.strip() for c in ln.split("|")] for ln in lines[1:]]
+    return {(r[0], r[1]): r[2:] for r in rows}
+
+
+def test_silver_status_reports_duplicates_and_late_rows(prefix):
+    """AC10: per table and day, bronze rows, silver rows, removed copies and late rows."""
+    now = _now()
+    ping = _ping(prefix, now - timedelta(minutes=3))
+    send_ping(ping, sent_at=ping.event_ts + timedelta(minutes=2))  # late
+    send_ping(ping, sent_at=_now())  # a copy
+    _wait_silver(prefix, 1)
+    day = ping.event_ts.astimezone(LOCAL_TZ).date().isoformat()
+    lo = datetime.fromisoformat(day).replace(tzinfo=LOCAL_TZ)
+    hi = lo + timedelta(days=1)
+
+    def direct():
+        return query(
+            f"SELECT (SELECT count(*) FROM {TABLE} WHERE event_ts >= ? AND event_ts < ?), "
+            f"(SELECT count(*) FROM {SILVER_GPS} WHERE event_ts >= ? AND event_ts < ?), "
+            f"(SELECT count_if(is_late) FROM {SILVER_GPS} WHERE event_ts >= ? AND event_ts < ?)",
+            (lo, hi, lo, hi, lo, hi),
+        )[0]
+
+    def both():  # jobs keep committing, so read both sides until they agree
+        bronze, silver, late = direct()
+        status = [int(x) for x in _status_rows()[("gps_pings", day)][:4]]
+        return status, [bronze, silver, bronze - silver, late]
+
+    (_, (bronze, silver, _, late)), _ = wait_for(both, lambda t: t[0] == t[1], 120)
+    assert bronze - silver >= 1 and late >= 1

@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -55,6 +55,9 @@ cdc-status:       # connector + task state, and how far the replication slot lag
 dlq-status:       # rejected events per source topic and reason (bronze.dlq_events, spec 003)
 	@$(COMPOSE) exec -T trino trino --output-format ALIGNED --execute \
 	  "SELECT source_topic, reason, count(*) AS events, max(ingest_ts) AS last_seen FROM lakehouse.bronze.dlq_events GROUP BY 1, 2 ORDER BY 1, 2"
+
+silver-status:    # per silver table and local day: rows kept, copies removed, late rows (spec 004)
+	@$(COMPOSE) exec -T trino trino --output-format ALIGNED < infra/local/trino/silver_status.sql
 
 psql:
 	$(COMPOSE) exec postgres psql -U ct -d control_tower
