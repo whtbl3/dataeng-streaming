@@ -19,7 +19,7 @@ and adding machines would not help:
 - Less work per event: producers batch and compress; the decode handles events in batches.
 - State that can grow lives on disk, and checkpoints write only what changed.
 - Tables stay healthy on a schedule: right-sized, sorted files; deletes applied; old snapshots,
-  orphan files and expired data removed. The same jobs map to an AWS managed service by config.
+  orphan files and expired data removed.
 - Storage is bounded: Kafka by size as well as time; every table by its retention.
 - No large simulated load. Proof uses the existing dev-size tests; the reasoning goes in an ADR.
 
@@ -66,7 +66,7 @@ and adding machines would not help:
    stops the job instead of going to the dead-letter table, which undoes spec 003.
 3. **Maintenance schedule?** *Recommended:* locally, a small always-on service through Trino:
    compaction every 30 min for silver and hourly for bronze; expiry, orphan removal and retention
-   daily; plus a make target to run it now. On AWS: Glue table optimizers, by config (ADR 0005).
+   daily; plus a make target to run it now.
 4. **GPS layout?** About 80 MB a day split into 16 buckets gives files of about 5 MB (Iceberg aims
    for 128–512 MB). *Recommended:* partition by day only, with files sorted by vehicle and event time
    during compaction, so a one-van query still skips most files.
