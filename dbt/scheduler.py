@@ -100,6 +100,7 @@ def main(argv: list[str]) -> int:
     group.add_argument("--close", type=date.fromisoformat, metavar="DAY")
     group.add_argument("--reclose", type=date.fromisoformat, metavar="DAY")
     group.add_argument("--test", action="store_true", help="data tests and source freshness")
+    group.add_argument("--freshness", action="store_true", help="source freshness only")
     args = parser.parse_args(argv)
     _profiles()
     if args.once:
@@ -108,6 +109,8 @@ def main(argv: list[str]) -> int:
         return run_dbt(dbt_command("close", day=args.close))
     if args.reclose:
         return run_dbt(dbt_command("close", day=args.reclose, restatement=True))
+    if args.freshness:
+        return run_dbt(["dbt", "source", "freshness"])
     if args.test:
         tests = run_dbt(["dbt", "test", "--exclude", "test_type:unit"])
         return tests or run_dbt(["dbt", "source", "freshness"])
