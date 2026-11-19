@@ -26,7 +26,8 @@ from simulator.world import DEPOT_BY_ID, VANS
 pytestmark = pytest.mark.e2e
 
 TIMEOUT_S = 60
-_RESERVED = itertools.cycle(VANS[180:200])  # VAN-0181 … VAN-0200
+_POOL = VANS[160:200]  # VAN-0161 … VAN-0200, used by these tests only
+_RESERVED = itertools.cycle(_POOL)
 ALERT_SCHEMA = json.loads((ROOT / "schemas/alerts.v1-value/v1.avsc").read_text())
 
 
@@ -43,14 +44,28 @@ def now() -> datetime:
 
 
 class ReservedVan:
-    """One reserved van: its depot, orders this test creates, and pings sent now."""
+    """One reserved van: its depot, orders this test creates, and pings sent now.
 
-    def __init__(self) -> None:
-        self.van = next(_RESERVED)
+    A test that sends pings dated in the past passes `pings_from`: it gets a van whose newest
+    position is older than that, because a van never moves back to an older ping (AC3)."""
+
+    def __init__(self, pings_from: datetime | None = None) -> None:
+        for _ in range(len(_POOL)):
+            self.van = next(_RESERVED)
+            if pings_from is None:
+                break
+            rows = pg(
+                "SELECT event_ts FROM serving.vehicle_latest WHERE van_id = %s", (self.van.van_id,)
+            )
+            if not rows or rows[0][0] < pings_from:
+                break
+        else:
+            raise RuntimeError(f"no reserved van without pings after {pings_from}")
         self.depot = DEPOT_BY_ID[self.van.depot_id]
         self.id = self.van.van_id
         self.orders: list[str] = []
         self.tag = uuid.uuid4().hex[:6].upper()
+        self.started = pings_from or now()
 
     def place(self, north_km: float) -> tuple[float, float]:
         return (self.depot.lat + north_km / 111.2, self.depot.lon)
@@ -93,9 +108,6 @@ class ReservedVan:
         )
         for (oid,) in open_:
             self.close(oid)
-        self.ping(
-            self.place(0), 0.0
-        )  # back at the depot: no abnormal stop leaks into the next test
 
 
 @pytest.fixture
@@ -114,11 +126,12 @@ def eta_row(oid: str):
     return rows[0] if rows else None
 
 
-def alert_rows(van_id: str, kind: str) -> list[tuple]:
+def alert_rows(van_id: str, kind: str, since: datetime) -> list[tuple]:
+    """This van's alerts of one type raised at or after `since` (earlier runs use the same vans)."""
     return pg(
         "SELECT alert_id, order_id, raised_at, resolved_at, raised_written_at FROM serving.alerts "
-        "WHERE van_id = %s AND type = %s ORDER BY raised_at",
-        (van_id, kind),
+        "WHERE van_id = %s AND type = %s AND raised_at >= %s ORDER BY raised_at",
+        (van_id, kind, since),
     )
 
 
@@ -158,31 +171,43 @@ def test_sla_risk_raised_once_and_resolved_on_delivery(van):
     for _ in range(5):
         van.ping(van.place(0), 30.0)
         time.sleep(1.1)
-    rows, _ = wait_for(lambda: alert_rows(van.id, "SLA_RISK"), lambda r: len(r) >= 1, TIMEOUT_S)
+    rows, _ = wait_for(
+        lambda: alert_rows(van.id, "SLA_RISK", since=van.started), lambda r: len(r) >= 1, TIMEOUT_S
+    )
     time.sleep(3)
-    (alert,) = alert_rows(van.id, "SLA_RISK")
+    (alert,) = alert_rows(van.id, "SLA_RISK", since=van.started)
     assert alert[1] == oid and alert[3] is None
     van.close(oid)
     resolved, _ = wait_for(
-        lambda: alert_rows(van.id, "SLA_RISK"), lambda r: r[0][3] is not None, TIMEOUT_S
+        lambda: alert_rows(van.id, "SLA_RISK", since=van.started),
+        lambda r: r[0][3] is not None,
+        TIMEOUT_S,
     )
     assert len(resolved) == 1
     wait_for(lambda: eta_row(oid), lambda r: r is None, TIMEOUT_S)  # closed orders leave
 
 
-def test_abnormal_stop_alert(van):
+def test_abnormal_stop_alert():
     """AC6: 11 min still, 3 km from the depot and with no open stop → one alert; moving resolves."""
     t0 = now() - timedelta(minutes=11)
-    spot = van.place(3)
-    for i in range(0, 11 * 60 + 1, 5):  # one ping every 5 s; the last ones are fresh
-        van.ping(spot, 0.0, ts=t0 + timedelta(seconds=i))
-    rows, _ = wait_for(
-        lambda: alert_rows(van.id, "ABNORMAL_STOP"), lambda r: len(r) >= 1, TIMEOUT_S
-    )
-    (alert,) = rows
-    assert alert[2] == t0 + timedelta(minutes=10)  # raised by the ping at the 10 min mark
-    van.ping(van.place(3.1), 25.0, ts=t0 + timedelta(minutes=11, seconds=5))
-    wait_for(lambda: alert_rows(van.id, "ABNORMAL_STOP"), lambda r: r[0][3] is not None, TIMEOUT_S)
+    van = ReservedVan(pings_from=t0)
+    try:
+        spot = van.place(3)
+        for i in range(0, 11 * 60 + 1, 5):  # one ping every 5 s; the last ones are fresh
+            van.ping(spot, 0.0, ts=t0 + timedelta(seconds=i))
+        rows, _ = wait_for(
+            lambda: alert_rows(van.id, "ABNORMAL_STOP", since=t0), lambda r: len(r) >= 1, TIMEOUT_S
+        )
+        (alert,) = rows
+        assert alert[2] == t0 + timedelta(minutes=10)  # raised by the ping at the 10 min mark
+        van.ping(van.place(3.1), 25.0, ts=t0 + timedelta(minutes=11, seconds=5))
+        wait_for(
+            lambda: alert_rows(van.id, "ABNORMAL_STOP", since=t0),
+            lambda r: r[0][3] is not None,
+            TIMEOUT_S,
+        )
+    finally:
+        van.teardown()
 
 
 def _alert_messages(van_id: str) -> list[dict]:
@@ -219,9 +244,15 @@ def test_each_alert_event_is_published_once_to_the_alerts_topic(van):
     oid = van.order(north_km=8, promised_in_min=5)
     time.sleep(3)
     van.ping(van.place(0), 30.0)
-    rows, _ = wait_for(lambda: alert_rows(van.id, "SLA_RISK"), lambda r: len(r) == 1, TIMEOUT_S)
+    rows, _ = wait_for(
+        lambda: alert_rows(van.id, "SLA_RISK", since=van.started), lambda r: len(r) == 1, TIMEOUT_S
+    )
     van.close(oid)
-    wait_for(lambda: alert_rows(van.id, "SLA_RISK"), lambda r: r[0][3] is not None, TIMEOUT_S)
+    wait_for(
+        lambda: alert_rows(van.id, "SLA_RISK", since=van.started),
+        lambda r: r[0][3] is not None,
+        TIMEOUT_S,
+    )
     # exactly-once Kafka sinks commit with the checkpoint (30 s)
     messages, _ = wait_for(lambda: _alert_messages(van.id), lambda m: len(m) >= 2, 120, every_s=10)
     events = sorted((m["alert_id"], m["event"]) for m in messages)
@@ -243,7 +274,9 @@ def test_alert_latency_p95_under_10s():
         lags = []
         for v in vans:
             rows, _ = wait_for(
-                lambda v=v: alert_rows(v.id, "SLA_RISK"), lambda r: len(r) >= 1, TIMEOUT_S
+                lambda v=v: alert_rows(v.id, "SLA_RISK", since=v.started),
+                lambda r: len(r) >= 1,
+                TIMEOUT_S,
             )
             lags.append((rows[-1][4] - sent[v.id]).total_seconds())
         p95 = statistics.quantiles(lags, n=20)[-1]
