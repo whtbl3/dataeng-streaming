@@ -1,5 +1,5 @@
 # Spec 007: Gold (delivery KPIs with dbt, intraday and nightly close)
-Status: Approved (2026-11-19) · Intent: roadmap item 7 · Author: project owner + Claude
+Status: Approved (2026-11-19) · Intent: roadmap item 7 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 

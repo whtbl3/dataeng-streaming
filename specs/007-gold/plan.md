@@ -39,9 +39,9 @@ Branch `feat/007-gold` is stacked on `feat/006-control-tower` (PR #15).
   with `-- noqa: AL05`, and the whole auto-fix diff was reviewed (formatting only otherwise).
 - **Gold is in the maintenance service** (compaction with silver every 30 min; retention 2 years,
   NFR-5); the scheduler gained `--test` and `--freshness` for `make gold-test` and the AC12 test.
-- **Connection settings:** the project rule `.claude/rules/dbt.md` says `profiles.yml` is committed
-  with `env_var()`, CLAUDE.md says never to read or edit `profiles.yml`. The approved spec keeps
-  `profiles.yml.example` (env vars only, copied at run time); the owner decides on the rule.
+- **Connection settings:** the dbt rules say `profiles.yml` is committed with `env_var()`, while the
+  project rules say never to read or edit `profiles.yml`. The approved spec keeps
+  `profiles.yml.example` (env vars only, copied at run time); the owner decides which rule wins.
 - **ETA error uses the close time as the arrival** (the order data has no arrival time); noted in
   ADR 0014.
 - `minutes_late` is 0 for an on-time delivery and NULL for a failure.
