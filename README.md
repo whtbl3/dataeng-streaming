@@ -34,6 +34,14 @@ This project answers three questions:
 | SQL / transforms | Trino + dbt | Athena + dbt (feature 9) |
 | Serving / dashboards | Postgres serving, dashboards designed | Grafana on ECS + CloudWatch |
 
+The lakehouse has three layers, each an Iceberg namespace:
+
+| Layer | Tables | Written by | What it holds |
+|---|---|---|---|
+| **Bronze** (raw) | `gps_pings`, `depots_cdc`, `vans_cdc`, `orders_cdc`, `dlq_events`, `alert_events`, `eta_marks` | Flink | Every event as it arrived, append-only: duplicates, late events and every order version included. One table per source, so no keys or relations to draw. |
+| **Silver** (clean) | `gps_pings`, `orders`, `order_status_history` | Flink | One row per real ping and per order, keyed and deduplicated, late rows flagged ([diagram](#4-silver-duplicates-late-and-out-of-order-events)) |
+| **Gold** (business) | `fct_delivery`, `dim_van`, `dim_depot`, `dim_date`, `agg_depot_daily`, `closed_days` | dbt | A star schema for KPIs, provisional intraday and final after the nightly close ([diagram](#7-gold-with-dbt-kpis-that-do-not-change-with-dirty-data)) |
+
 Two ideas hold the design together:
 - **Stream for freshness, batch for correctness** ([ADR 0006](docs/decisions/0006-stream-freshness-batch-correctness.md)).
   Flink raises alerts within seconds; dbt recomputes KPIs every 5 minutes (provisional) and
@@ -92,6 +100,8 @@ is not sure it got through and sends it again. Bronze keeps both copies; silver 
 
 **Proof:** the same day sent clean and with chaos gives identical silver; killing a task manager
 mid-load leaves silver exact.
+
+![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
 
 ![Before and after: duplicate ping → dedup and upsert; replayed CDC → order by commit LSN; late ping → late-data flag; growing state → state TTL](docs/diagrams/patterns-clean.svg)
 
@@ -190,8 +200,6 @@ Pattern names follow *Data Engineering Design Patterns* (Konieczny).
 ![Before and after: schema change → schema compatibility; bad message → dead-letter queue; crash mid-write → checkpoint and commit; killed cluster → resume from the newest retained checkpoint](docs/diagrams/patterns-ingest.svg)
 
 ![Before and after: a file per writer → hash distribution; 5 MB files → day partitions sorted by van; stale reader → refused resume and rebuild; piling files → maintenance service](docs/diagrams/patterns-scale-tables.svg)
-
-![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
 </details>
 
 ## Cost
