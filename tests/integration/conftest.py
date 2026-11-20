@@ -18,7 +18,7 @@ from simulator.day import local_dates, merged_stream, simulate_day
 from simulator.producer import GpsEncoder, make_producer, produce_all
 
 ROOT = Path(__file__).resolve().parents[2]
-PROFILES = os.environ.get("PROFILES", "cdc").split()
+PROFILES = os.environ.get("PROFILES", "lake cdc").split()  # as the Makefile (spec 009)
 COMPOSE = [
     "docker",
     "compose",

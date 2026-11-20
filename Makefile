@@ -1,9 +1,30 @@
 # Rule: `make check` must run exactly what CI runs.
-PROFILES ?= cdc
-COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
-TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild gold close reclose gold-status gold-test dbt-ci tower-status maintain table-health aws-plan aws-up aws-down
+# Lakehouse (spec 009): local = MinIO + REST catalog + Trino (default); aws = S3 + Glue + Athena,
+# with Kafka, Flink and Postgres still local. Only configuration differs (ADR 0015).
+LAKEHOUSE ?= local
+# AWS_PROFILE: the demo role the jobs use (infra/aws/lakehouse.env.example);
+# AWS_ADMIN_PROFILE: your own login, to create and remove the AWS lakehouse
+AWS_PROFILE ?= ct-demo
+AWS_ADMIN_PROFILE ?= default
+ifeq ($(LAKEHOUSE),aws)
+PROFILES ?= cdc
+export LAKEHOUSE_ENV := ../aws/lakehouse.env
+# short-lived credentials from your AWS login, as environment variables only (never a file)
+CREDS = eval "$$(aws configure export-credentials --profile $(AWS_PROFILE) --format env)" &&
+else
+PROFILES ?= lake cdc
+endif
+ADMIN_CREDS = eval "$$(aws configure export-credentials --profile $(AWS_ADMIN_PROFILE) --format env)" &&
+COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
+
+# Terraform: the installed binary, or the pinned image when none is installed
+TF_IMAGE := hashicorp/terraform:1.9.8
+TF_BIN   := $(if $(shell command -v terraform),terraform,docker run --rm -i -v $(CURDIR):/repo -w /repo -u $(shell id -u):$(shell id -g) -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN $(TF_IMAGE))
+TF       := $(TF_BIN) -chdir=infra/aws
+TF_LAKE  := $(TF_BIN) -chdir=infra/aws/lakehouse
+
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild gold close reclose gold-status gold-test dbt-ci tower-status maintain table-health aws-plan aws-up aws-down aws-lake-plan aws-lake-up aws-lake-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -27,13 +48,13 @@ check: lint test
 	@echo "check: all green"
 
 ## ---- Local stack ($0) -------------------------------------------------
-up:               # start services; `run` waits for every depends_on condition, then submits jobs
-	$(COMPOSE) up -d --build --remove-orphans
-	$(COMPOSE) run --rm flink-submit
+up:               # start services; `run` waits for every depends_on condition, then submits jobs (LAKEHOUSE=aws: spec 009)
+	$(CREDS) $(COMPOSE) up -d --build --remove-orphans
+	$(CREDS) $(COMPOSE) run --rm flink-submit
 
 down:             # stops the Flink jobs with a savepoint first, so `make up` resumes exactly
-	-$(COMPOSE) run --rm --no-deps flink-submit /opt/flink/bin/stop_jobs.sh
-	$(COMPOSE) --profile jobs down
+	-$(CREDS) $(COMPOSE) run --rm --no-deps flink-submit /opt/flink/bin/stop_jobs.sh
+	$(COMPOSE) --profile lake --profile jobs down
 
 clean:            # also deletes local data volumes
 	$(COMPOSE) --profile jobs down -v
@@ -106,3 +127,17 @@ aws-up:
 
 aws-down:
 	$(TF) destroy
+
+## ---- AWS lakehouse (spec 009): S3 + Glue + Athena, created only on demand -------
+aws-lake-plan:    # what aws-lake-up would create (free; log in first: aws sso login)
+	$(ADMIN_CREDS) $(TF_LAKE) init -input=false && $(TF_LAKE) plan
+
+aws-lake-up:      # create the AWS lakehouse; asks first. Remove it with aws-lake-down after the demo
+	@echo "Creates in $(AWS_ADMIN_PROFILE)'s account (ap-southeast-1): an S3 bucket, 5 Glue databases,"
+	@echo "an Athena workgroup (queries stop at 1 GB scanned), 2 IAM roles and 2 budgets (5 and 20 USD)."
+	@echo "Nothing runs per hour: S3 ~0.025 USD/GB-month, Athena 5 USD/TB scanned, Glue optimizers per run."
+	@read -r -p "Type yes to create them: " ok && [ "$$ok" = yes ]
+	$(ADMIN_CREDS) $(TF_LAKE) init -input=false && $(TF_LAKE) apply
+
+aws-lake-down:    # remove everything aws-lake-up created, the bucket's data included
+	$(ADMIN_CREDS) $(TF_LAKE) destroy

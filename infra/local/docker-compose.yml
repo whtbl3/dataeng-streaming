@@ -30,6 +30,7 @@ services:
   # ---- Object storage (S3 API) -------------------------------------------------
   minio:
     image: ${S3_IMAGE:-dhi.io/minio:RELEASE.2025-09-07T16-13-09Z-debian13}
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-ct-local}
@@ -40,6 +41,7 @@ services:
 
   minio-init: # creates the warehouse bucket; doubles as MinIO's readiness gate (image has no shell)
     image: amazon/aws-cli:2.39.4
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on: [minio]
     environment:
       AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-ct-local}
@@ -175,6 +177,7 @@ services:
   # ---- Iceberg catalog ------------------------------------------------------------
   iceberg-rest:
     image: apache/iceberg-rest-fixture:1.10.1
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on:
       minio-init: { condition: service_completed_successfully }
     environment:
@@ -199,6 +202,7 @@ services:
   # ---- SQL ------------------------------------------------------------------------
   trino:
     image: trinodb/trino:484
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on: [iceberg-rest]
     environment: *s3-env
     ports: ["8080:8080"]
@@ -226,6 +230,7 @@ services:
   # ---- Table maintenance (spec 005, ADR 0012) ------------------------------------------
   maintenance: # compaction, manifests, snapshot expiry, orphan files, retention; through Trino
     image: python:3.11.11-slim
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on:
       lakehouse-init: { condition: service_completed_successfully }
     environment:
@@ -242,7 +247,11 @@ services:
     image: control-tower/dbt:1.11.16
     depends_on:
       lakehouse-init: { condition: service_completed_successfully }
+    env_file: ["${LAKEHOUSE_ENV:-./lakehouse.env}"]
     environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       DBT_TRINO_HOST: trino
       DBT_TRINO_PORT: "8080"
       GOLD_INTERVAL_MIN: ${GOLD_INTERVAL_MIN:-5}
@@ -261,6 +270,9 @@ services:
     stop_signal: SIGKILL
     environment:
       FLINK_PROPERTIES: *flink-props
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     ports: ["8081:8081"]
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
     healthcheck:
@@ -277,6 +289,9 @@ services:
     command: taskmanager
     environment:
       FLINK_PROPERTIES: *flink-props
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
     mem_limit: 2560m # JVM + RocksDB + one Python UDF worker per GPS subtask and CDC job (ADR 0010)
 
@@ -305,6 +320,9 @@ services:
       GPS_PARALLELISM: ${GPS_PARALLELISM:-2}
       SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d} # same as maintenance: how long a reader may stop
       FRESH_JOBS: ${FRESH_JOBS:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes:
       - ../../flink/jobs:/opt/flink/jobs:ro
       - ../../contracts:/opt/ct/contracts:ro # shipped to the cluster via python.files

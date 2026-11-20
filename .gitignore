@@ -41,3 +41,6 @@ docs/diagrams/*.html
 docs/diagrams/*.delivery.json
 docs/diagrams/*.finalize*.json
 docs/diagrams/*.browser-check.json
+
+# AWS lakehouse settings (spec 009): copied from lakehouse.env.example, holds bucket names
+infra/aws/lakehouse.env
