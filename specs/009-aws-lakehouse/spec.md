@@ -1,5 +1,5 @@
 # Spec 009: AWS lakehouse (S3, Glue, Athena by configuration)
-Status: Draft · Intent: roadmap item 9 · Author: project owner
+Status: Approved (2026-11-20) · Intent: roadmap item 9 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -46,7 +46,10 @@ maintenance runs Trino procedures, and dbt uses the Trino adapter.
   adapter, credentials, region).
 - The local table DDL moves from Trino SQL to the shared table definition (open question 2).
 
-## Open questions
+## Resolved questions (approved 2026-11-20)
+All seven recommendations were accepted as written. No local AWS emulator: the owner decided
+the end-to-end proof runs on real AWS only (AWS Emulator, GA 2026-11-11, runs Athena on SQLite and
+cannot read Glue or Iceberg tables).
 1. **Region?** *Recommended:* `ap-southeast-1` (Singapore), closest to Ho Chi Minh City; all
    lakehouse services are available there.
 2. **One table definition for two catalogs?** Trino DDL does not run in Athena (different syntax for
