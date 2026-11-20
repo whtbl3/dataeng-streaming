@@ -1,0 +1,16 @@
+# SQL lint for the dbt project (tech stack: sqlfluff). Jinja templater with dbt builtins, so it
+# lints without a database connection (CI, `make dbt-ci`).
+[sqlfluff]
+dialect = trino
+templater = jinja
+max_line_length = 110
+# capitalisation and aliasing style are left to review; layout, ambiguity and references are linted
+exclude_rules = capitalisation, aliasing.length, structure.column_order, references.qualification, references.consistent, ambiguous.column_count, layout.long_lines
+large_file_skip_byte_limit = 40000
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
+load_macros_from_path = macros
+
+[sqlfluff:templater:jinja:context]
+target = {"name": "ci", "catalog": "lakehouse", "schema": "gold"}

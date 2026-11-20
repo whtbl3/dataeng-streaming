@@ -1,0 +1,26 @@
+# dbt connection, every value from the environment (spec 007, resolved question 2). No secrets:
+# the local Trino has no authentication. The dbt container and the make targets copy this file
+# to a temporary profiles directory; nothing writes a real profiles.yml into the repo.
+ct:
+  target: "{{ env_var('DBT_TARGET', 'local') }}"
+  outputs:
+    local:
+      type: trino
+      method: none
+      user: "{{ env_var('DBT_TRINO_USER', 'dbt') }}"
+      host: "{{ env_var('DBT_TRINO_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_TRINO_PORT', '8080') | int }}"
+      http_scheme: http
+      catalog: "{{ env_var('DBT_TRINO_CATALOG', 'lakehouse') }}"
+      schema: gold
+      threads: 2
+    ci:  # a throwaway Trino with a memory catalog named lakehouse (`make dbt-ci`, CI)
+      type: trino
+      method: none
+      user: "{{ env_var('DBT_TRINO_USER', 'dbt') }}"
+      host: "{{ env_var('DBT_TRINO_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_TRINO_PORT', '18089') | int }}"
+      http_scheme: http
+      catalog: lakehouse
+      schema: gold
+      threads: 2

@@ -15,7 +15,7 @@ on the dev stack (Flink 1.20.5, Iceberg 1.10.1, Trino 484, Redpanda 26.1, 8 core
 | Producers | many small requests | batches up to 512 KiB, `linger.ms` 20, `zstd` (simulator, Debezium, Flink DLQ sinks) |
 | Flink | one Python call per message (ADR 0010) | vectorized UDF: one call per batch; same output (unit-tested), decode time −28 % (20k → 28k msg/s) |
 | Flink | state on the heap, capped by RAM | RocksDB with incremental checkpoints; GPS jobs run with `GPS_PARALLELISM` (2 locally, up to 6) |
-| Flink | a killed cluster lost its place (no HA) | `submit.sh` resumes from the newest retained checkpoint when there is no savepoint |
+| Flink | a killed cluster lost its place (no HA) | `submit.sh` resumes from the newest retained checkpoint when there is no savepoint; the JobManager stops with SIGKILL, because a clean shutdown (a reboot) deletes the retained checkpoints without HA (found in spec 007) |
 | Iceberg | each parallel writer writes a file per partition | `write.distribution-mode=hash`: one writer, one file per partition per commit |
 | Iceberg | 16 buckets a day gave ~5 MB files (target 128–512 MB) | GPS partitioned by day only, files sorted by `(vehicle_id, event_ts)` when compacted |
 | Iceberg | small files, upsert delete files, manifests, snapshots and metadata files pile up | the maintenance service (below), plus `write.metadata.delete-after-commit` (100 versions kept) |

@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: stg_orders_closed
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: local_date
+        data_tests: [not_null]
+  - name: stg_van_versions
+    columns:
+      - name: van_key
+        data_tests: [unique, not_null]
+  - name: stg_depots
+    columns:
+      - name: depot_id
+        data_tests: [unique, not_null]
+  - name: stg_alert_events
+    description: Key (alert_id, event); see tests/staging_keys_are_unique.sql.
+    columns:
+      - name: alert_id
+        data_tests: [not_null]
+  - name: stg_eta_marks
+    description: Key (order_id, mark); see tests/staging_keys_are_unique.sql.
+    columns:
+      - name: order_id
+        data_tests: [not_null]

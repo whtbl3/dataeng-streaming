@@ -281,7 +281,7 @@ def test_table_health_matches_the_table_metadata():
         cells = [c.strip() for c in line.split("|")]
         if len(cells) == 10 and "." in cells[0]:
             rows[cells[0]] = cells
-    assert len(rows) == 9
+    assert len(rows) == 11
     data, deletes = query(
         'SELECT count_if(content = 0), count_if(content <> 0) FROM lakehouse.silver."orders$files"'
     )[0]

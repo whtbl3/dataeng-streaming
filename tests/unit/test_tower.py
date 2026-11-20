@@ -160,3 +160,33 @@ def test_a_gap_in_pings_or_a_new_place_starts_a_new_still_period():
     s = t.VanState()
     gap_same_place = still(0, 3, AWAY) + still(9 * 60, 2, AWAY)  # 6 min without pings
     assert alerts(run(s, gap_same_place)) == []
+
+
+# ---- ETA marks for gold (spec 007 AC1) ------------------------------------------------------
+def marks(outputs):
+    return [o for o in outputs if isinstance(o, t.EtaMark)]
+
+
+def test_eta_marks_are_written_once_when_t30_and_t15_pass():
+    s = t.VanState()
+    run(s, [order(end_min=60)])
+    pings = [ping(60 * m, DEPOT, 30.0) for m in range(0, 60, 1)]  # one a minute until the deadline
+    out = run(s, pings)
+    got = {(m.mark, m.event_ts) for m in marks(out)}
+    assert got == {("T30", T0 + timedelta(minutes=30)), ("T15", T0 + timedelta(minutes=45))}
+    (t30,) = [m for m in marks(out) if m.mark == "T30"]
+    assert t30.order_id == "O1" and t30.promised_end == T0 + timedelta(minutes=60) and t30.eta
+
+
+def test_no_mark_for_an_order_dispatched_after_the_mark_time():
+    s = t.VanState()
+    run(s, [order(end_min=20), ping(0, DEPOT, 30.0)])  # T-30 is already past at dispatch
+    out = run(s, [ping(60 * m, DEPOT, 30.0) for m in range(1, 20)])
+    assert [m.mark for m in marks(out)] == ["T15"]
+
+
+def test_marks_survive_an_order_update():
+    s = t.VanState()
+    run(s, [order(end_min=60), *[ping(60 * m) for m in range(0, 31)]])
+    out = run(s, [order(end_min=60, lsn=2, at_s=1900), *[ping(60 * m) for m in range(31, 50)]])
+    assert [m.mark for m in marks(out)] == ["T15"]  # T30 is not written again

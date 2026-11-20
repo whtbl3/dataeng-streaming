@@ -43,13 +43,14 @@ def _exact(table: str, prefix: str) -> tuple[int, int]:
     )[0]
 
 
-def test_killed_cluster_resumes_from_retained_checkpoints(prefix):
-    """No savepoint (the JobManager is killed): every job resumes from its newest checkpoint, so
-    bronze has each message once and silver each ping once, for pings sent before the kill and
-    while Flink was down."""
+@pytest.mark.parametrize("how", ["kill", "stop"])
+def test_killed_cluster_resumes_from_retained_checkpoints(prefix, how):
+    """No savepoint (the JobManager is killed, or stopped as on a reboot): every job resumes from
+    its newest checkpoint, so bronze has each message once and silver each ping once, for pings
+    sent before the stop and while Flink was down."""
     before, _ = run_gps_sim(f"{prefix}A", vans=3, hours=0.5)
     wait_for(_safe(lambda: count_table(TABLE, f"{prefix}A")), lambda n: n == before, TIMEOUT_S)
-    compose("kill", "jobmanager", "taskmanager")
+    compose(how, "jobmanager", "taskmanager")  # stop = SIGTERM, as on a reboot
     during, _ = run_gps_sim(f"{prefix}B", vans=3, hours=0.5, seed=12)
     subprocess.run(["make", "-s", "up"], cwd=ROOT, check=True, capture_output=True, text=True)
     for p, sent in ((f"{prefix}A", before), (f"{prefix}B", during)):

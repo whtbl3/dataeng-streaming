@@ -11,7 +11,7 @@ Items marked *(cut if late)* can move to "Stretch" without breaking the story.
 | 4 | 3 | Silver: dedup + event-time watermarks; simulator chaos mode (late, out-of-order, duplicate events); tests | Implemented | [004](../specs/004-silver/spec.md) |
 | 5 | 3 | Scale: more GPS partitions, batched decode, state on disk, Iceberg layout + compaction + expiry, bounded Kafka retention + table maintenance service | Implemented | [005](../specs/005-scale/spec.md) |
 | 6 | 3–4 | Control tower job: latest position ⋈ active orders → ETA, SLA-risk + abnormal-stop alerts → Postgres serving + `alerts.v1` | Implemented | [006](../specs/006-control-tower/spec.md) |
-| 7 | 4 | Gold with dbt: `fct_delivery`, `agg_depot_daily`, ETA error; dbt tests + source freshness; intraday run (5 min, 2 h look-back) + nightly reconciliation (close previous day, `is_final`, `closed_days`) | Planned | — |
+| 7 | 4 | Gold with dbt: `fct_delivery`, `agg_depot_daily`, ETA error; dbt tests + source freshness; intraday run (5 min, 2 h look-back) + nightly reconciliation (close previous day, `is_final`, `closed_days`) | Implemented | [007](../specs/007-gold/spec.md) |
 | 8 | 4 | Grafana: live map, alerts, KPI (provisional vs final) and pipeline-health dashboards (Prometheus) | Planned | — |
 | 9 | 5 | AWS-native lakehouse (local Flink/dbt → real AWS): MinIO/REST/Trino → S3 + Glue Catalog + Athena by config only; dbt-athena | Planned | — |
 | 10 | 5 | Managed deploy: Terraform (MSK Serverless, MSK Connect, Managed Flink, RDS, ECS); `make aws-up` / `aws-down` *(cut if late: keep the Terraform + one recorded demo)* | Planned | — |

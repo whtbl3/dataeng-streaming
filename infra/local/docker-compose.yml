@@ -237,11 +237,29 @@ services:
     entrypoint: ["python", "-u", "/opt/maintenance/maintain.py"]
     mem_limit: 64m
 
+  # ---- Gold (spec 007, ADR 0014) ------------------------------------------------------
+  dbt: # gold star schema: intraday build every 5 min, nightly close at 01:00 local (ADR 0006)
+    build: ./dbt
+    image: control-tower/dbt:1.11.16
+    depends_on:
+      trino-init: { condition: service_completed_successfully }
+    environment:
+      DBT_TRINO_HOST: trino
+      DBT_TRINO_PORT: "8080"
+      GOLD_INTERVAL_MIN: ${GOLD_INTERVAL_MIN:-5}
+      GOLD_CLOSE_AT: ${GOLD_CLOSE_AT:-01:00}
+    volumes: ["../../dbt:/opt/dbt:ro"]
+    mem_limit: 512m
+
   # ---- Flink ----------------------------------------------------------------------
   jobmanager:
     build: ./flink
     image: control-tower/flink:1.20.5
     command: jobmanager
+    # Without HA, a JobManager that shuts down cleanly (SIGTERM: `docker stop`, a reboot) suspends
+    # its jobs and deletes their retained checkpoints, so nothing could resume. Killing it keeps
+    # them (spec 005 AC4). `make down` still stops every job with a savepoint first.
+    stop_signal: SIGKILL
     environment:
       FLINK_PROPERTIES: *flink-props
     ports: ["8081:8081"]

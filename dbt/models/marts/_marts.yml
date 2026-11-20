@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: fct_delivery
+    description: One row per closed order (spec 007 AC2). Provisional until its day is closed.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: local_date
+        data_tests: [not_null]
+      - name: outcome
+        data_tests:
+          - accepted_values:
+              arguments: {values: [delivered, failed]}
+      - name: is_on_time
+        data_tests: [not_null]
+      - name: is_final
+        data_tests: [not_null]
+      - name: van_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_van'), field: van_key}
+      - name: depot_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_depot'), field: depot_id}
+  - name: agg_depot_daily
+    description: One row per depot and local day (spec 007 AC6).
+    columns:
+      - name: depot_id
+        data_tests: [not_null]
+      - name: local_date
+        data_tests: [not_null]
+  - name: dim_van
+    description: One row per version of a van (SCD Type 2, AC4).
+    columns:
+      - name: van_key
+        data_tests: [unique, not_null]
+  - name: dim_depot
+    columns:
+      - name: depot_id
+        data_tests: [unique, not_null]
+  - name: dim_date
+    columns:
+      - name: local_date
+        data_tests: [unique, not_null]
+  - name: closed_days
+    description: One row per closed local day (rule 4, ADR 0006).
+    columns:
+      - name: local_date
+        data_tests: [unique, not_null]

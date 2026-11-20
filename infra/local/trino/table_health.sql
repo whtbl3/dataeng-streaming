@@ -52,6 +52,18 @@ WITH files AS (
            (SELECT count(*) FROM lakehouse.bronze."dlq_events$snapshots") AS snapshots
     FROM lakehouse.bronze."dlq_events$files"
     UNION ALL
+    SELECT 'bronze.alert_events' AS table_name, count_if(content = 0) AS data_files,
+           count_if(content <> 0) AS delete_files,
+           round(coalesce(avg(CASE WHEN content = 0 THEN file_size_in_bytes END), 0) / 1048576e0, 2) AS avg_file_mb,
+           (SELECT count(*) FROM lakehouse.bronze."alert_events$snapshots") AS snapshots
+    FROM lakehouse.bronze."alert_events$files"
+    UNION ALL
+    SELECT 'bronze.eta_marks' AS table_name, count_if(content = 0) AS data_files,
+           count_if(content <> 0) AS delete_files,
+           round(coalesce(avg(CASE WHEN content = 0 THEN file_size_in_bytes END), 0) / 1048576e0, 2) AS avg_file_mb,
+           (SELECT count(*) FROM lakehouse.bronze."eta_marks$snapshots") AS snapshots
+    FROM lakehouse.bronze."eta_marks$files"
+    UNION ALL
     SELECT 'ops.maintenance_runs' AS table_name, count_if(content = 0) AS data_files,
            count_if(content <> 0) AS delete_files,
            round(coalesce(avg(CASE WHEN content = 0 THEN file_size_in_bytes END), 0) / 1048576e0, 2) AS avg_file_mb,

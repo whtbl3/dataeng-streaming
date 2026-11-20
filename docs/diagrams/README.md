@@ -9,7 +9,7 @@ The interactive HTML viewers are generated and not committed (`.gitignore`).
 | `gps-ping.svg` | `gps-ping.sequence.json` | sequence | What happens to one ping, a duplicate and a bad message? |
 | `order-lifecycle.svg` | `order-lifecycle.lifecycle.json` | lifecycle | Which statuses can an order reach, and in what order? |
 | `model-silver.svg` | `model-silver.erd.json` | erd | Which columns and keys do the source and silver tables have? |
-| `model-gold.svg` | `model-gold.erd.json` | erd | How will the gold star schema join (planned, feature 7)? |
+| `model-gold.svg` | `model-gold.erd.json` | erd | How does the gold star schema join (spec 007; `dbt/models/marts` is the reference for columns)? |
 | `patterns-ingest.svg` | `patterns-ingest.dataflow.json` | dataflow | Which failures can hit ingestion and storage, and which pattern fixes each? |
 | `patterns-clean.svg` | `patterns-clean.dataflow.json` | dataflow | Which failures can hit cleaning (silver), and which pattern fixes each? |
 | `patterns-scale-stream.svg` | `patterns-scale-stream.dataflow.json` | dataflow | What limited Kafka and Flink, and what changed (ADR 0012)? |
