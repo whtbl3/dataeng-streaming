@@ -79,13 +79,14 @@ events therefore cannot skew the final numbers.
   - `dim_van` (SCD2), `dim_depot`, `dim_date`, `closed_days` (closed_at, late events absorbed, late after close, restatements).
   The `dbt` service builds the open days every 5 min (orders changed in the last 2 h of commit time) and closes each past day after 01:00 local. The control tower appends `bronze.alert_events` and `bronze.eta_marks` for it.
 - **Order DB (CDC source, spec 002):** Postgres `public.{depots,vans,orders}`, publication `ct_cdc`, slot `ct_cdc_slot`; written by `python -m simulator day`.
+- **Dashboards (spec 008):** designed, not built: `docs/design/dashboards.md` (dispatch, KPI, pipeline health; panel queries in `dashboards.sql`) and the NFR-10 alert rules.
 - **Serving DB (spec 006):** Postgres schema `serving`, written by the Flink job `control_tower` (one state per van, ADR 0013) with idempotent upserts, read by Grafana:
   - `vehicle_latest`: one row per van, its newest ping (an older ping never overwrites it);
   - `order_eta`: one row per open order on a van: status, `eta` (NULL until dispatched), `distance_km`; deleted when the order closes;
   - `alerts`: one row per alert: `type` (SLA_RISK, ABNORMAL_STOP), van, order, `raised_at` / `resolved_at` (event time), `raised_written_at` (wall clock);
   - `alerts.v1` topic: one registry-framed Avro message per raise and per resolve (exactly-once), key `alert_id`.
   Postgres runs in the core stack (serving), the Debezium connector in the `cdc` profile.
-- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`, `make maintain [TASK=… TABLE=…]`, `make table-health` (spec 005), `make tower-status` (spec 006), `make gold`, `make close DAY=…`, `make reclose DAY=…`, `make gold-status`, `make gold-test`, `make dbt-ci` (spec 007); `make aws-up|aws-down` (managed).
+- **CLI / Make:** `make check`, `make up [PROFILES=...]`, `make demo`, `make down` (stops the Flink jobs with a savepoint, so `make up` resumes exactly), `make silver-status`, `make silver-rebuild`, `make maintain [TASK=… TABLE=…]`, `make table-health` (spec 005), `make tower-status` (spec 006), `make gold`, `make close DAY=…`, `make reclose DAY=…`, `make gold-status`, `make gold-test`, `make dbt-ci` (spec 007), `make health [QUICK=1]` (spec 008); `make aws-up|aws-down` (managed).
 - **Simulator:** `python -m simulator day [--abnormal-stops N] [--chaos] [--dup-rate --delay-rate --max-delay-min --jitter-rate --offline] [--late-delivery-rate] [--invalid-rate]`. Chaos sends valid but dirty GPS (duplicates, delays up to 2 h, jitter, offline bursts) in exactly known amounts (spec 004).
 
 ## 6. Non-functional requirements

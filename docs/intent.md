@@ -23,7 +23,9 @@ nightly batch job, one day late.
 - Abnormal stops (vehicle idle > N minutes outside a delivery point) are flagged.
 - A lakehouse holds raw → cleaned → business-ready tables, and late or duplicate
   events do not corrupt the KPIs.
-- A dashboard shows on-time %, ETA error, and active alerts.
+- A dashboard shows on-time %, ETA error, and active alerts. *Changed 2026-11-20 (spec 008): the
+  dashboards are designed panel by panel (`docs/design/dashboards.md`), not built; building them is
+  a stretch item.*
 
 ## Out of scope
 - Route optimisation or vehicle routing algorithms.
