@@ -129,7 +129,7 @@ aws-down:
 	$(TF) destroy
 
 ## ---- AWS lakehouse (spec 009): S3 + Glue + Athena, created only on demand -------
-aws-lake-plan:    # what aws-lake-up would create (free; log in first: aws sso login)
+aws-lake-plan:    # what aws-lake-up would create (free; log in first: aws login --profile ct-admin)
 	$(ADMIN_CREDS) $(TF_LAKE) init -input=false && $(TF_LAKE) plan
 
 aws-lake-up:      # create the AWS lakehouse; asks first. Remove it with aws-lake-down after the demo

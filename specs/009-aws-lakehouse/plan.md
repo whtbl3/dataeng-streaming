@@ -138,7 +138,7 @@ files).
   checked.
 - **R2 dbt-athena Iceberg strategies** (S3): if MERGE with a delete pre-hook is not enough, the close
   writes through `insert_overwrite` on a staging table plus a swap. Decided in S3.
-- **R3 credentials expire** (1 h SSO session): the demo fits in an hour; otherwise log in again
+- **R3 credentials expire** (short-lived `aws login` session): the demo fits in an hour; otherwise log in again
   and restart the services.
 - **R4 cost overrun:** the 1 GB scan cutoff, budgets, `force_destroy` and `aws-lake-down` straight
   after the demo; nothing runs 24/7 on AWS.
@@ -161,7 +161,7 @@ files).
 - Local: `make check`, `make dbt-ci`, `make clean && make up`, `make e2e` (the same results with
   tables created by `tables.py`).
 - AWS, only with the owner's OK:
-  1. `aws sso login`;
+  1. `aws login --profile ct-admin` (console sign-in of an IAM user; IAM Identity Center would need an AWS Organization, which ends the free-plan credits);
   2. `make aws-lake-plan`, then `make aws-lake-up` (typing `yes`);
   3. `make up LAKEHOUSE=aws`;
   4. `uv run python scripts/aws_demo.py`;
