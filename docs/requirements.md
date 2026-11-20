@@ -130,8 +130,8 @@ No HA commitment (demo project; see "Out of scope" in the intent).
 - Managed demo: < $5 per session, destroyed afterwards.
 - Budget alerts at $20 and $50.
 
-### NFR-10 · Observability — *feature 8*
-Alert when:
+### NFR-10 · Observability — *spec 008*
+Alert when (`make health` checks them now; `docs/design/dashboards.md` specifies the alert rules):
 - consumer lag grows for > 5 min;
 - a checkpoint fails;
 - replication slot lag > 500 MB;

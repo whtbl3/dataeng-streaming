@@ -1,5 +1,5 @@
 # Spec 008: Dashboard design and pipeline health checks
-Status: Approved (2026-11-20) · Intent: roadmap item 8 · Author: project owner
+Status: Implemented (2026-11-20) · Intent: roadmap item 8 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -24,10 +24,10 @@ precise design is enough for the portfolio, and the checks behind NFR-10 must ex
   which table and query each panel comes from.
 
 ## Acceptance criteria
-- [ ] AC1: Given the design, then it describes the dispatch, KPI and pipeline dashboards panel by panel: question, source (serving, gold or metrics), query, refresh, and the provisional marker for numbers that are not final (requirements, resolved question 3).
-- [ ] AC2: Given the queries in the design, then each one runs without error against the running stack (one light test).
-- [ ] AC3: Given the running stack, when the health check runs, then it reports for each consumer group whether lag grows, for each Flink job whether its latest checkpoint failed, the replication slot lag against 500 MB, and whether bronze got no rows while Kafka received messages in the last 2 min, each as OK or ALERT with its value.
-- [ ] AC4: Given any condition alerts, then the health check exits with an error; on a healthy stack it exits cleanly (unit test of the rules; one e2e run).
+- [x] AC1: Given the design, then it describes the dispatch, KPI and pipeline dashboards panel by panel: question, source (serving, gold or metrics), query, refresh, and the provisional marker for numbers that are not final (requirements, resolved question 3).
+- [x] AC2: Given the queries in the design, then each one runs without error against the running stack (one light test).
+- [x] AC3: Given the running stack, when the health check runs, then it reports for each consumer group whether lag grows, for each Flink job whether its latest checkpoint failed, the replication slot lag against 500 MB, and whether bronze got no rows while Kafka received messages in the last 2 min, each as OK or ALERT with its value.
+- [x] AC4: Given any condition alerts, then the health check exits with an error; on a healthy stack it exits cleanly (unit test of the rules; one e2e run).
 
 ## Out of scope
 - A dashboard service, provisioned dashboards, alert delivery (stretch).
