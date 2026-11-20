@@ -111,20 +111,30 @@ def facts(prefix: str) -> list[tuple]:
     )
 
 
+def refresh(*prefixes: str) -> list[str]:
+    """Build gold so it holds these orders: the intraday build for open days, and a logged
+    restatement for days already closed (the scheduler closes past days after 01:00, so the
+    simulated orders may all fall on closed days, depending on the time of the run)."""
+    make("gold")
+    days = [d for (d,) in query(
+        "SELECT DISTINCT CAST(local_date AS varchar) FROM lakehouse.gold_staging.stg_orders_closed "
+        "WHERE regexp_like(order_id, ?) AND local_date IN "
+        "(SELECT local_date FROM lakehouse.gold.closed_days)",
+        ("^(" + "|".join(prefixes) + ")-",),
+    )]  # fmt: skip
+    for day in days:
+        make("reclose", f"DAY={day}")
+    return days
+
+
 def test_one_fact_per_closed_order_and_no_exact_destination():
     """AC2 and AC3 on the real tables (the dbt tests also run in every build)."""
     prefix = f"G2{uuid.uuid4().hex[:5].upper()}"
-    simulate(prefix)
-    make("gold")
-    # closed days are not touched by the intraday build (AC9), so count the open days only
-    (n,) = query(
-        "SELECT count(*) FROM lakehouse.gold_staging.stg_orders_closed WHERE order_id LIKE ? "
-        "AND local_date NOT IN (SELECT local_date FROM lakehouse.gold.closed_days)",
-        (f"{prefix}-%",),
-    )[0]
+    n = simulate(prefix)
+    closed_days = set(refresh(prefix))
     rows = facts(prefix)
     assert n > 0 and len(rows) == n == len({r[0] for r in rows})
-    assert all(not r[7] for r in rows)  # provisional until the close
+    assert all(r[7] == (str(r[1]) in closed_days) for r in rows)  # final only on closed days
     columns = {c for (c,) in query("SELECT column_name FROM lakehouse.information_schema.columns "
                                    "WHERE table_schema = 'gold'")}  # fmt: skip
     assert "dest_area" in columns and not columns & {"dest_lat", "dest_lon"}
@@ -248,10 +258,11 @@ def test_dirty_cdc_gives_the_same_gold_kpis_as_clean():
     query(f"INSERT INTO {ORDERS_CDC} SELECT c.* {_WITH_MAX_LSN} WHERE c.source_lsn < x.max_lsn",
           like)  # fmt: skip
     time.sleep(70)  # the silver job reads the injected copies (two commits)
-    make("gold")
+    refresh(clean, dirty)  # provisional rows on open days, final ones on closed days
     assert facts(clean) == facts(dirty) and facts(clean)
-    make("close", f"DAY={_yesterday_local()}")
-    assert facts(clean) == facts(dirty)
+    for day in {str(r[1]) for r in facts(clean)}:  # and every day final
+        make("reclose", f"DAY={day}")
+    assert facts(clean) == facts(dirty) and all(r[7] for r in facts(clean))
 
 
 def test_a_broken_model_fails_the_data_tests():
