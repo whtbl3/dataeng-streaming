@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild gold close reclose gold-status gold-test dbt-ci tower-status maintain table-health aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild gold close reclose gold-status gold-test health dbt-ci tower-status maintain table-health aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -73,6 +73,9 @@ reclose:          # restate a closed day, logged in closed_days.restatements: ma
 
 gold-status:      # per local day: closed orders, on-time rate, final rows, close and late counts
 	@$(COMPOSE) exec -T trino trino --output-format ALIGNED < infra/local/trino/gold_status.sql
+
+health:           # the NFR-10 checks now: lag, checkpoints, slot, bronze stuck; exits 1 on ALERT (spec 008)
+	uv run python scripts/health.py $(if $(QUICK),--quick)
 
 dbt-ci:           # dbt unit tests + SQL lint on a throwaway Trino, no stack needed (CI, spec 007)
 	scripts/dbt_ci.sh
