@@ -284,6 +284,8 @@ services:
   flink-submit: # one-shot, idempotent; run by `make up` via `docker compose run`
     image: control-tower/flink:1.20.5
     profiles: ["jobs"]
+    # lakehouse settings: local (default) or AWS (spec 009, `make up LAKEHOUSE=aws`)
+    env_file: ["${LAKEHOUSE_ENV:-./lakehouse.env}"]
     depends_on:
       taskmanager: { condition: service_started }
       jobmanager: { condition: service_healthy }

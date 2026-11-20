@@ -42,7 +42,9 @@ def _jobs_running() -> None:
     assert states.get("bronze_gps") == "RUNNING" and states.get("bronze_cdc") == "RUNNING", states
 
 
-def _latest_values(topic: str, n: int = 5) -> list[bytes]:
+def _latest_values(topic: str, mine: str | None = None, n: int = 50) -> list[bytes]:
+    """The latest values, only those whose key contains `mine` (this test's ids) when given:
+    other partitions may end with another test's deliberate garbage (spec 003 DLQ tests)."""
     from confluent_kafka import Consumer, TopicPartition
 
     c = Consumer(
@@ -65,7 +67,7 @@ def _latest_values(topic: str, n: int = 5) -> list[bytes]:
             msg = c.poll(5)
             if msg is None:
                 break
-            if not msg.error():
+            if not msg.error() and (mine is None or mine.encode() in (msg.key() or b"")):
                 values.append(msg.value())
         return values
     finally:
@@ -88,9 +90,10 @@ def test_subjects_registered_full_transitive():
 def test_topics_carry_registry_framed_avro(prefix):
     """AC1: the producer and the CDC connector write Confluent-framed Avro with known ids."""
     produce(prefix, vans=1, steps=2)
-    run_orders_sim(f"F{uuid.uuid4().hex[:5]}", vans=1, orders_per_day=2, hours=1)
-    for topic in [TOPIC, "cdc.public.orders"]:
-        values = _latest_values(topic)
+    orders = f"F{uuid.uuid4().hex[:5]}"
+    run_orders_sim(orders, vans=1, orders_per_day=2, hours=1)
+    for topic, mine in [(TOPIC, prefix), ("cdc.public.orders", orders)]:
+        values = _latest_values(topic, mine)
         assert values, f"no messages in {topic}"
         for v in values:
             schema_id, _ = unframe(v)

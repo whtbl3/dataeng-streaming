@@ -241,4 +241,10 @@ def job_states() -> dict[str, str]:
 
     with urllib.request.urlopen("http://localhost:8081/jobs/overview", timeout=5) as r:
         jobs = json.load(r)["jobs"]
-    return {j["name"]: j["state"] for j in jobs if j["state"] != "CANCELED"}
+    # One state per job name: RUNNING if any run of it runs (earlier runs stopped with a
+    # savepoint stay listed as FINISHED under the same name), else the newest run's state.
+    states: dict[str, str] = {}
+    for j in sorted(jobs, key=lambda j: j.get("start-time", 0)):
+        if j["state"] != "CANCELED" and states.get(j["name"]) != "RUNNING":
+            states[j["name"]] = j["state"]
+    return states
