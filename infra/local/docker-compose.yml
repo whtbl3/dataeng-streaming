@@ -30,6 +30,7 @@ services:
   # ---- Object storage (S3 API) -------------------------------------------------
   minio:
     image: ${S3_IMAGE:-dhi.io/minio:RELEASE.2025-09-07T16-13-09Z-debian13}
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-ct-local}
@@ -40,6 +41,7 @@ services:
 
   minio-init: # creates the warehouse bucket; doubles as MinIO's readiness gate (image has no shell)
     image: amazon/aws-cli:2.39.4
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on: [minio]
     environment:
       AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-ct-local}
@@ -175,6 +177,7 @@ services:
   # ---- Iceberg catalog ------------------------------------------------------------
   iceberg-rest:
     image: apache/iceberg-rest-fixture:1.10.1
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on:
       minio-init: { condition: service_completed_successfully }
     environment:
@@ -199,6 +202,7 @@ services:
   # ---- SQL ------------------------------------------------------------------------
   trino:
     image: trinodb/trino:484
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on: [iceberg-rest]
     environment: *s3-env
     ports: ["8080:8080"]
@@ -211,24 +215,23 @@ services:
       retries: 60
     mem_limit: 1536m
 
-  trino-init:
-    image: trinodb/trino:484
+  lakehouse-init: # idempotent: every bronze, silver and ops table from one definition (spec 009)
+    build: ../lakehouse
+    image: control-tower/lakehouse-init:0.12.0
     depends_on:
-      trino: { condition: service_healthy }
-    volumes: ["./trino/init:/init:ro"]
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        for f in /init/*.sql; do
-          echo "applying $$f"
-          trino --server http://trino:8080 --file "$$f" || exit 1
-        done
+      iceberg-rest: { condition: service_started, required: false }  # absent in AWS mode
+    env_file: ["${LAKEHOUSE_ENV:-./lakehouse.env}"]
+    environment:  # AWS mode only: short-lived credentials from the shell, never written
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
 
   # ---- Table maintenance (spec 005, ADR 0012) ------------------------------------------
   maintenance: # compaction, manifests, snapshot expiry, orphan files, retention; through Trino
     image: python:3.11.11-slim
+    profiles: ["lake"]  # the local lakehouse; absent with LAKEHOUSE=aws (spec 009)
     depends_on:
-      trino-init: { condition: service_completed_successfully }
+      lakehouse-init: { condition: service_completed_successfully }
     environment:
       TRINO_URL: http://trino:8080
       SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d}
@@ -242,8 +245,12 @@ services:
     build: ./dbt
     image: control-tower/dbt:1.11.16
     depends_on:
-      trino-init: { condition: service_completed_successfully }
+      lakehouse-init: { condition: service_completed_successfully }
+    env_file: ["${LAKEHOUSE_ENV:-./lakehouse.env}"]
     environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       DBT_TRINO_HOST: trino
       DBT_TRINO_PORT: "8080"
       GOLD_INTERVAL_MIN: ${GOLD_INTERVAL_MIN:-5}
@@ -262,6 +269,9 @@ services:
     stop_signal: SIGKILL
     environment:
       FLINK_PROPERTIES: *flink-props
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     ports: ["8081:8081"]
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
     healthcheck:
@@ -278,17 +288,22 @@ services:
     command: taskmanager
     environment:
       FLINK_PROPERTIES: *flink-props
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes: ["flink-checkpoints:/opt/flink/checkpoints"]
     mem_limit: 2560m # JVM + RocksDB + one Python UDF worker per GPS subtask and CDC job (ADR 0010)
 
   flink-submit: # one-shot, idempotent; run by `make up` via `docker compose run`
     image: control-tower/flink:1.20.5
     profiles: ["jobs"]
+    # lakehouse settings: local (default) or AWS (spec 009, `make up LAKEHOUSE=aws`)
+    env_file: ["${LAKEHOUSE_ENV:-./lakehouse.env}"]
     depends_on:
       taskmanager: { condition: service_started }
       jobmanager: { condition: service_healthy }
       redpanda-init: { condition: service_completed_successfully }
-      trino-init: { condition: service_completed_successfully }
+      lakehouse-init: { condition: service_completed_successfully }
       serving-init: { condition: service_completed_successfully }
     environment:
       <<: *s3-env
@@ -304,19 +319,19 @@ services:
       GPS_PARALLELISM: ${GPS_PARALLELISM:-2}
       SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d} # same as maintenance: how long a reader may stop
       FRESH_JOBS: ${FRESH_JOBS:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes:
       - ../../flink/jobs:/opt/flink/jobs:ro
       - ../../contracts:/opt/ct/contracts:ro # shipped to the cluster via python.files
       - ../../schemas:/opt/ct/schemas:ro
       - ../../flink:/opt/ct/flink:ro # flink.udf (control tower rules) and the Python job
-      - ./iceberg:/opt/iceberg:ro
       - flink-checkpoints:/opt/flink/checkpoints # savepoint pointers (stop_jobs.sh / submit.sh)
     entrypoint: ["/bin/bash", "-c"]
-    # Trino creates the tables but cannot set identifier fields (the upsert key) or write.* properties
-    # (hash distribution, metadata cleanup), so table_admin.py sets them first (ADR 0011, spec 005).
+    # The tables exist before any job starts (lakehouse-init, from infra/lakehouse/tables.py).
     command:
       - >-
-        python /opt/iceberg/table_admin.py "$$ICEBERG_CATALOG_URI" apply &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_gps.sql bronze_gps &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_cdc.sql bronze_cdc &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/silver_gps.sql silver_gps &&

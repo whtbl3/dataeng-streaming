@@ -4,9 +4,12 @@
 {%- set close = var('mode') == 'close' %}
 {{ config(
     materialized='incremental',
-    incremental_strategy='delete+insert',
-    unique_key='local_date',
+    incremental_strategy='merge',
+    unique_key=['depot_id', 'local_date'],
+    pre_hook="{{ clear_days('open') }}",
     properties=partitioned_by('local_date'),
+    partitioned_by=['local_date'],
+    table_type='iceberg',
     on_schema_change='fail',
 ) }}
 

@@ -2,14 +2,18 @@
     intraday: MERGE the orders whose silver row, alert or ETA mark changed in the last
       `lookback_hours` of commit time (system time, so a late change of any age is absorbed),
       never touching a closed day; rows are provisional (is_final = false).
-    close: overwrite the whole local-day partition `day`, final (is_final = true). -#}
+    close: rewrite the whole local day `day` (pre-hook delete, then merge), final.
+    The same strategy runs on Trino and Athena (spec 009, macros/partitioning.sql). -#}
 -- depends_on: {{ ref('closed_days') }}
 {%- set close = var('mode') == 'close' %}
 {{ config(
     materialized='incremental',
-    incremental_strategy='delete+insert' if close else 'merge',
-    unique_key='local_date' if close else 'order_id',
+    incremental_strategy='merge',
+    unique_key='order_id',
+    pre_hook="{{ clear_days('closing') }}",
     properties=partitioned_by('local_date'),
+    partitioned_by=['local_date'],
+    table_type='iceberg',
     on_schema_change='fail',
 ) }}
 

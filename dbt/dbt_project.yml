@@ -25,6 +25,7 @@ models:
     marts:
       +schema: gold
       +materialized: table
+      +table_type: iceberg  # dbt-athena (spec 009); dbt-trino ignores it
 
 flags:
   require_certificate_validation: true  # http to the local Trino; silences the SSL default warning

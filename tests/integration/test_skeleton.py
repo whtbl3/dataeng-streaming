@@ -23,7 +23,7 @@ from conftest import (
 pytestmark = pytest.mark.e2e
 
 LONG_RUNNING = {"minio", "redpanda", "iceberg-rest", "trino", "jobmanager", "taskmanager"}
-ONE_SHOT = {"minio-init", "redpanda-init", "trino-init"}
+ONE_SHOT = {"minio-init", "redpanda-init", "lakehouse-init"}
 CHECKPOINT_S = 30
 
 

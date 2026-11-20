@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (gitignored) and fill in. No credentials go here.
+bucket_name  = "control-tower-lake-<something-unique>"
+budget_email = "<your email for budget alerts>"
+# region = "ap-southeast-1"

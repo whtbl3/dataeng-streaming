@@ -24,3 +24,12 @@ ct:
       catalog: lakehouse
       schema: gold
       threads: 2
+    aws:  # Athena + Glue (spec 009): `make up LAKEHOUSE=aws`; credentials from the environment
+      type: athena
+      database: awsdatacatalog
+      schema: gold
+      region_name: "{{ env_var('AWS_REGION', 'ap-southeast-1') }}"
+      work_group: "{{ env_var('DBT_ATHENA_WORKGROUP', 'control-tower') }}"
+      s3_staging_dir: "{{ env_var('DBT_ATHENA_STAGING_DIR', '') }}"
+      s3_data_dir: "{{ env_var('DBT_ATHENA_DATA_DIR', '') }}"
+      threads: 2

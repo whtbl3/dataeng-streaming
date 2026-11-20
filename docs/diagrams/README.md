@@ -15,7 +15,7 @@ The interactive HTML viewers are generated and not committed (`.gitignore`).
 | `patterns-scale-stream.svg` | `patterns-scale-stream.dataflow.json` | dataflow | What limited Kafka and Flink, and what changed (ADR 0012)? |
 | `patterns-scale-tables.svg` | `patterns-scale-tables.dataflow.json` | dataflow | What limited the Iceberg tables, and what changed (ADR 0012)? |
 
-Facts come from the code: `infra/local/postgres/init/001_schema.sql`, `infra/local/trino/init/*.sql`,
+Facts come from the code: `infra/local/postgres/init/001_schema.sql`, `infra/lakehouse/tables.py`,
 `flink/jobs/*.sql`, `contracts/` and `simulator/orders_db.py`. The gold model follows
 `docs/requirements.md` section 4; its other columns and types are a draft.
 

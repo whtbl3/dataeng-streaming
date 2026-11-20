@@ -12,12 +12,16 @@ dependencies = [
 
 [dependency-groups]
 dbt = [
+    "dbt-athena==1.11.1",
     "dbt-core==1.11.16",
     "dbt-trino==1.11.0",
     "sqlfluff==4.4.0",
 ]
 dev = ["ruff>=0.8", "pytest>=8"]
 e2e = ["trino>=0.340,<1"]
+lakehouse = [
+    "pyiceberg[glue,pyarrow]==0.12.0",
+]
 
 [tool.ruff]
 line-length = 100

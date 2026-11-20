@@ -9,15 +9,6 @@ SET 'python.executable' = '/opt/venv/bin/python';
 SET 'python.client.executable' = '/opt/venv/bin/python';
 SET 'python.files' = '/opt/ct';
 
-CREATE CATALOG lakehouse WITH (
-  'type' = 'iceberg',
-  'catalog-type' = 'rest',
-  'uri' = '${ICEBERG_CATALOG_URI}',
-  'warehouse' = '${WAREHOUSE}',
-  'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
-  's3.endpoint' = '${S3_ENDPOINT}',
-  's3.path-style-access' = 'true',
-  's3.access-key-id' = '${S3_ACCESS_KEY}',
-  's3.secret-access-key' = '${S3_SECRET_KEY}',
-  'client.region' = '${AWS_REGION}'
-);
+-- The catalog options come whole from the environment (infra/local/lakehouse.env locally,
+-- infra/aws/lakehouse.env on AWS: REST + MinIO or Glue + S3, spec 009).
+CREATE CATALOG lakehouse WITH ('type' = 'iceberg', ${ICEBERG_CATALOG_OPTIONS});

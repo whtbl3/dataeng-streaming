@@ -31,11 +31,9 @@ if [ -n "$(running_ids)" ]; then
   exit 1
 fi
 
-trino() { $COMPOSE exec -T trino trino "$@"; }
-for table in gps_pings orders order_status_history; do
-  trino --execute "DROP TABLE IF EXISTS lakehouse.silver.$table"
-done
-trino < infra/local/trino/init/004_silver.sql
-# Sets the identifier fields again and submits the silver jobs; bronze jobs are left running.
+# Drop and recreate the silver tables from the one table definition (infra/lakehouse/tables.py),
+# in whichever catalog is configured, then submit the silver jobs; bronze jobs keep running.
+$COMPOSE run --rm --no-deps lakehouse-init drop silver
+$COMPOSE run --rm --no-deps lakehouse-init create
 FRESH_JOBS="${JOBS[*]}" $COMPOSE run --rm flink-submit
 echo "silver rebuild submitted; it catches up from the first bronze snapshot"

@@ -220,15 +220,10 @@ class DecodeOrders(_Decoder):
 
 
 def build(env: StreamExecutionEnvironment, t_env: StreamTableEnvironment) -> None:
-    # Same Iceberg catalog as the SQL jobs (flink/jobs/_init_catalog.sql), from env.
-    t_env.execute_sql(f"""
-        CREATE CATALOG lakehouse WITH (
-          'type' = 'iceberg', 'catalog-type' = 'rest', 'uri' = '{ENV["ICEBERG_CATALOG_URI"]}',
-          'warehouse' = '{ENV["WAREHOUSE"]}', 'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
-          's3.endpoint' = '{ENV["S3_ENDPOINT"]}', 's3.path-style-access' = 'true',
-          's3.access-key-id' = '{ENV["S3_ACCESS_KEY"]}',
-          's3.secret-access-key' = '{ENV["S3_SECRET_KEY"]}',
-          'client.region' = '{ENV["AWS_REGION"]}')""")
+    # Same Iceberg catalog as the SQL jobs (flink/jobs/_init_catalog.sql): options from env.
+    t_env.execute_sql(
+        f"CREATE CATALOG lakehouse WITH ('type' = 'iceberg', {ENV['ICEBERG_CATALOG_OPTIONS']})"
+    )
     kafka = f"'connector' = 'kafka', 'properties.bootstrap.servers' = '{BOOTSTRAP}'"
     t_env.execute_sql(f"""
         CREATE TEMPORARY TABLE gps_raw (
