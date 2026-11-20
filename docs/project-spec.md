@@ -132,3 +132,4 @@ Business definitions (BR-*), non-functional requirements (NFR-*) and data-modeli
 | [0012](decisions/0012-scale-and-table-maintenance.md) | Scale by design: 6 GPS partitions, batched decode, RocksDB, hash writes, table maintenance service | Final |
 | [0013](decisions/0013-control-tower-keyed-state.md) | Control tower: one state per van, distance/speed ETA, alerts from Kafka | Final |
 | [0014](decisions/0014-gold-dbt-intraday-and-close.md) | Gold with dbt on Trino: commit-time intraday window, nightly close, restatements | Final |
+| [0015](decisions/0015-lakehouse-environments.md) | Lakehouse switched by configuration: one table definition (pyiceberg), one dbt strategy, Glue optimizers, Terraform with confirmation | Final (lakehouse); Flink and dbt on AWS in feature 10 |

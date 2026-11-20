@@ -1,5 +1,5 @@
 # Spec 009: AWS lakehouse (S3, Glue, Athena by configuration)
-Status: Approved (2026-11-20) · Intent: roadmap item 9 · Author: project owner
+Status: Implemented (2026-11-20, narrowed: see "Revised during the build") · Intent: roadmap item 9 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -26,14 +26,21 @@ maintenance runs Trino procedures, and dbt uses the Trino adapter.
 - **Developer:** switches back to the local lakehouse with the same configuration switch.
 
 ## Acceptance criteria
-- [ ] AC1: Given the two lakehouse settings (local, AWS), then the jobs, table definitions, dbt models and maintenance tasks are the same files; only configuration differs (a check fails if code branches on the environment).
-- [ ] AC2: Given the owner's go-ahead, when the lakehouse is created, then the storage, the catalog databases, a query workgroup with a scan limit, a least-privilege access role and budget alerts exist; when it is removed, nothing billable remains (the bucket is emptied and deleted).
-- [ ] AC3: Given the AWS lakehouse, then every bronze, silver, gold and maintenance-log table exists in the catalog with the same columns, partitioning and properties as locally, from one table definition.
-- [ ] AC4: Given the AWS setting and a simulated hour of data, then bronze and silver rows written by the local Flink jobs are queryable in Athena, and their counts equal what was sent and deduplicated.
-- [ ] AC5: Given the AWS setting, when gold is built and its data tests run with the Athena adapter, then they pass, and the KPIs of the simulated day equal the KPIs the local stack computes from the same seed.
-- [ ] AC6: Given the AWS lakehouse, then compaction, snapshot expiry and orphan removal run by AWS-side configuration or the same maintenance tasks through Athena (ADR 0012 mapping).
-- [ ] AC7: Given one demo session (create, one hour of data, gold build, remove), then its AWS cost is measured and stays under $1; the figure and how it was measured are recorded.
-- [ ] AC8: Given the repository and the machine, then no AWS credential is ever written to a file the project creates, and no command creates AWS resources without an explicit confirmation.
+- [x] AC1: Given the two lakehouse settings (local, AWS), then the jobs, table definitions, dbt models and maintenance tasks are the same files; only configuration differs (a check fails if code branches on the environment).
+- [x] AC2: Given the owner's go-ahead, when the lakehouse is created, then the storage, the catalog databases, a query workgroup with a scan limit, a least-privilege access role and budget alerts exist; when it is removed, nothing billable remains (the bucket is emptied and deleted).
+- [x] AC3 (bronze, silver, ops; gold tables are created by dbt, see AC5): Given the AWS lakehouse, then every bronze, silver, gold and maintenance-log table exists in the catalog with the same columns, partitioning and properties as locally, from one table definition.
+- [ ] AC4 *(moved to feature 10)*: Given the AWS setting and a simulated hour of data, then bronze and silver rows written by the local Flink jobs are queryable in Athena, and their counts equal what was sent and deduplicated.
+- [ ] AC5 *(moved to feature 10)*: Given the AWS setting, when gold is built and its data tests run with the Athena adapter, then they pass, and the KPIs of the simulated day equal the KPIs the local stack computes from the same seed.
+- [x] AC6: Given the AWS lakehouse, then compaction, snapshot expiry and orphan removal run by AWS-side configuration or the same maintenance tasks through Athena (ADR 0012 mapping).
+- [ ] AC7 *(moved to feature 10)*: Given one demo session (create, one hour of data, gold build, remove), then its AWS cost is measured and stays under $1; the figure and how it was measured are recorded.
+- [x] AC8: Given the repository and the machine, then no AWS credential is ever written to a file the project creates, and no command creates AWS resources without an explicit confirmation.
+
+## Revised during the build (2026-11-20)
+- The owner narrowed the AWS proof to a short smoke test ("a test run is enough"): no demo script,
+  no Flink or dbt run on AWS. AC4, AC5 and AC7 move to feature 10, where the full stack runs on AWS
+  anyway. What the smoke test proved is in the plan ("AWS smoke test") and ADR 0015.
+- Credentials (resolved question 3): `aws login` with an IAM user, not SSO. IAM Identity Center
+  needs an AWS Organization, which would end the account's free-plan credits.
 
 ## Out of scope
 - MSK, MSK Connect, Managed Flink, RDS, ECS and `make aws-up` / `aws-down` for the full stack

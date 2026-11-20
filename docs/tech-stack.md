@@ -11,12 +11,13 @@
 | Table format | Apache Iceberg | Iceberg on S3 | Native in Athena, Flink, Trino; ACID + time travel (ADR 0003) | Delta Lake, Hudi |
 | Catalog | Iceberg REST catalog | AWS Glue Data Catalog | Swap by config only | Nessie, Hive Metastore |
 | Query engine | Trino | Amazon Athena | Same Iceberg tables, ANSI SQL | DuckDB, Spark SQL |
-| Transformations | dbt-core + dbt-trino | dbt-athena | Tested, documented gold models | Flink SQL only; Spark |
+| Table definitions | pyiceberg 0.12 (`glue`, `pyarrow`): one definition for both catalogs (ADR 0015) | same, against Glue | No Trino DDL; upsert keys and properties in one place | Trino DDL + an Athena copy |
+| Transformations | dbt-core 1.11 + dbt-trino 1.11 | dbt-athena 1.11 | Tested, documented gold models | Flink SQL only; Spark |
 | Scheduling | `dbt` container: intraday every 5 min + nightly close | ECS Fargate tasks + EventBridge Scheduler (2 schedules) | Two simple schedules do not need Airflow | Airflow / MWAA, Dagster |
 | Serving store | Postgres `serving` schema | same RDS instance | Low-latency upserts for live panels (ADR 0007) | Redis, DynamoDB |
 | Dashboards | Grafana OSS (provisioned as code) | Grafana OSS on ECS Fargate | Real-time panels + Geomap + ops metrics in one tool | Streamlit, Superset, QuickSight |
 | Metrics | Prometheus | Amazon CloudWatch | Consumer lag, checkpoints, throughput | — |
-| IaC | Docker Compose | Terraform | Reproducible, one-command up/down (ADR 0005) | CDK, CloudFormation |
+| IaC | Docker Compose | Terraform 1.9 (pinned image if not installed); lakehouse root `infra/aws/lakehouse/` | Reproducible, one-command up/down (ADR 0005) | CDK, CloudFormation |
 | Runtime host | Laptop, WSL2 10 GB / 8 vCPU, compose profiles | — | $0 daily iteration (ADR 0005) | EC2 devbox (fallback) |
 | Tests | pytest, PyFlink MiniCluster, dbt tests + unit tests | — | Logic, job and data-quality layers | Great Expectations |
 | Lint / format | ruff, sqlfluff (dbt), terraform fmt/validate | — | Fast, one config each | black + flake8 |
@@ -31,7 +32,8 @@ schemas/            Avro schemas = data contracts: schemas/<subject>/v1.avsc, v2
 contracts/          wire format, registry client, rules, decoders, PyFlink UDFs (spec 003)
 dbt/                dbt project: staging (silver) → marts (gold)
 infra/local/        docker-compose.yml + service configs
-infra/aws/          Terraform modules for the managed env (network, msk, flink, rds, s3_glue, ecs)
+infra/lakehouse/    the one table definition (tables.py) + lakehouse-init image
+infra/aws/          Terraform: lakehouse/ (S3, Glue, Athena, IAM, budgets); the managed env later
 bench/              backfill + benchmark harness, results in bench/results/*.md
 grafana/            provisioned datasources + dashboards (JSON)
 tests/unit/         fast tests, no Docker

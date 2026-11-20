@@ -104,7 +104,7 @@ The owner narrowed T6 to a short test: no `aws_demo.py`, no Flink or dbt run on 
   - `aws-lake-up`: prints the cost estimate and asks to type `yes`;
   - `aws-lake-down`.
 
-**6. Demo and proof on AWS** (`scripts/aws_demo.py`, boto3, only after the owner's OK):
+**6. Demo and proof on AWS** *(narrowed to the smoke test above; the full demo moves to feature 10)* (`scripts/aws_demo.py`, boto3, only after the owner's OK):
 - Simulate an hour, count bronze/silver in Athena against what was sent, and build gold.
 - Compare KPIs with the same seed run locally.
 - Read the cost from Cost Explorer by the project tag a day later (Cost Explorer lags) and record
@@ -119,8 +119,8 @@ files).
   - `infra/lakehouse/tables.py` (+ `tests/unit/test_tables.py`);
   - `infra/local/lakehouse.env`, `infra/aws/lakehouse.env.example`;
   - `infra/aws/lakehouse/*.tf` + `terraform.tfvars.example`;
-  - `scripts/aws_demo.py`;
-  - `docs/decisions/0015-lakehouse-environments.md`, `docs/cost.md`;
+  - ~~`scripts/aws_demo.py`~~ (dropped with the narrowed T6);
+  - `docs/decisions/0015-lakehouse-environments.md`; cost in the README and ADR 0015 (no `docs/cost.md` until a measured demo, feature 10);
   - `tests/unit/test_no_env_branching.py`;
   - `specs/009-aws-lakehouse/{plan,tasks}.md`.
 - **Changed:**
@@ -170,10 +170,10 @@ files).
 | AC1 same files | unit `test_no_env_branching.py`; review: only env/config files differ |
 | AC2 infra up/down | `terraform plan`/`apply`/`destroy` output; `aws s3 ls` / Glue `get-databases` empty after down |
 | AC3 tables from one definition | unit `test_tables.py`; local e2e (REST metadata matches); AWS: Glue tables listed by the demo |
-| AC4 bronze/silver on Athena | `aws_demo.py` counts vs sent / deduplicated |
-| AC5 gold on Athena = local | `aws_demo.py` runs `dbt build --target aws` and compares KPIs with the local run |
+| AC4 bronze/silver on Athena *(feature 10)* | `aws_demo.py` counts vs sent / deduplicated |
+| AC5 gold on Athena = local *(feature 10)* | `aws_demo.py` runs `dbt build --target aws` and compares KPIs with the local run |
 | AC6 maintenance | Glue optimizer status read by the demo; retention task through Athena |
-| AC7 cost < $1 | Cost Explorer by tag, recorded in `docs/cost.md` |
+| AC7 cost < $1 *(feature 10)* | Cost Explorer by tag, recorded in `docs/cost.md` |
 | AC8 no stored credentials | review + unit check that the env files hold no key names with values; make targets prompt before create |
 
 ## Verification

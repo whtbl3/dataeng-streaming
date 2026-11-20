@@ -7,4 +7,4 @@ From: plan.md (approved 2026-11-20). Tests first in every task.
 - [x] T4: dbt aws target, adapter macros, image; `make dbt-ci`
 - [x] T5: Terraform lakehouse + optimizer role + budgets; make targets with confirmation; `terraform plan`
 - [x] T6: ~~`aws_demo.py`~~ narrowed by the owner to a short smoke test; **owner's OK** (2026-11-20) → up, tables, Athena checks, destroy
-- [ ] T7: ADR 0015, docs; `make check`, `make e2e`; spec Implemented; PR
+- [x] T7: ADR 0015, docs; `make check`, `make e2e`; spec Implemented; PR
