@@ -260,9 +260,12 @@ def test_dirty_cdc_gives_the_same_gold_kpis_as_clean():
     time.sleep(70)  # the silver job reads the injected copies (two commits)
     refresh(clean, dirty)  # provisional rows on open days, final ones on closed days
     assert facts(clean) == facts(dirty) and facts(clean)
-    for day in {str(r[1]) for r in facts(clean)}:  # and every day final
+    today = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).date()
+    past = {r[1] for r in facts(clean) if r[1] < today}  # today must stay open
+    for day in past:  # and every past day final
         make("reclose", f"DAY={day}")
-    assert facts(clean) == facts(dirty) and all(r[7] for r in facts(clean))
+    assert facts(clean) == facts(dirty)
+    assert all(r[7] for r in facts(clean) if r[1] in past)
 
 
 def test_a_broken_model_fails_the_data_tests():
