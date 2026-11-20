@@ -225,7 +225,6 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
 
   # ---- Table maintenance (spec 005, ADR 0012) ------------------------------------------
   maintenance: # compaction, manifests, snapshot expiry, orphan files, retention; through Trino

@@ -137,7 +137,7 @@ aws-lake-up:      # create the AWS lakehouse; asks first. Remove it with aws-lak
 	@echo "an Athena workgroup (queries stop at 1 GB scanned), 2 IAM roles and 2 budgets (5 and 20 USD)."
 	@echo "Nothing runs per hour: S3 ~0.025 USD/GB-month, Athena 5 USD/TB scanned, Glue optimizers per run."
 	@read -r -p "Type yes to create them: " ok && [ "$$ok" = yes ]
-	$(ADMIN_CREDS) $(TF_LAKE) init -input=false && $(TF_LAKE) apply
+	$(ADMIN_CREDS) $(TF_LAKE) init -input=false </dev/null && $(TF_LAKE) apply
 
 aws-lake-down:    # remove everything aws-lake-up created, the bucket's data included
 	$(ADMIN_CREDS) $(TF_LAKE) destroy

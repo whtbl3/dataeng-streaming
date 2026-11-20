@@ -30,6 +30,25 @@ Nothing is created on AWS without the owner's explicit OK in that session.
   until the next run rewrites it (the next intraday run, or the close run again).
 - **S4** (`terraform validate`) is done with T5.
 
+## AWS smoke test (T6, 2026-11-20)
+The owner narrowed T6 to a short test: no `aws_demo.py`, no Flink or dbt run on AWS.
+- `make aws-lake-up`: 16 resources created in ap-southeast-1. `make aws-lake-down`: 16 destroyed;
+  no project bucket, Glue database, workgroup, role or budget left (checked with the CLI).
+- With the demo role only (assumed from the owner's `aws login` session, credentials as env):
+  `lakehouse-init create` made all 11 tables in Glue and turned on the 3 Glue optimizers per
+  table (AC3, AC6); a second run only checked them.
+- Athena on `silver.gps_pings`: INSERT, read by day (day partitions as defined), MERGE on the
+  upsert key (update + insert) and a day DELETE, the statements the dbt strategy uses (AC4, AC5
+  in part). The queries scanned under 1 KB.
+- Found and fixed in config only: pyiceberg needs a FileIO to write metadata with Glue (the
+  `pyarrow` extra; `s3fs` conflicts with the `glue` extra's botocore), boto3 reads
+  `AWS_DEFAULT_REGION`, compose no longer overrides `AWS_REGION`, and `terraform init` no longer
+  reads stdin (it swallowed the apply confirmation).
+- Not run on AWS: the Flink jobs (Glue catalog) and `dbt build --target aws`; they are covered by
+  the same files locally and by AC1, and stay open for the full demo (feature 10).
+- Login: `aws login` (console sign-in of an IAM user), because IAM Identity Center needs an AWS
+  Organization, which ends the free-plan credits.
+
 ## Design
 **1. Catalog settings from one env value.**
 - `ICEBERG_CATALOG_OPTIONS` holds the Flink catalog options as `'k' = 'v'` pairs. It is used by
