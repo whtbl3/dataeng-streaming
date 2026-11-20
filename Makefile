@@ -6,7 +6,7 @@ LAKEHOUSE ?= local
 # AWS_PROFILE: the demo role the jobs use (infra/aws/lakehouse.env.example);
 # AWS_ADMIN_PROFILE: your own login, to create and remove the AWS lakehouse
 AWS_PROFILE ?= ct-demo
-AWS_ADMIN_PROFILE ?= default
+AWS_ADMIN_PROFILE ?= ct-admin
 ifeq ($(LAKEHOUSE),aws)
 PROFILES ?= cdc
 export LAKEHOUSE_ENV := ../aws/lakehouse.env
