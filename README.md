@@ -1,175 +1,245 @@
 # Delivery Control Tower
 
-Real-time last-mile delivery tracking on a streaming lakehouse.
-It runs locally on Docker for $0, is designed for ~100M events (ADR 0012), and
-deploys to AWS managed services on demand with Terraform.
+Real-time last-mile delivery tracking on a streaming lakehouse:
+**Kafka → Flink → Iceberg → dbt**, with live ETAs and alerts *before* a delivery is late.
+It runs locally on Docker for $0, is designed for ~100M GPS events, and its lakehouse moves to
+AWS (S3, Glue, Athena) by configuration only.
 
-> **Status:** in development. See [roadmap](docs/roadmap.md).
+> **Status:** features 1–8 done, 9 (AWS lakehouse) in progress. See the [roadmap](docs/roadmap.md).
+> All data is synthetic: 200 vans in Ho Chi Minh City, ~5k orders a day, one GPS ping per van every 5 s.
 
 ## The problem
-Dispatchers find out that a parcel is late only after the promised window has passed, and
-managers get delivery KPIs a day late. This project predicts SLA breaches **before** they happen
-and keeps KPIs correct even when GPS data arrives late or duplicated.
+A delivery company's dispatchers learn that a parcel is late only **after** its promised window
+has passed. Van GPS and order status live in separate systems, and managers get on-time KPIs
+from a nightly batch, a day late ([intent](docs/intent.md)).
 
-## Architecture
-![Data flow: simulator and Postgres CDC into Kafka, Flink into Iceberg bronze and silver, dbt into gold, a Flink alert job into Postgres serving, and Trino and Grafana as consumers](docs/diagrams/data-flow.svg)
+This project answers three questions:
 
-Nodes marked *built* run today (features 1–7); *planned* nodes are feature 8 and AWS on the
-[roadmap](docs/roadmap.md).
-
-**Stream for freshness, batch for correctness:**
-- Flink raises alerts within seconds.
-- dbt recomputes KPIs every 5 minutes (provisional).
-- A nightly job "closes the books" on the previous day (final).
-
-See [ADR 0006](docs/decisions/0006-stream-freshness-batch-correctness.md).
-
-**Data contracts:** every event is Avro with a registered schema (FULL_TRANSITIVE compatibility,
-checked in CI too). A bad message never stops a job: it goes to `bronze.dlq_events` and
-`dlq.<topic>` with the reason ([ADR 0008](docs/decisions/0008-avro-schema-registry.md),
-[ADR 0010](docs/decisions/0010-dlq-raw-source-python-udf.md)).
-
-| Layer | Local | AWS managed |
+| Who | Question | Answer in this project |
 |---|---|---|
-| Event log | Redpanda | Amazon MSK Serverless |
+| Dispatcher | Which order will be late, before it is? | A live ETA per order and an SLA-risk alert at least 15 min ahead |
+| Ops manager | How did each depot do today and yesterday? | On-time rate, ETA error, stops per hour: provisional every 5 min, final every night |
+| Analyst | Can I query clean history with SQL? | Bronze → silver → gold Iceberg tables, the same answer even with late or duplicate data |
+
+## The result in one picture
+![Data flow: simulator and Postgres CDC into Kafka, Flink into Iceberg bronze and silver, dbt into gold, a Flink alert job into Postgres serving, and Trino as the query engine](docs/diagrams/data-flow.svg)
+
+| Layer | Local ($0) | AWS managed |
+|---|---|---|
+| Event log | Redpanda (Kafka API) | Amazon MSK Serverless |
 | Data contracts | Avro + Redpanda Schema Registry | AWS Glue Schema Registry |
 | CDC | Debezium on Kafka Connect | MSK Connect + RDS PostgreSQL |
-| Stream processing | Apache Flink | Managed Service for Apache Flink |
-| Lakehouse | Iceberg on MinIO (S3 API) + REST catalog | Iceberg on S3 + Glue Data Catalog |
-| SQL / transforms | Trino + dbt | Athena + dbt |
-| Dashboards | designed ([dashboards](docs/design/dashboards.md)); `make health` for NFR-10 | Grafana on ECS + CloudWatch |
+| Stream processing | Apache Flink 1.20 (SQL + PyFlink) | Managed Service for Apache Flink |
+| Lakehouse | Iceberg on MinIO + REST catalog | Iceberg on S3 + Glue Data Catalog (feature 9) |
+| SQL / transforms | Trino + dbt | Athena + dbt (feature 9) |
+| Serving / dashboards | Postgres serving, dashboards designed | Grafana on ECS + CloudWatch |
 
-## How data moves
-### One GPS ping: first copy, duplicate copy and a bad message
-![Sequence: a ping goes from the van to Kafka, is decoded by bronze_gps with the Schema Registry, appended to bronze, then upserted to silver by silver_gps; a duplicate is appended to bronze but produces no silver row; a ping outside the city goes to the dead-letter table and topic](docs/diagrams/gps-ping.svg)
+Two ideas hold the design together:
+- **Stream for freshness, batch for correctness** ([ADR 0006](docs/decisions/0006-stream-freshness-batch-correctness.md)).
+  Flink raises alerts within seconds; dbt recomputes KPIs every 5 minutes (provisional) and
+  "closes the books" on each day at night (final).
+- **Bronze keeps every raw event, and every later table can be rebuilt from it with the same
+  answer.** Writes are keyed by business keys and ordered by event time or commit position,
+  never by arrival.
 
-### Order status lifecycle
+## How it was built, step by step
+Each step is one feature with its own spec, plan and tests in [`specs/`](specs/). Each one fixes
+a problem the previous step left open.
+
+### 1. Walking skeleton: one thin path through every layer
+**Problem:** nothing ran end to end, and integrating many parts at once hides where things break.
+**Built:** a GPS simulator → Redpanda topic `gps.pings.v1` → a Flink job → Iceberg `bronze.gps_pings`
+on MinIO → queried in Trino, plus `make up`, `make check` and CI.
+**Decisions:** Redpanda locally, MSK on AWS ([ADR 0001](docs/decisions/0001-kafka-redpanda-msk-serverless.md));
+Flink, SQL first ([0002](docs/decisions/0002-apache-flink-stream-processing.md)); Iceberg
+([0003](docs/decisions/0003-iceberg-lakehouse.md)); local first, AWS on demand
+([0005](docs/decisions/0005-local-first-aws-on-demand.md)).
+**Proof:** exactly N pings sent → exactly N rows in bronze; the whole stack stays under 6 GB of RAM.
+
+### 2. Orders through CDC: know what each van carries
+**Problem:** the pipeline knew where vans were, not what they deliver. Orders live in another
+team's database, which we must not change.
+**Built:** Postgres (depots, vans, orders) and an order simulator whose vans really drive to each
+address, so GPS and order status tell the same story. Debezium streams every row change to Kafka
+and into `bronze.*_cdc` ([ADR 0004](docs/decisions/0004-cdc-postgres-debezium.md)).
+
 ![Lifecycle: created, assigned, out_for_delivery, then delivered or failed (customer absent)](docs/diagrams/order-lifecycle.svg)
 
-## Data model
-### Built: Postgres source tables and Iceberg silver
-![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
+### 3. Data contracts: one bad message must not stop 200 vans
+**Problem:** one malformed message stopped a bronze job, and any producer could rename a field a
+running job depends on.
+**Built:** every topic is Avro with a registered schema under FULL_TRANSITIVE compatibility,
+checked in CI too ([ADR 0008](docs/decisions/0008-avro-schema-registry.md)). An undecodable or
+rule-breaking event goes to `bronze.dlq_events` and `dlq.<topic>` with its raw bytes and a reason;
+the job keeps running ([ADR 0010](docs/decisions/0010-dlq-raw-source-python-udf.md)).
 
-### Planned: gold star schema (feature 7)
-![ERD: fct_delivery joined to dim_van (SCD Type 2), dim_depot and dim_date; agg_depot_daily and closed_days](docs/diagrams/model-gold.svg)
+![Sequence: a ping goes from the van to Kafka, is decoded by bronze_gps with the Schema Registry, appended to bronze, then upserted to silver by silver_gps; a duplicate is appended to bronze but produces no silver row; a ping outside the city goes to the dead-letter table and topic](docs/diagrams/gps-ping.svg)
 
-## Reliability and scale patterns
-A stream is never complete and never clean: devices resend, tunnels delay pings, another team
-changes a schema, a machine dies mid-write. So the design follows one rule:
+### 4. Silver: duplicates, late and out-of-order events
+**Problem:** real devices resend pings, lose signal in tunnels and flush old pings later. Counting
+bronze rows doubles distance, and "the last row" moves a van backwards.
+**Built:** a `--chaos` simulator mode (duplicates, pings up to 2 h late, jitter, offline bursts) and
+Flink jobs that build silver: one row per real ping (first arrival wins, then an Iceberg upsert on
+`(vehicle_id, event_ts)`), late rows kept and flagged, and the current state of each order ordered
+by the database commit position ([ADR 0011](docs/decisions/0011-silver-upsert-first-arrival.md)).
 
-> **Bronze keeps every raw event. Every later table can be rebuilt from bronze and gives the same
-> answer**, because writes are keyed by business keys and ordered by event time or commit position,
-> never by arrival.
-
-Each pattern below fixes one way the pipeline breaks. Pattern names follow *Data Engineering Design
-Patterns* (Konieczny). Read each diagram row left to right: what breaks → the pattern → what you get.
-
-### Failures: before and after
-![Before and after: schema change → schema compatibility; bad message → dead-letter queue; crash mid-write → checkpoint and commit; killed cluster → resume from the newest retained checkpoint](docs/diagrams/patterns-ingest.svg)
-
-![Before and after: duplicate ping → dedup and upsert; replayed CDC → order by commit LSN; late ping → late-data flag; growing state → state TTL](docs/diagrams/patterns-clean.svg)
-
-**Example: the tunnel ping.** VAN-0001 records a ping at 08:07:00 in a tunnel, sends it at 08:11:02,
-and is not sure it got through, so it sends it again.
-
-*Before (bronze keeps every copy):*
-
-| vehicle_id | event_ts | ingest_ts |
-|---|---|---|
-| VAN-0001 | 08:07:00 | 08:11:02 |
-| VAN-0001 | 08:07:00 | 08:11:03 |
-
-*After (silver keeps one row per real ping, kept and flagged as late):*
+**Example, the tunnel ping.** VAN-0001 records a ping at 08:07:00 in a tunnel, sends it at 08:11:02,
+is not sure it got through and sends it again. Bronze keeps both copies; silver keeps one:
 
 | vehicle_id | event_ts | ingest_ts | lateness_s | is_late |
 |---|---|---|---|---|
 | VAN-0001 | 08:07:00 | 08:11:02 | 242 | true |
 
-| Pattern | Why this design | Trade-off | Proof (test) |
-|---|---|---|---|
-| Schema compatibility (FULL_TRANSITIVE, checked in CI) | Producers and consumers deploy separately. The registry rejects a breaking schema before it reaches a running job. | A breaking change needs a new topic (`*.v2`). | `test_subjects_registered_full_transitive`, `test_v1_and_v2_pings_reach_bronze` |
-| Dead-letter queue | One bad message must not stop 200 vans. The raw bytes and reason are kept, so a reject can be explained with SQL and replayed. | Validation runs in Python (batched, see scale). | `test_garbage_goes_to_dlq_once_and_job_keeps_running` |
-| Checkpoint + transactional commit | Read position and written data must move together. Iceberg commits only on a checkpoint (every 30 s), so a restart neither loses nor doubles rows. | Bronze is up to one checkpoint behind (≤ 60 s target). | `test_exactly_n_rows`, `test_taskmanager_kill_mid_load_keeps_silver_exact` |
-| Resume from the newest retained checkpoint | There is no HA locally. A killed cluster must find its place again without a savepoint. | Work since that checkpoint is redone (writes stay exactly-once). | `test_killed_cluster_resumes_from_retained_checkpoints` |
-| Dedup + upsert, first arrival wins | Counting copies doubles distance. Two layers: Top-1 per `(vehicle_id, event_ts)` in state for 24 h, then an upsert on the same key for later copies ([ADR 0011](docs/decisions/0011-silver-upsert-first-arrival.md)). | Upserts write delete files; the maintenance service merges them every 30 min. | `test_clean_and_chaos_runs_give_identical_silver`, `test_resending_pings_changes_no_silver_row` |
-| Order by commit LSN (CDC) | Debezium can replay or reorder changes. Arrival order would bring a delivered order back to "out for delivery". | While Debezium is down, Postgres keeps the unread WAL (capped at 1 GB). | `test_order_latest_version_wins_despite_duplicates_and_disorder`, `test_connector_restart_loses_and_duplicates_nothing` |
-| Late-data flag | Dropping late pings loses data; arrival order moves vans backwards. Lateness comes from the data, so every rebuild flags the same rows. | Late rows land in an older day's partition; pings are at most about 2 h late, so only today or yesterday is touched. | `test_two_hour_late_ping_is_kept_and_marked_late` |
-| State TTL | Remembering every key forever runs out of memory (≈ 100M keys in 30 days). | A copy that arrives after 24 h replaces the row (same key, newer `ingest_ts`). | `test_stack_memory_under_6gb` |
+**Proof:** the same day sent clean and with chaos gives identical silver; killing a task manager
+mid-load leaves silver exact.
 
-*Planned (features 6–8):* one alert per order on replay (keyed idempotency), no alert storm after
-a restart (alert horizon), KPIs recomputed over a 2 h look-back, a nightly close that counts
-late arrivals, audit before publish, SCD Type 2 vans, `dest_area` instead of customer coordinates,
-and alerts on lag and silence.
+![Before and after: duplicate ping → dedup and upsert; replayed CDC → order by commit LSN; late ping → late-data flag; growing state → state TTL](docs/diagrams/patterns-clean.svg)
 
-### Scale: before and after
-The design targets about 100M GPS events (30 days at 200 vans). More machines do not help when the
-design itself has a ceiling, so each layer was checked for what stops it from growing
-([ADR 0012](docs/decisions/0012-scale-and-table-maintenance.md)). Scaling out is now configuration:
-more partitions, `GPS_PARALLELISM`, more task slots.
+### 5. Scale by design, not by more machines
+**Problem:** the target is ~100M GPS events (30 days), but parts of the design had a ceiling that
+more machines would not lift: 3 partitions cap readers at 3, Python decoded one row at a time, state
+lived in RAM, and small files and delete files piled up.
+**Built** ([ADR 0012](docs/decisions/0012-scale-and-table-maintenance.md)): 6 partitions keyed by van,
+a vectorized decode UDF (20k → 28k msg/s), RocksDB state with incremental checkpoints, hash write
+distribution, day partitions sorted by van, time + size bounded Kafka retention, and a maintenance
+service (compaction, snapshot expiry, orphan removal, retention). Scaling out is now configuration.
+*Throughput at 100M events is reasoned from these limits, not measured; the benchmark is a stretch item.*
 
 ![Before and after: 3 partitions → 6 partitions keyed by vehicle_id; time-only retention → time and size retention; one Python call per message → vectorized UDF; heap state → RocksDB](docs/diagrams/patterns-scale-stream.svg)
 
+### 6. Control tower: the reason the project exists
+**Problem:** clean data existed, but nothing combined a van's live position with the orders it
+still carries. No ETA, no early warning, no "van stuck where it should not be".
+**Built:** a PyFlink job with one keyed state per van: latest position, open orders, alert state
+and idle timers ([ADR 0013](docs/decisions/0013-control-tower-keyed-state.md)). It writes ETAs and
+alerts to Postgres serving, to the `alerts.v1` topic (exactly once) and to the lakehouse.
+- **ETA v1:** the current leg at the van's recent speed, later stops at 25 km/h. A first version
+  used recent speed on every leg and gave 33 % precision (one traffic jam inflated every later
+  ETA); the change raised it to 82–86 %, with 97–100 % recall on late orders that can still be
+  warned 15 min ahead.
+- **Alerts:** SLA risk (ETA past the window by a margin, at most once per order until resolved)
+  and abnormal stop (idle away from any stop or depot).
+- **Proof:** GPS → alert p95 under 10 s; the same alerts from clean and chaos data; no alert storm
+  after a 30 min outage.
+
+### 7. Gold with dbt: KPIs that do not change with dirty data
+**Problem:** managers still had no KPIs, and the key promise was unproven: late or duplicate events
+must give the same KPIs as clean data.
+**Built** ([ADR 0014](docs/decisions/0014-gold-dbt-intraday-and-close.md)): a dbt star schema
+(`fct_delivery`, `dim_van` as SCD Type 2, `dim_depot`, `dim_date`, `agg_depot_daily`).
+- An **intraday run** every 5 minutes merges what changed in the last 2 h (provisional,
+  `is_final = false`).
+- A **nightly close** rebuilds the previous local day in full, marks it final and records it in
+  `closed_days`. A late event after the close is counted, and applied only by an explicit restatement.
+- Customer coordinates are reduced to a ~150 m area.
+- dbt tests (uniqueness, relationships, KPIs recomputed by hand) and source freshness run in CI.
+- **Proof:** the same day clean and with chaos gives identical gold, intraday and after the close.
+
+![ERD: fct_delivery joined to dim_van (SCD Type 2), dim_depot and dim_date; agg_depot_daily and closed_days](docs/diagrams/model-gold.svg)
+
+### 8. Dashboards designed, health checked
+**Built:** a [dashboard design](docs/design/dashboards.md) for the dispatcher, the manager and the
+operator, with the SQL of every panel runnable against the stack today
+([`dashboards.sql`](docs/design/dashboards.sql)), and `make health` for the pipeline alarms
+(consumer lag, checkpoints, CDC slot, bronze stuck). Building the Grafana dashboards themselves is
+a stretch item ([ADR 0007](docs/decisions/0007-grafana-postgres-serving.md)).
+
+### 9. The lakehouse on AWS, by configuration only *(in progress)*
+**Problem:** the promise that the lakehouse moves to S3, Glue and Athena without code changes was
+unproven, and parts of the stack leaned on Trino (table DDL, upsert keys, dbt adapter).
+**Built:**
+- One table definition (`infra/lakehouse/tables.py`, pyiceberg) creates every bronze, silver and
+  ops table in either catalog: REST locally, Glue on AWS.
+- Flink catalog settings come from one env value. Local and AWS differ only in
+  `infra/local/lakehouse.env` vs `infra/aws/lakehouse.env`, and a unit test fails if code branches
+  on the environment.
+- dbt has an Athena target. Both engines use one strategy (merge plus a pre-hook that clears the
+  days being rewritten), because dbt-athena has no `delete+insert` for Iceberg.
+- Terraform (`infra/aws/lakehouse/`): an S3 bucket, Glue databases, an Athena workgroup that stops
+  any query above 1 GB scanned, two least-privilege IAM roles and $5/$20 budgets.
+
+**Proof so far:** a smoke test on AWS created the 16 resources, made all 11 tables in Glue with the
+demo role, turned on Glue compaction and retention, ran INSERT, MERGE and a day DELETE through
+Athena, and destroyed everything (cost under $0.01). Running the Flink jobs and dbt against AWS is
+next.
+
+<details>
+<summary><b>Every reliability and scale pattern, with its trade-off and test</b></summary>
+
+Pattern names follow *Data Engineering Design Patterns* (Konieczny).
+
+| Pattern | Why | Trade-off | Proof (test) |
+|---|---|---|---|
+| Schema compatibility (FULL_TRANSITIVE) | The registry rejects a breaking schema before it reaches a running job. | A breaking change needs a new topic (`*.v2`). | `test_subjects_registered_full_transitive`, `test_v1_and_v2_pings_reach_bronze` |
+| Dead-letter queue | Raw bytes and a reason are kept, so a reject can be explained and replayed. | Validation runs in Python (batched). | `test_garbage_goes_to_dlq_once_and_job_keeps_running` |
+| Checkpoint + transactional commit | Iceberg commits only on a checkpoint (30 s): a restart neither loses nor doubles rows. | Bronze is up to one checkpoint behind. | `test_exactly_n_rows`, `test_taskmanager_kill_mid_load_keeps_silver_exact` |
+| Resume from the newest retained checkpoint | No HA locally; a killed cluster finds its place without a savepoint. | Work since that checkpoint is redone. | `test_killed_cluster_resumes_from_retained_checkpoints` |
+| Dedup + upsert, first arrival wins | Top-1 per key in state for 24 h, then an upsert for later copies. | Upserts write delete files; compaction merges them every 30 min. | `test_clean_and_chaos_runs_give_identical_silver` |
+| Order by commit LSN (CDC) | Arrival order would bring a delivered order back to "out for delivery". | Postgres keeps unread WAL while Debezium is down (capped at 1 GB). | `test_order_latest_version_wins_despite_duplicates_and_disorder` |
+| Late-data flag | Lateness comes from the data, so every rebuild flags the same rows. | Late rows land in an older day's partition. | `test_two_hour_late_ping_is_kept_and_marked_late` |
+| State TTL | Remembering every key forever runs out of memory. | A copy after 24 h replaces the row. | `test_stack_memory_under_6gb` |
+| 6 partitions keyed by van | Readers are capped by partitions; one van stays in order on one partition. | Partitions can only be added. | `test_a_van_stays_on_one_partition` |
+| Time + size retention | A big load must not fill the disk: 7 days or 1 GiB per partition. | Shorter replay window under heavy load. | `test_size_bound_drops_the_oldest_segments` |
+| Vectorized decode UDF | One Python call per batch instead of per message. | Still slower than a JVM decoder. | `test_batch_columns_equal_the_row_by_row_results` |
+| RocksDB + incremental checkpoints | State on disk, not capped by RAM. | Slower state reads. | `test_state_lives_in_rocksdb_with_incremental_checkpoints` |
+| Day partitions sorted by van | Larger files; one-van queries skip files by min/max. | Sorted only after compaction. | `test_compaction_reads_fewer_files_for_one_van_and_keeps_every_row` |
+| Maintenance service | Small files, delete files and snapshots slow every read. | Up to 30 min of delete files between compactions. | `test_compaction_during_live_writes_keeps_silver_exact` |
+| Keyed alert idempotency + alert horizon | One alert per order on replay, no storm after a restart. | Old events update ETAs but raise no alert. | `test_alert_latency_p95_under_10s` and the spec 006 suite |
+| Commit-time intraday window + nightly close | Late changes of any age are absorbed; closed days stay fixed. | A late event after the close waits for a restatement. | spec 007 suite (AC10: clean = chaos) |
+
+![Before and after: schema change → schema compatibility; bad message → dead-letter queue; crash mid-write → checkpoint and commit; killed cluster → resume from the newest retained checkpoint](docs/diagrams/patterns-ingest.svg)
+
 ![Before and after: a file per writer → hash distribution; 5 MB files → day partitions sorted by van; stale reader → refused resume and rebuild; piling files → maintenance service](docs/diagrams/patterns-scale-tables.svg)
 
-| Change | Why this design | Trade-off | Proof (test) |
-|---|---|---|---|
-| 6 partitions, keyed by `vehicle_id` | Parallel readers are capped by partitions. The key keeps each van on one partition, in order. | Partitions are only ever added, never removed. | `test_gps_topic_and_its_dlq_have_6_partitions`, `test_a_van_stays_on_one_partition` |
-| Time + size retention | A big load must not fill the disk: 7 days or 1 GiB per GPS partition, whichever first. | Under a very large load the replay window is shorter than 7 days. | `test_topics_are_bounded_by_size_and_time`, `test_size_bound_drops_the_oldest_segments` |
-| Vectorized decode UDF | One Python call per message was the bottleneck. One call per batch: 20k → 28k msg/s. A JVM decoder or Flink's Avro format would stop on a bad message. | Still slower than a JVM decoder. | `test_batch_columns_equal_the_row_by_row_results` |
-| RocksDB + incremental checkpoints | Heap state is capped by RAM. RocksDB keeps state on local disk; a checkpoint copies only what changed. | State reads are slower than on the heap. | `test_state_lives_in_rocksdb_with_incremental_checkpoints` |
-| Hash write distribution | Otherwise every parallel writer writes its own small file per partition. | All rows of one partition go through one writer. | `test_each_commit_writes_one_file_per_partition` |
-| Day partitions, sorted by `(vehicle_id, event_ts)` | 16 buckets a day gave ≈ 5 MB files (target 128–512 MB). Sorting lets a one-van query skip files by min/max. | Files are sorted only after compaction. | `test_silver_gps_is_one_partition_a_day_sorted_by_van`, `test_compaction_reads_fewer_files_for_one_van_and_keeps_every_row` |
-| Refuse a stale resume | After 7 days a reader's snapshot is expired, and Iceberg would fail later with an unclear error. | A reader stopped longer than 7 days needs `make silver-rebuild`. | `test_reader_stopped_past_snapshot_retention_is_refused_and_rebuild_recovers` |
-| Maintenance service | Small files, delete files, manifests and snapshots pile up and slow every read. It compacts silver every 30 min, bronze every hour, and daily expires snapshots, removes orphans and drops partitions past retention. | Between compactions, reads apply up to 30 min of delete files. | `test_compaction_during_live_writes_keeps_silver_exact`, `test_expiry_and_orphan_removal`, `test_retention_drops_partitions_past_their_age_and_jobs_keep_running` |
+![ERD: Postgres depots, vans and orders with their foreign keys; silver gps_pings, orders and order_status_history with their upsert keys and logical join keys](docs/diagrams/model-silver.svg)
+</details>
 
-Throughput at 100M events is reasoned from these limits, not measured: the benchmark is a stretch item.
-
-The diagrams are drawn with [Archify](https://github.com/tt-a1i/archify) from the JSON files in
-[`docs/diagrams/`](docs/diagrams/), which also explains how to regenerate them.
+## Cost
+- **Local:** $0. Everything runs in Docker on a laptop (WSL2) in under 6 GB of RAM.
+- **AWS:** created only on demand and destroyed after each session ([ADR 0005](docs/decisions/0005-local-first-aws-on-demand.md)).
+  The AWS lakehouse has no hourly cost: S3 storage, Athena at $5 per TB scanned (each query is
+  capped at 1 GB) and Glue optimizer runs. Budgets alert at $5 and $20. The smoke test cost under $0.01.
 
 ## Quick start
-Prerequisites: Docker with ~6 GB free RAM, [uv](https://docs.astral.sh/uv/), and a free
-Docker Hub account for the hardened MinIO image (`docker login dhi.io`, once).
+Prerequisites: Docker with ~6 GB free RAM, [uv](https://docs.astral.sh/uv/), and a free Docker Hub
+account for the hardened MinIO image (`docker login dhi.io`, once).
 ```bash
-make install                  # Python 3.11 + dev tools
-make check                    # lint + unit tests (same as CI)
-make up                       # core + CDC stack, Flink jobs (~1 min with images cached)
-make demo                     # live delivery day, 20 vans: orders → Postgres, GPS → Kafka
-make cdc-status               # Debezium connector state + replication slot lag
-make dlq-status               # rejected events per source topic and reason
-make silver-status            # silver: rows kept, duplicate copies removed, late rows per day
-make silver-rebuild           # drop silver and rebuild it from bronze (same result)
-make down                     # stop jobs with a savepoint, then the stack (make up resumes)
-make e2e                      # acceptance tests against the running stack
-make maintain                 # table maintenance now: compaction, manifests, expiry, orphans, retention
-make table-health             # files, delete files, file size, snapshots and last maintenance per table
-make tower-status             # control tower: open orders with an ETA, open alerts, newest ping per van
-make gold                     # build gold now (provisional); make close DAY=… / make reclose DAY=…
-make gold-status              # per local day: orders, on-time rate, final or not, late after close
-make dbt-ci                   # dbt unit tests + SQL lint on a throwaway Trino (as in CI)
-make health                   # NFR-10 checks: consumer lag, checkpoints, CDC slot, bronze stuck
+make install          # Python 3.11 + dev tools
+make check            # lint + unit tests (same as CI)
+make up               # the whole local stack and the Flink jobs (~1 min with images cached)
+make demo             # a live delivery day: orders → Postgres, GPS → Kafka
+make e2e              # acceptance tests against the running stack
+make down             # stop the jobs with a savepoint, then the stack (make up resumes)
 ```
-Query the bronze table:
+Look inside:
 ```bash
-docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
-  "SELECT count(*), max(event_ts) FROM lakehouse.bronze.gps_pings"
-# every change of one order, in commit order (CDC changelog)
-docker compose -f infra/local/docker-compose.yml exec trino trino --execute \
-  "SELECT op, before.status, after.status, commit_ts FROM lakehouse.bronze.orders_cdc
-   WHERE after.order_id = 'ORD-20261118-00001' ORDER BY source_lsn"
+make tower-status     # open orders with an ETA, open alerts, newest ping per van
+make silver-status    # rows kept, duplicates removed, late rows per day
+make gold-status      # per local day: orders, on-time rate, final or not
+make health           # pipeline alarms: consumer lag, checkpoints, CDC slot, bronze stuck
+make dlq-status       # rejected events per topic and reason
+make table-health     # files, delete files, snapshots, last maintenance per table
 ```
-Try the dead-letter path: `uv run python -m simulator day --invalid-rate 0.05`, then `make dlq-status`.
-Try dirty data: `uv run python -m simulator day --chaos` sends duplicates, pings up to 2 h late,
-jitter and offline bursts; `make silver-status` shows bronze has more rows than silver, which
-keeps one row per real ping (spec 004).
+Break it on purpose: `uv run python -m simulator day --chaos` (duplicates, late pings, offline
+bursts), or `--invalid-rate 0.05` (bad messages → DLQ). Then compare `make silver-status` and
+`make gold-status`.
 
-UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001 · Kafka Connect http://localhost:8083 · Schema Registry http://localhost:18081 · Postgres `localhost:15432` (`make psql`)
+More: `make silver-rebuild` (drop silver, rebuild from bronze), `make gold` / `make close DAY=…` /
+`make reclose DAY=…`, `make maintain`, `make dbt-ci`, `make psql`.
+
+UIs: Flink http://localhost:8081 · Trino http://localhost:8080 · MinIO http://localhost:9001 ·
+Kafka Connect http://localhost:8083 · Schema Registry http://localhost:18081 · Postgres `localhost:15432`
+
+**AWS lakehouse** (costs money, so destroy it after use): log in with `aws login --profile ct-admin`,
+copy `infra/aws/lakehouse/terraform.tfvars.example`, then run `make aws-lake-plan` →
+`make aws-lake-up` (asks to type `yes`) → `make aws-lake-down`.
 
 ## Docs
-- [Intent](docs/intent.md) · [Project spec](docs/project-spec.md) · [Tech stack](docs/tech-stack.md)
-- [Architecture decisions (ADRs)](docs/decisions/)
-- Feature specs: [`specs/`](specs/)
+- [Intent](docs/intent.md) · [Project spec](docs/project-spec.md) · [Requirements](docs/requirements.md) · [Tech stack](docs/tech-stack.md)
+- [Architecture decisions (ADRs)](docs/decisions/) · [Dashboard design](docs/design/dashboards.md)
+- Diagrams are drawn with [Archify](https://github.com/tt-a1i/archify) from the JSON in [`docs/diagrams/`](docs/diagrams/).
 
 ## How this repo is built
-The project follows a spec-driven workflow: intent → spec → plan → tasks → PR.
+Spec-driven: intent → spec (what and why, approved first) → plan (files, risks, rollback, proof per
+criterion) → tasks, tests first → PR. Every hard-to-reverse choice gets an ADR.
 See [`specs/README.md`](specs/README.md).
