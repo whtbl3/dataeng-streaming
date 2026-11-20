@@ -42,6 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--seed", type=int, default=42)
     d.add_argument("--late-delivery-rate", type=float, default=0.10, help="share delivered late")
     d.add_argument("--fail-rate", type=float, default=0.02)
+    d.add_argument(
+        "--abnormal-stops", type=int, default=0,
+        help="vans per day that stand still 12-25 min away from stops and depot (spec 006)",
+    )  # fmt: skip
     d.add_argument("--prefix", default="ORD", help="order id prefix (tests use a unique one)")
     d.add_argument("--vehicle-prefix", default=None, help="rename GPS vehicle ids (tests only)")
     mode = d.add_mutually_exclusive_group()
@@ -115,6 +119,7 @@ def run_day(
             fail_rate=args.fail_rate,
             prefix=args.prefix,
             interval_s=args.interval,
+            abnormal_stops=args.abnormal_stops,
         )
         for d in local_dates(start, end)
     ]
@@ -184,6 +189,8 @@ def main(
         args, producer_factory, db_factory, now, encoder_factory
     )
     line = f"order_changes={changes} pings={pings} vans={args.vans} prefix={args.prefix}"
+    if args.abnormal_stops:
+        line += f" abnormal_stops={args.abnormal_stops}/day"
     if corrupter:
         line += " invalid=" + ",".join(f"{k}:{n}" for k, n in sorted(corrupter.counts.items()))
     if chaos.config.enabled:

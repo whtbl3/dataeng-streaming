@@ -35,7 +35,8 @@ for t in cdc.public.depots cdc.public.vans cdc.public.orders; do
   ensure_topic "$t" 3 $((256 * MIB))
   ensure_topic "dlq.$t" 3 $((128 * MIB))
 done
-for t in "$GPS" cdc.public.depots cdc.public.vans cdc.public.orders; do
+ensure_topic alerts.v1 3 $((256 * MIB)) # control tower alerts (spec 006), keyed by alert_id
+for t in "$GPS" cdc.public.depots cdc.public.vans cdc.public.orders alerts.v1; do
   rpk registry compatibility-level set "$t-value" --level FULL_TRANSITIVE "${REGISTRY[@]}"
 done
 

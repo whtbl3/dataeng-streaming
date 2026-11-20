@@ -1,4 +1,4 @@
-# Flink 1.20 + the connector JARs the jobs need (ADR 0002). Versions are pinned and
+# Flink 1.20 + the connector JARs the jobs need (ADR 0002); JDBC + Postgres for serving (spec 006). Versions are pinned and
 # verified by SHA-1 from Maven Central. PyFlink (Python 3.11) runs the contract UDFs (ADR 0010).
 FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
 FROM flink:1.20.5-scala_2.12-java17
@@ -20,6 +20,9 @@ RUN set -eu; cd /opt/flink/lib; \
     fetch org/apache/iceberg/iceberg-aws-bundle/1.10.1/iceberg-aws-bundle-1.10.1.jar 9c02c851a2356f287f040ed784170c758369d134; \
     fetch org/apache/hadoop/hadoop-client-api/3.4.1/hadoop-client-api-3.4.1.jar 7e4cfae7f5c85cffdbc21fdf749262fc78d4463a; \
     fetch org/apache/hadoop/hadoop-client-runtime/3.4.1/hadoop-client-runtime-3.4.1.jar 30ec07ceccb224b2ef17af34fbb593bff3e9e071; \
+    fetch org/apache/flink/flink-connector-jdbc/3.3.0-1.20/flink-connector-jdbc-3.3.0-1.20.jar 292553dba07f5e004065da539611a5c3d20ccd0f; \
+    fetch org/apache/flink/flink-connector-jdbc-postgres/3.3.0-1.20/flink-connector-jdbc-postgres-3.3.0-1.20.jar b76056cac96832118d0f593713d39ee98e8b5e9a; \
+    fetch org/postgresql/postgresql/42.7.5/postgresql-42.7.5.jar 747897987b86c741fb8b56f6b81929ae1e6e4b46; \
     chown flink:flink /opt/flink/lib/*.jar
 
 # PyFlink for the Python UDFs in contracts/ (spec 003). Same version as the cluster.
@@ -27,7 +30,7 @@ COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_PYTHON_INSTALL_DIR=/opt/python UV_NO_CACHE=1
 RUN uv venv /opt/venv --python 3.11 \
  && uv pip install --python /opt/venv/bin/python apache-flink==1.20.5 fastavro==1.13.1 \
- && mv /opt/flink/opt/flink-python-1.20.5.jar /opt/flink/lib/ \
+ && cp /opt/flink/opt/flink-python-1.20.5.jar /opt/flink/lib/ `# flink run -py also looks in opt/` \
  && chown -R flink:flink /opt/venv /opt/python /opt/flink/lib
 ENV PATH=/opt/venv/bin:$PATH
 

@@ -17,6 +17,7 @@ from conftest import (
     SILVER_GPS,
     TABLE,
     count_table,
+    pg_query,
     query,
     run_gps_sim,
     run_orders_sim,
@@ -137,8 +138,13 @@ def test_compaction_during_live_writes_keeps_silver_exact(prefix):
         'SELECT "after".order_id, max_by("after".status, source_lsn), max(source_lsn) '
         'FROM lakehouse.bronze.orders_cdc WHERE "after".order_id LIKE ? GROUP BY 1'
     )
-    want = sorted(query(latest, (f"{orders}%",)))
-    assert want
+    # the order changes reach bronze through Debezium and bronze_cdc (one 30 s commit or more)
+    in_db = pg_query("SELECT order_id, status FROM orders WHERE order_id LIKE %s", (f"{orders}%",))
+    want, _ = wait_for(
+        lambda: sorted(query(latest, (f"{orders}%",))),
+        lambda rows: sorted((oid, st) for oid, st, _ in rows) == sorted(in_db),
+        SILVER_TIMEOUT_S,
+    )
     wait_for(
         lambda: sorted(
             query(

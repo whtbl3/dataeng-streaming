@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "Alert",
+  "namespace": "ct.alerts",
+  "doc": "An alert was raised or resolved. Producer: Flink job control_tower (spec 006). Subject: alerts.v1-value. Key: alert_id.",
+  "fields": [
+    {"name": "alert_id", "type": "string", "doc": "type:subject:raise epoch seconds; stable across replays"},
+    {"name": "event", "type": {"type": "enum", "name": "AlertEvent", "symbols": ["raised", "resolved"]}},
+    {"name": "type", "type": {"type": "enum", "name": "AlertType", "symbols": ["SLA_RISK", "ABNORMAL_STOP"]}},
+    {"name": "van_id", "type": "string"},
+    {"name": "order_id", "type": ["null", "string"], "default": null, "doc": "SLA_RISK only"},
+    {"name": "raised_at", "type": {"type": "long", "logicalType": "timestamp-millis"}, "doc": "Event time of the ping that raised it"},
+    {"name": "resolved_at", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null},
+    {"name": "lat", "type": "double"},
+    {"name": "lon", "type": "double"},
+    {"name": "detail", "type": "string"}
+  ]
+}

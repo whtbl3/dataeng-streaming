@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Submit a Flink SQL job once: render ${VARS} from env, skip if a job with the same
+# Submit a Flink job once: a SQL file (rendered from env, run by sql-client) or a Python file
+# (run by `flink run -py`; it reads its settings from env itself). Skip if a job with the same
 # pipeline name is already RUNNING (so `make up` can be re-run safely).
 # Usage: submit.sh <job.sql> <pipeline-name>
 set -euo pipefail
@@ -31,8 +32,12 @@ render() {
   fi
   echo "$out"
 }
-RENDERED_INIT="$(render "$INIT_FILE")"
-RENDERED="$(render "$SQL_FILE")"
+IS_PYTHON=false
+[[ "$SQL_FILE" == *.py ]] && IS_PYTHON=true
+if ! $IS_PYTHON; then
+  RENDERED_INIT="$(render "$INIT_FILE")"
+  RENDERED="$(render "$SQL_FILE")"
+fi
 
 # Where to resume from (spec 004, spec 005):
 #   1. the savepoint `make down` took (stop_jobs.sh), if any;
@@ -101,15 +106,23 @@ if [ -n "$RESUME" ] && grep -q "'streaming' = 'true'" "$SQL_FILE"; then
     exit 1
   fi
 fi
-if [ -n "$RESUME" ]; then
-  {
-    echo "SET 'execution.state-recovery.path' = '$RESUME';"
-    echo "SET 'execution.state-recovery.ignore-unclaimed-state' = 'true';"
-  } >> "$RENDERED_INIT"
+if $IS_PYTHON; then
+  # The cluster imports contracts/ and flink/udf from /opt/ct (shipped with -pyfs).
+  resume_args=()
+  [ -n "$RESUME" ] && resume_args=(-s "$RESUME" --allowNonRestoredState)
+  /opt/flink/bin/flink run -d -m "${FLINK_JOBMANAGER_HOST:-jobmanager}:8081" "${resume_args[@]}" \
+    -pyexec /opt/venv/bin/python -pyclientexec /opt/venv/bin/python -pyfs /opt/ct \
+    -py "$SQL_FILE"
+else
+  if [ -n "$RESUME" ]; then
+    {
+      echo "SET 'execution.state-recovery.path' = '$RESUME';"
+      echo "SET 'execution.state-recovery.ignore-unclaimed-state' = 'true';"
+    } >> "$RENDERED_INIT"
+  fi
+  /opt/flink/bin/sql-client.sh -Drest.address="${FLINK_JOBMANAGER_HOST:-jobmanager}" \
+    -i "$RENDERED_INIT" -f "$RENDERED"
 fi
-
-/opt/flink/bin/sql-client.sh -Drest.address="${FLINK_JOBMANAGER_HOST:-jobmanager}" \
-  -i "$RENDERED_INIT" -f "$RENDERED"
 
 # Keep disk flat: once the new run is RUNNING, drop the checkpoints of runs older than the one it
 # resumed from (a restored run takes a full first checkpoint, so it never needs older files), and

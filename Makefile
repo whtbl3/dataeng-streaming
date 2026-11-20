@@ -3,7 +3,7 @@ PROFILES ?= cdc
 COMPOSE := docker compose -f infra/local/docker-compose.yml $(addprefix --profile ,$(PROFILES))
 TF      := terraform -chdir=infra/aws
 
-.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild maintain table-health aws-plan aws-up aws-down
+.PHONY: install format lint test check up down clean demo e2e e2e-restart stack-mem psql cdc-status dlq-status silver-status silver-rebuild tower-status maintain table-health aws-plan aws-up aws-down
 
 ## ---- Code quality (CI) -------------------------------------------------
 install:
@@ -38,8 +38,8 @@ down:             # stops the Flink jobs with a savepoint first, so `make up` re
 clean:            # also deletes local data volumes
 	$(COMPOSE) --profile jobs down -v
 
-demo:             # live delivery day at dev size (20 vans, 500 orders/day); Ctrl-C to stop
-	uv run python -m simulator day --realtime --vans 20
+demo:             # live delivery day at dev size (20 vans, 500 orders/day, 2 abnormal stops); Ctrl-C to stop
+	uv run python -m simulator day --realtime --vans 20 --abnormal-stops 2
 
 e2e:              # needs `make up`
 	uv run pytest -q tests/integration -m "e2e and not restart"
@@ -61,6 +61,10 @@ silver-status:    # per silver table and local day: rows kept, copies removed, l
 
 silver-rebuild:   # drop silver and rebuild it from bronze with the same jobs (spec 004 AC8)
 	COMPOSE="$(COMPOSE)" infra/local/silver_rebuild.sh
+
+tower-status:     # control tower: open orders with an ETA, open alerts by type, newest position per van (spec 006)
+	@$(COMPOSE) exec -T postgres psql -X -q -A -F ' | ' -P footer=off -U ct -d control_tower \
+	  < infra/local/postgres/tower_status.sql
 
 maintain:         # run table maintenance now: make maintain [TASK=compact|manifests|expire|orphans|retention] [TABLE=ns.t]
 	$(COMPOSE) run --rm --no-deps -e SNAPSHOT_RETENTION -e ORPHAN_RETENTION maintenance --once \
