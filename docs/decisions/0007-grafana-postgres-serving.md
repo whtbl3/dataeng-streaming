@@ -1,5 +1,9 @@
 # 0007: Grafana dashboards backed by a Postgres serving layer
-Date: 2026-11-17 · Status: Final
+Date: 2026-11-17 · Status: Final; Grafana deferred (spec 008)
+
+> **Spec 008 (2026-11-20):** the project owner deferred building Grafana and Prometheus. The
+> dashboards are designed panel by panel in `docs/design/dashboards.md` against the serving tables,
+> gold and the metrics named there; `make health` checks the NFR-10 conditions in the meantime.
 
 ## Context
 Dispatchers need a live map and alert list (second-level freshness). Managers need KPI

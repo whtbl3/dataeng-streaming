@@ -37,7 +37,7 @@ checked in CI too). A bad message never stops a job: it goes to `bronze.dlq_even
 | Stream processing | Apache Flink | Managed Service for Apache Flink |
 | Lakehouse | Iceberg on MinIO (S3 API) + REST catalog | Iceberg on S3 + Glue Data Catalog |
 | SQL / transforms | Trino + dbt | Athena + dbt |
-| Dashboards | Grafana + Prometheus | Grafana on ECS + CloudWatch |
+| Dashboards | designed ([dashboards](docs/design/dashboards.md)); `make health` for NFR-10 | Grafana on ECS + CloudWatch |
 
 ## How data moves
 ### One GPS ping: first copy, duplicate copy and a bad message
@@ -147,6 +147,7 @@ make tower-status             # control tower: open orders with an ETA, open ale
 make gold                     # build gold now (provisional); make close DAY=… / make reclose DAY=…
 make gold-status              # per local day: orders, on-time rate, final or not, late after close
 make dbt-ci                   # dbt unit tests + SQL lint on a throwaway Trino (as in CI)
+make health                   # NFR-10 checks: consumer lag, checkpoints, CDC slot, bronze stuck
 ```
 Query the bronze table:
 ```bash
