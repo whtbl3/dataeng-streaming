@@ -1,5 +1,5 @@
 # Spec 008: Dashboard design and pipeline health checks
-Status: Draft · Intent: roadmap item 8 · Author: project owner
+Status: Approved (2026-11-20) · Intent: roadmap item 8 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -40,7 +40,8 @@ precise design is enough for the portfolio, and the checks behind NFR-10 must ex
   are designed, not built (changed by the project owner, 2026-11-20).
 - ADR 0007: Grafana and Prometheus are deferred; the serving tables stay as designed for them.
 
-## Open questions
+## Resolved questions (approved 2026-11-20)
+All three recommendations were accepted as written.
 1. **Where does the design live?** *Recommended:* one page in the design documents, with the panel
    queries in a SQL file next to it so the light test can run them.
 2. **"Lag grows for 5 min" without history?** *Recommended:* the check takes two lag samples 30 s
