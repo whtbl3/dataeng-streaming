@@ -211,10 +211,23 @@ def differences(table: Table, existing) -> list[str]:
 
 
 # ---- catalog actions ------------------------------------------------------------------------
-def catalog():
+def catalog(wait_s: int = 90):
+    """The configured catalog, waiting for it to answer (the local REST catalog starts slowly)."""
+    import time
+
     from pyiceberg.catalog import load_catalog
 
-    return load_catalog("lakehouse")
+    deadline = time.monotonic() + wait_s
+    while True:
+        try:
+            cat = load_catalog("lakehouse")
+            cat.list_namespaces()
+            return cat
+        except Exception as exc:  # noqa: BLE001 - not up yet; give up after wait_s
+            if time.monotonic() > deadline:
+                raise
+            print(f"waiting for the catalog: {type(exc).__name__}", flush=True)
+            time.sleep(3)
 
 
 def create_missing(cat=None) -> list[str]:

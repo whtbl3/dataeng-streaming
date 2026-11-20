@@ -211,24 +211,23 @@ services:
       retries: 60
     mem_limit: 1536m
 
-  trino-init:
-    image: trinodb/trino:484
+  lakehouse-init: # idempotent: every bronze, silver and ops table from one definition (spec 009)
+    build: ../lakehouse
+    image: control-tower/lakehouse-init:0.12.0
     depends_on:
-      trino: { condition: service_healthy }
-    volumes: ["./trino/init:/init:ro"]
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        for f in /init/*.sql; do
-          echo "applying $$f"
-          trino --server http://trino:8080 --file "$$f" || exit 1
-        done
+      iceberg-rest: { condition: service_started, required: false }  # absent in AWS mode
+    env_file: ["${LAKEHOUSE_ENV:-./lakehouse.env}"]
+    environment:  # AWS mode only: short-lived credentials from the shell, never written
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
 
   # ---- Table maintenance (spec 005, ADR 0012) ------------------------------------------
   maintenance: # compaction, manifests, snapshot expiry, orphan files, retention; through Trino
     image: python:3.11.11-slim
     depends_on:
-      trino-init: { condition: service_completed_successfully }
+      lakehouse-init: { condition: service_completed_successfully }
     environment:
       TRINO_URL: http://trino:8080
       SNAPSHOT_RETENTION: ${SNAPSHOT_RETENTION:-7d}
@@ -242,7 +241,7 @@ services:
     build: ./dbt
     image: control-tower/dbt:1.11.16
     depends_on:
-      trino-init: { condition: service_completed_successfully }
+      lakehouse-init: { condition: service_completed_successfully }
     environment:
       DBT_TRINO_HOST: trino
       DBT_TRINO_PORT: "8080"
@@ -290,7 +289,7 @@ services:
       taskmanager: { condition: service_started }
       jobmanager: { condition: service_healthy }
       redpanda-init: { condition: service_completed_successfully }
-      trino-init: { condition: service_completed_successfully }
+      lakehouse-init: { condition: service_completed_successfully }
       serving-init: { condition: service_completed_successfully }
     environment:
       <<: *s3-env
@@ -311,14 +310,11 @@ services:
       - ../../contracts:/opt/ct/contracts:ro # shipped to the cluster via python.files
       - ../../schemas:/opt/ct/schemas:ro
       - ../../flink:/opt/ct/flink:ro # flink.udf (control tower rules) and the Python job
-      - ./iceberg:/opt/iceberg:ro
       - flink-checkpoints:/opt/flink/checkpoints # savepoint pointers (stop_jobs.sh / submit.sh)
     entrypoint: ["/bin/bash", "-c"]
-    # Trino creates the tables but cannot set identifier fields (the upsert key) or write.* properties
-    # (hash distribution, metadata cleanup), so table_admin.py sets them first (ADR 0011, spec 005).
+    # The tables exist before any job starts (lakehouse-init, from infra/lakehouse/tables.py).
     command:
       - >-
-        python /opt/iceberg/table_admin.py "$$ICEBERG_CATALOG_URI" apply &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_gps.sql bronze_gps &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/bronze_cdc.sql bronze_cdc &&
         /opt/flink/bin/submit.sh /opt/flink/jobs/silver_gps.sql silver_gps &&

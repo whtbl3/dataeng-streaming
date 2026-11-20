@@ -1,5 +1,5 @@
 -- Empty source tables for `make dbt-ci` (memory catalog): the same columns and types as
--- infra/local/trino/init/*.sql, so dbt can build the models empty and run its unit tests.
+-- infra/lakehouse/tables.py, so dbt can build the models empty and run its unit tests.
 CREATE SCHEMA IF NOT EXISTS lakehouse.silver;
 CREATE SCHEMA IF NOT EXISTS lakehouse.bronze;
 CREATE SCHEMA IF NOT EXISTS lakehouse.gold;
