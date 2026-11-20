@@ -8,4 +8,4 @@ From: plan.md (approved 2026-11-19). Tests first in every task.
 - [x] T5: unit tests, freshness, CI step (AC11, AC12)
 - [x] T6: scheduler + make targets (unit tests first); e2e AC7-AC10; memory AC13
 - [x] T7: ADR 0014 + docs, diagrams
-- [ ] T8: `make check`, `make e2e`, `make e2e-restart` green; spec Implemented; PR
+- [x] T8: `make check`, `make e2e`, `make e2e-restart` green; spec Implemented; PR

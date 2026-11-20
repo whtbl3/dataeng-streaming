@@ -1,5 +1,5 @@
 # Spec 007: Gold (delivery KPIs with dbt, intraday and nightly close)
-Status: Approved (2026-11-19) · Intent: roadmap item 7 · Author: project owner
+Status: Implemented (2026-11-20) · Intent: roadmap item 7 · Author: project owner
 
 <!-- WHAT and WHY only. No file names, no code, no SQL. -->
 
@@ -28,19 +28,19 @@ latest ETA and nothing about what was predicted 30 or 15 minutes before the dead
   the close being counted, not silently applied.
 
 ## Acceptance criteria
-- [ ] AC1: Given alerts and ETAs from the control tower, then every alert raise/resolve and the ETA of each open order at T-30 and T-15 before its promised end are stored in the lakehouse, append-only and replay-safe.
-- [ ] AC2: Given closed orders in silver, when gold is built, then there is exactly one fact row per closed order with its local day (Asia/Ho_Chi_Minh), outcome, on-time flag (a failed order is not on time), minutes late, ETA error at T-30 and T-15, first alert time and alert lead time, and the van version that was valid when it closed.
-- [ ] AC3: Given gold, then no table holds a customer's exact destination; only a coarse area (about 150 m) is kept (NFR-6).
-- [ ] AC4: Given a van that moves to another depot, when gold is built, then its earlier deliveries stay with the old depot and later ones go to the new one (versioned van dimension).
-- [ ] AC5: Given orders around local midnight, then each lands on the right local day (BR-4), in the fact and in the daily aggregate.
-- [ ] AC6: Given the daily aggregate per depot and day, then on-time rate, failure rate, stops per hour, mean and p90 ETA error, alert precision and recall equal the same figures computed by hand from the fact rows (data test).
-- [ ] AC7: Given the intraday run every 5 minutes, then today's and yesterday's provisional rows reflect every change within the last 2 h of event time, are marked provisional, and a run touches only that window.
-- [ ] AC8: Given the nightly close for a local day, then that day is recomputed in full, marked final, and recorded as closed with when it closed and how many late events it absorbed; running it again gives the same result.
-- [ ] AC9: Given an event for a closed day arrives after the close, then the closed day does not change, the arrival is counted as late-after-close, and an explicit, logged restatement of that day applies it.
-- [ ] AC10: Given the same simulated day sent clean and with chaos (spec 004), then gold KPIs are identical after the intraday run (for events up to 2 h late) and after the close (NFR-2).
-- [ ] AC11: Given a model change that breaks a data test (uniqueness, not-null, accepted values, relationships, the hand-computed KPIs), then the build fails locally and in CI.
-- [ ] AC12: Given silver stops receiving data, then a source freshness check warns after 10 min and fails after 30 min.
-- [ ] AC13: Given the core and CDC stack with all jobs and the gold scheduler running at dev size, then total container memory stays under 6 GB.
+- [x] AC1: Given alerts and ETAs from the control tower, then every alert raise/resolve and the ETA of each open order at T-30 and T-15 before its promised end are stored in the lakehouse, append-only and replay-safe.
+- [x] AC2: Given closed orders in silver, when gold is built, then there is exactly one fact row per closed order with its local day (Asia/Ho_Chi_Minh), outcome, on-time flag (a failed order is not on time), minutes late, ETA error at T-30 and T-15, first alert time and alert lead time, and the van version that was valid when it closed.
+- [x] AC3: Given gold, then no table holds a customer's exact destination; only a coarse area (about 150 m) is kept (NFR-6).
+- [x] AC4: Given a van that moves to another depot, when gold is built, then its earlier deliveries stay with the old depot and later ones go to the new one (versioned van dimension).
+- [x] AC5: Given orders around local midnight, then each lands on the right local day (BR-4), in the fact and in the daily aggregate.
+- [x] AC6: Given the daily aggregate per depot and day, then on-time rate, failure rate, stops per hour, mean and p90 ETA error, alert precision and recall equal the same figures computed by hand from the fact rows (data test).
+- [x] AC7: Given the intraday run every 5 minutes, then today's and yesterday's provisional rows reflect every change within the last 2 h of event time, are marked provisional, and a run touches only that window.
+- [x] AC8: Given the nightly close for a local day, then that day is recomputed in full, marked final, and recorded as closed with when it closed and how many late events it absorbed; running it again gives the same result.
+- [x] AC9: Given an event for a closed day arrives after the close, then the closed day does not change, the arrival is counted as late-after-close, and an explicit, logged restatement of that day applies it.
+- [x] AC10: Given the same simulated day sent clean and with chaos (spec 004), then gold KPIs are identical after the intraday run (for events up to 2 h late) and after the close (NFR-2).
+- [x] AC11: Given a model change that breaks a data test (uniqueness, not-null, accepted values, relationships, the hand-computed KPIs), then the build fails locally and in CI.
+- [x] AC12: Given silver stops receiving data, then a source freshness check warns after 10 min and fails after 30 min.
+- [x] AC13: Given the core and CDC stack with all jobs and the gold scheduler running at dev size, then total container memory stays under 6 GB.
 
 ## Out of scope
 - Dashboards (feature 8); Athena and dbt-athena (feature 9).
