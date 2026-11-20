@@ -45,6 +45,10 @@ Branch `feat/007-gold` is stacked on `feat/006-control-tower` (PR #15).
 - **ETA error uses the close time as the arrival** (the order data has no arrival time); noted in
   ADR 0014.
 - `minutes_late` is 0 for an on-time delivery and NULL for a failure.
+- **A reboot lost every job's place (spec 005 bug).** A JobManager stopped with SIGTERM suspends
+  its jobs and, without HA, deletes their retained checkpoints, so nothing resumed after the laptop
+  restarted (bronze could get duplicates, the control tower restarted empty). The JobManager now
+  stops with SIGKILL; the spec 005 restart test runs for both `kill` and `stop`.
 - A `.PHONY` typo from spec 006 (`table-healthaws-plan`) was fixed here and on `feat/006-control-tower`.
 
 ## Design

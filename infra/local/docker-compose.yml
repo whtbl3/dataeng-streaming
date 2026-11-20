@@ -256,6 +256,10 @@ services:
     build: ./flink
     image: control-tower/flink:1.20.5
     command: jobmanager
+    # Without HA, a JobManager that shuts down cleanly (SIGTERM: `docker stop`, a reboot) suspends
+    # its jobs and deletes their retained checkpoints, so nothing could resume. Killing it keeps
+    # them (spec 005 AC4). `make down` still stops every job with a savepoint first.
+    stop_signal: SIGKILL
     environment:
       FLINK_PROPERTIES: *flink-props
     ports: ["8081:8081"]
