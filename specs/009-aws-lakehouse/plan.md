@@ -13,6 +13,23 @@ catalog-specific today:
 - dbt has only the Trino adapter.
 Nothing is created on AWS without the owner's explicit OK in that session.
 
+## Spike outcome (T1, 2026-11-20)
+- **S1 one table definition works.** `infra/lakehouse/tables.py` (pyiceberg 0.12.0) checked against
+  the 11 tables Trino created: no difference in columns, types, required flags, partitions, sort
+  order, identifier fields or `write.*` properties; a deliberate change (month instead of day) is
+  reported. Tables it creates in the REST catalog read and write in Trino exactly like the Trino
+  ones (`format_version = 2`, `NOT NULL` keys, nested ROW types).
+- **S2 Flink has what Glue needs:** `GlueCatalog` is in `iceberg-flink-runtime-1.20-1.10.1.jar`, the
+  Glue and S3 SDK clients in `iceberg-aws-bundle-1.10.1.jar`; no new jar.
+- **S3 dbt-athena 1.11.1 has only `append` and `merge` for Iceberg** (no `delete+insert`). So both
+  engines now use one path: `merge`, with a pre-hook that deletes the partitions being rewritten
+  (the closing day, or the open days of the aggregate). The partition config is declared for both
+  adapters at once (`properties` is read by dbt-trino, `partitioned_by` and `table_type` by
+  dbt-athena; each ignores the other's keys), so no macro branches on the adapter either.
+  Cost: the delete and the merge are two commits; a failure between them leaves the day short
+  until the next run rewrites it (the next intraday run, or the close run again).
+- **S4** (`terraform validate`) is done with T5.
+
 ## Design
 **1. Catalog settings from one env value.**
 - `ICEBERG_CATALOG_OPTIONS` holds the Flink catalog options as `'k' = 'v'` pairs. It is used by
@@ -50,9 +67,8 @@ Nothing is created on AWS without the owner's explicit OK in that session.
 - The dbt image adds dbt-athena, pinned.
 - Engine differences stay in macros:
   - `partitioned_by()` per adapter;
-  - a `close_strategy()` macro: `delete+insert` on Trino; on Athena, `merge` plus a pre-hook
-    `DELETE` of the closing day's partition, because dbt-athena has no `delete+insert` for
-    Iceberg.
+  - (S3) one strategy for both engines: `merge` plus a pre-hook `DELETE` of the partitions
+    being rewritten, because dbt-athena has no `delete+insert` for Iceberg.
 - Models are unchanged.
 
 **5. Terraform** (`infra/aws/lakehouse/`, its own root; `aws-plan/up/down` stay for feature 10):

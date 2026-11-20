@@ -1,7 +1,7 @@
 # Tasks 009: AWS lakehouse
 From: plan.md (approved 2026-11-20). Tests first in every task.
 
-- [ ] T1: spikes S1-S4, outcome in plan.md
+- [x] T1: spikes S1-S4, outcome in plan.md
 - [ ] T2: catalog options from env (jobs, submit, compose); local regression
 - [ ] T3: tests, then `tables.py` replaces Trino DDL + `table_admin.py`; `lakehouse-init`; local e2e
 - [ ] T4: dbt aws target, adapter macros, image; `make dbt-ci`
