@@ -8,23 +8,26 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: sticky left nav (parts 1–7) + one reading column. Seven parts, each answering one question;
-   flow steps B1–B7 (part 2) link the parts. Light/dark tokens below. */
+/* Layout: sticky left nav + one reading column. One data set (section 0) runs through features 1–9;
+   each feature: problem → diagram → data in → processing (real code) → data out → result. */
 :root {
   --bg: #F7F6F2; --paper: #FFFFFF; --sunk: #F0EEE8; --ink: #1B1E23; --soft: #4A4F57; --faint: #7B8089; --line: #E4E1D8;
   --accent: #2563C9; --accent-ink: #1D4E9E; --accent-bg: #E9F0FB; --on-accent: #FFFFFF;
   --ok: #157A4B; --ok-bg: #EAF6EF; --plan: #6B7079; --plan-bg: #F0F0EE; --bad: #B4322A; --bad-bg: #FCEFED; --hl: #FFF5CC;
+  --code-bg: #F3F1EB; --kw: #1D4E9E; --cm: #7B8089;
   --f-b: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #121417; --paper: #1A1D21; --sunk: #22262B; --ink: #ECEDEF; --soft: #B6BAC1; --faint: #8B9099; --line: #2D3137;
   --accent: #7AA7EC; --accent-ink: #A8C6F3; --accent-bg: #1C2A40; --on-accent: #10151C;
-  --ok: #6BCB97; --ok-bg: #16281F; --plan: #9AA0A8; --plan-bg: #24272C; --bad: #F08F86; --bad-bg: #33201E; --hl: #3A3315; color-scheme: dark; } }
+  --ok: #6BCB97; --ok-bg: #16281F; --plan: #9AA0A8; --plan-bg: #24272C; --bad: #F08F86; --bad-bg: #33201E; --hl: #3A3315;
+  --code-bg: #16191C; --kw: #A8C6F3; --cm: #8B9099; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #121417; --paper: #1A1D21; --sunk: #22262B; --ink: #ECEDEF; --soft: #B6BAC1; --faint: #8B9099; --line: #2D3137;
   --accent: #7AA7EC; --accent-ink: #A8C6F3; --accent-bg: #1C2A40; --on-accent: #10151C;
-  --ok: #6BCB97; --ok-bg: #16281F; --plan: #9AA0A8; --plan-bg: #24272C; --bad: #F08F86; --bad-bg: #33201E; --hl: #3A3315; color-scheme: dark; }
+  --ok: #6BCB97; --ok-bg: #16281F; --plan: #9AA0A8; --plan-bg: #24272C; --bad: #F08F86; --bad-bg: #33201E; --hl: #3A3315;
+  --code-bg: #16191C; --kw: #A8C6F3; --cm: #8B9099; color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html { scroll-padding-top: 24px; }
@@ -42,7 +45,7 @@ button { font: inherit; color: inherit; }
 .brand { font-weight: 700; font-size: 15px; line-height: 1.35; padding: 0 10px; }
 .brand small { display: block; font-weight: 500; font-size: 12.5px; color: var(--faint); }
 .nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.nav a { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: baseline; padding: 7px 10px; border-radius: 8px; color: var(--soft); text-decoration: none; font-size: 14.5px; line-height: 1.4; }
+.nav a { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: baseline; padding: 6px 10px; border-radius: 8px; color: var(--soft); text-decoration: none; font-size: 14px; line-height: 1.4; }
 .nav a span { font: 600 11.5px var(--f-m); color: var(--faint); }
 .nav a:hover { background: var(--sunk); color: var(--ink); }
 .nav a.on { background: var(--accent-bg); color: var(--accent-ink); font-weight: 600; }
@@ -50,889 +53,1014 @@ button { font: inherit; color: inherit; }
 .btn { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--soft); }
 .btn:hover { color: var(--ink); border-color: var(--faint); }
 .side .btn { margin-top: auto; align-self: flex-start; margin-left: 10px; }
-.wrap { padding: 56px 56px 140px; max-width: 920px; display: grid; gap: 88px; min-width: 0; }
+.wrap { padding: 56px 56px 140px; max-width: 920px; display: grid; gap: 96px; min-width: 0; }
 .wrap > * { min-width: 0; }
 @media (max-width: 1000px) {
   .shell { display: block; }
   .side { position: sticky; z-index: 5; height: auto; flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 16px; border-right: 0; border-bottom: 1px solid var(--line); background: var(--bg); }
   .side .nav { display: none; }
   .brand { padding: 0; } .side .btn { margin: 0; }
-  .wrap { padding: 32px 16px 96px; gap: 64px; }
+  .wrap { padding: 32px 16px 96px; gap: 72px; }
 }
 
 /* intro */
 .intro { display: grid; gap: 16px; }
 .eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); }
 .intro h1 { font-size: clamp(30px, 4.4vw, 42px); font-weight: 700; letter-spacing: -.02em; }
-.lede { font-size: 18px; color: var(--soft); max-width: 60ch; }
-.map { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 10px; }
-.map a { height: 100%; display: grid; align-content: start; gap: 4px; padding: 14px 16px 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); text-decoration: none; transition: border-color .15s, transform .15s; }
-.map a:hover { border-color: var(--accent); }
-.map .no { font: 600 12px var(--f-m); color: var(--accent-ink); }
-.map b { font-size: 16.5px; }
-.map .qq { font-size: 14px; line-height: 1.5; color: var(--soft); }
-.map .not { font-size: 12.5px; color: var(--faint); margin-top: 4px; }
-.thread { font-size: 15px; color: var(--soft); max-width: 70ch; }
+.lede { font-size: 18px; color: var(--soft); max-width: 62ch; }
+.anat { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.anat span { font-size: 13.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--soft); }
+.anat span b { font: 700 11.5px var(--f-m); color: var(--accent-ink); margin-right: 6px; }
+.note { font-size: 14.5px; color: var(--soft); max-width: 72ch; }
 
 /* parts */
-section.part { display: grid; gap: 24px; scroll-margin-top: 24px; }
+section.part { display: grid; gap: 22px; scroll-margin-top: 24px; }
 section.part > * { min-width: 0; }
 .part > h2 { display: grid; gap: 8px; font-size: clamp(25px, 3.2vw, 32px); font-weight: 700; letter-spacing: -.02em; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-.part > h2 .n { justify-self: start; font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); }
-.part > h2 .n::before { content: "Phần "; }
+.part > h2 .n { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); }
 .part > p { max-width: 70ch; }
-.scope { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 14px; color: var(--soft); margin-top: -8px; }
-.scope div { display: flex; gap: 8px; align-items: baseline; }
-.scope b { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
-.scope .in b { color: var(--ok); } .scope .out b { color: var(--faint); }
-.q { display: grid; gap: 14px; padding-top: 12px; }
+.q { display: grid; gap: 14px; padding-top: 10px; }
 .q > * { min-width: 0; }
-.q h3 { font-size: 19.5px; font-weight: 700; display: flex; gap: 10px; align-items: baseline; }
+.q h3 { font-size: 19px; font-weight: 700; display: flex; gap: 10px; align-items: baseline; }
 .q h3 .k { font: 600 13px var(--f-m); color: var(--faint); }
-.q p, .q ul { max-width: 70ch; }
-ul.pts { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
-ul.pts li::marker { color: var(--faint); }
+.q p, .q ul, .q ol { max-width: 70ch; }
+ul.pts, ol.pts { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+ul.pts li::marker, ol.pts li::marker { color: var(--faint); }
 
-/* callouts: label on its own line, soft fill, no heavy borders */
-.prob, .sol, .ana, .key { border-radius: 12px; padding: 13px 16px 14px; max-width: 76ch; font-size: 15.5px; line-height: 1.7; }
-.prob > b:first-child, .sol > b:first-child, .ana > b:first-child, .key > b:first-child { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 2px; }
+/* callouts */
+.prob, .sol, .ana, .key, .warn { border-radius: 12px; padding: 13px 16px 14px; max-width: 76ch; font-size: 15.5px; line-height: 1.7; }
+.prob > b:first-child, .sol > b:first-child, .ana > b:first-child, .key > b:first-child, .warn > b:first-child { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 2px; }
 .prob { background: var(--bad-bg); } .prob > b:first-child { color: var(--bad); }
 .sol { background: var(--ok-bg); } .sol > b:first-child { color: var(--ok); }
 .ana { background: var(--paper); border: 1px solid var(--line); } .ana > b:first-child { color: var(--accent-ink); }
 .key { background: var(--accent-bg); } .key > b:first-child { color: var(--accent-ink); }
-
-.step { display: grid; gap: 10px; padding: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
-.step > p:first-child { font-weight: 700; font-size: 16.5px; display: flex; gap: 10px; align-items: center; line-height: 1.4; }
-.step .prob, .step .sol, .step .ana { max-width: none; }
+.warn { background: var(--hl); } .warn > b:first-child { color: var(--ink); }
+.key ul, .sol ul { margin: 4px 0 0; padding-left: 1.2em; }
 
 /* small marks */
-.st { display: inline-block; font: 600 11.5px/1 var(--f-b); padding: 4px 8px; border-radius: 999px; vertical-align: 1px; white-space: nowrap; }
+.st { display: inline-block; font: 600 11.5px/1 var(--f-b); padding: 4px 8px; border-radius: 999px; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; text-transform: none; }
 .st.ok { color: var(--ok); background: var(--ok-bg); }
 .st.plan { color: var(--plan); background: var(--plan-bg); }
-.pn { font: 600 12.5px var(--f-m); color: var(--accent-ink); background: var(--accent-bg); border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
-.bs { font: 700 11.5px/1 var(--f-m); color: var(--on-accent); background: var(--accent); border-radius: 6px; padding: 4px 6px; white-space: nowrap; display: inline-block; vertical-align: 1px; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--soft); }
+.st.part { color: var(--bad); background: var(--bad-bg); }
+.ft { font: 700 10.5px/1 var(--f-m); color: var(--accent-ink); background: var(--accent-bg); border-radius: 5px; padding: 3px 5px; white-space: nowrap; }
+.adr { font-size: 14px; color: var(--soft); }
 
 /* tables */
 .tw { overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
+.tcap { font-size: 13.5px; font-weight: 600; color: var(--soft); margin-bottom: -6px; }
+.tcap code { font-weight: 600; }
 table { border-collapse: collapse; width: 100%; font-size: 14.5px; line-height: 1.55; }
 table.wide { min-width: 680px; }
-th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th, td { text-align: left; vertical-align: top; padding: 9px 14px; border-bottom: 1px solid var(--line); }
 tr:last-child td { border-bottom: 0; }
-th { background: var(--sunk); font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+th { background: var(--sunk); font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--faint); font-family: var(--f-m); }
 td.m, td code { font-family: var(--f-m); font-size: 13px; } td code { background: none; padding: 0; }
-tr.hl td { background: var(--hl); } tr.new td { background: var(--ok-bg); }
+tr.hl td { background: var(--hl); } tr.new td { background: var(--ok-bg); } tr.bad td { background: var(--bad-bg); }
+tr.gone td { color: var(--faint); text-decoration: line-through; text-decoration-color: var(--faint); }
 .ok-t { color: var(--ok); font-weight: 600; } .bad-t { color: var(--bad); font-weight: 600; }
 
-/* figures */
-figure { margin: 0; display: grid; gap: 8px; }
-figcaption { font-size: 14px; color: var(--soft); max-width: 74ch; }
-.svgw { overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
-.svgw svg { display: block; width: 100%; min-width: 640px; height: auto; }
-svg .ax { stroke: var(--faint); stroke-width: 1; }
-svg .grid { stroke: var(--line); stroke-dasharray: 3 4; }
-svg .w { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 1.3; }
-svg .wb { fill: var(--accent); opacity: .4; }
-svg .d { fill: var(--ink); }
-svg .lb { fill: var(--ink); font: 700 13px var(--f-b); }
-svg .sm { fill: var(--soft); font: 12px var(--f-b); }
-svg .src { fill: var(--paper); stroke: var(--faint); stroke-width: 1.3; }
-svg .stp { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 1.3; }
-svg .usr { fill: var(--ok-bg); stroke: var(--ok); stroke-width: 1.3; }
-svg .rej { fill: var(--bad-bg); stroke: var(--bad); stroke-width: 1.3; }
-svg .ar { stroke: var(--faint); stroke-width: 1.5; fill: none; marker-end: url(#ah); }
-svg .ar.dash { stroke-dasharray: 5 4; }
-svg .ah { fill: var(--faint); }
-svg .t1 { fill: var(--ink); font: 700 13px var(--f-b); text-anchor: middle; }
-svg .t2 { fill: var(--soft); font: 11.5px var(--f-b); text-anchor: middle; }
-svg .tl { fill: var(--accent-ink); font: 600 11.5px var(--f-b); }
+/* code */
+figure { margin: 0; display: grid; gap: 0; }
+figure.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+figure.code figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--soft); }
+figure.code figcaption b { font: 700 11px var(--f-m); letter-spacing: .06em; color: var(--accent-ink); }
+figure.code figcaption code { background: none; padding: 0; }
+pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 13px/1.65 var(--f-m); tab-size: 2; }
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+pre .c { color: var(--cm); font-style: italic; } pre .k { color: var(--kw); font-weight: 600; } pre .h { background: var(--hl); border-radius: 3px; }
 
-/* architecture lanes */
-.flow { overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-.lanes { display: grid; gap: 12px; min-width: 760px; }
-.lane { display: grid; grid-template-columns: 110px repeat(4, minmax(0, 1fr)); gap: 14px; align-items: center; }
-.lane > i { font-style: normal; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); line-height: 1.4; }
-.lane > i small { display: block; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px; }
-.box { position: relative; background: var(--accent-bg); border: 1px solid transparent; border-radius: 9px; padding: 7px 10px; font-size: 13.5px; font-weight: 600; line-height: 1.35; }
-.box small { display: block; font: 500 12px var(--f-b); color: var(--soft); }
-.box.plan { background: transparent; border: 1px dashed var(--plan); color: var(--soft); font-weight: 500; }
-.box + .box::before { content: "→"; position: absolute; left: -8px; top: 50%; transform: translate(-50%, -50%); color: var(--faint); font-size: 13px; font-weight: 400; }
+/* flow diagrams: rows of nodes joined by arrows */
+.flow { overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.flow > p { font-size: 13.5px; color: var(--soft); }
+.row { display: flex; align-items: stretch; gap: 22px; min-width: max-content; }
+.row > i { font-style: normal; width: 96px; flex: none; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); line-height: 1.4; align-self: center; }
+.nd { position: relative; background: var(--sunk); border: 1px solid var(--line); border-radius: 9px; padding: 7px 11px; font-size: 13.5px; font-weight: 600; line-height: 1.35; max-width: 210px; }
+.nd small { display: block; font: 500 12px var(--f-m); color: var(--soft); }
+.nd.new { background: var(--accent-bg); border-color: var(--accent); }
+.nd.bad { background: var(--bad-bg); border-color: var(--bad); }
+.nd.out { background: var(--ok-bg); border-color: var(--ok); }
+.nd .ft { position: absolute; top: -8px; right: -6px; }
+.nd + .nd::before { content: "→"; position: absolute; left: -12px; top: 50%; transform: translate(-50%, -50%); color: var(--faint); font-size: 14px; font-weight: 400; }
+.row.fork .nd:first-of-type::before { content: "↳"; position: absolute; left: -12px; top: 50%; transform: translate(-50%, -50%); color: var(--faint); font-size: 14px; font-weight: 400; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--soft); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--sunk); }
+.legend i.new { background: var(--accent-bg); border-color: var(--accent); }
+.legend i.out { background: var(--ok-bg); border-color: var(--ok); }
+.legend i.bad { background: var(--bad-bg); border-color: var(--bad); }
+
+/* side-by-side cards */
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.card .lbl { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
+.card .big { font: 700 22px/1.3 var(--f-m); }
+.card p { font-size: 14.5px; color: var(--soft); }
+.card.win { border-color: var(--ok); background: var(--ok-bg); } .card.win .lbl { color: var(--ok); }
+.card.lose { border-color: var(--bad); background: var(--bad-bg); } .card.lose .lbl { color: var(--bad); }
+
+/* math rows */
+.calc { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; max-width: 76ch; }
+.calc div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; font-size: 15px; }
+.calc div span:last-child { font: 600 14px var(--f-m); text-align: right; }
+.calc div.tot { border-top: 1px solid var(--line); padding-top: 10px; font-weight: 700; }
 
 /* timeline */
 .story { list-style: none; margin: 0; padding: 0; display: grid; max-width: 74ch; }
-.story li { display: grid; grid-template-columns: 4.8em minmax(0, 1fr); gap: 16px; }
+.story li { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 16px; }
 .story .t { font: 600 13px/1.7 var(--f-m); color: var(--faint); text-align: right; padding-top: 1px; }
-.story .b { border-left: 2px solid var(--line); padding: 0 0 20px 20px; position: relative; display: grid; gap: 2px; }
+.story .b { border-left: 2px solid var(--line); padding: 0 0 18px 20px; position: relative; display: grid; gap: 2px; }
 .story li:last-child .b { padding-bottom: 2px; }
 .story .b::before { content: ""; position: absolute; left: -6px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--paper); border: 2px solid var(--accent); }
 .story li.ev .b::before { background: var(--bad); border-color: var(--bad); }
-.story li.ev .who { color: var(--bad); }
 .story .who { font-weight: 700; font-size: 15.5px; }
-.story .b p { color: var(--soft); }
-
-/* failure cards */
-h3.grp { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--soft); padding-top: 14px; }
-.err { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; }
-.err.plan { background: transparent; border-style: dashed; }
-.err .hd { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 16px; font-weight: 700; line-height: 1.4; }
-.err .hd .no { font: 700 11.5px/1 var(--f-m); color: var(--bad); background: var(--bad-bg); padding: 4px 7px; border-radius: 6px; }
-dl.pat { margin: 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 16px; font-size: 15px; line-height: 1.65; }
-dl.pat dt { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); padding-top: 3px; }
-dl.pat dt.v { color: var(--bad); } dl.pat dt.c { color: var(--ok); }
-dl.pat dd { margin: 0; min-width: 0; }
-@media (max-width: 560px) { dl.pat { grid-template-columns: minmax(0, 1fr); gap: 0; } dl.pat dd { margin-bottom: 10px; } .story li { grid-template-columns: 3.8em minmax(0, 1fr); gap: 12px; } }
+.story .b p { color: var(--soft); font-size: 15px; }
+@media (max-width: 560px) { .story li { grid-template-columns: 4.4em minmax(0, 1fr); gap: 12px; } }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-/* window cards (5.3) */
-.wcard { display: grid; gap: 12px; padding: 18px 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
-.wcard > * { min-width: 0; }
-.wcard h4 { margin: 0; font-size: 17.5px; font-weight: 700; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
-.wcard h4 small { font-size: 13px; font-weight: 500; color: var(--faint); }
-.wcard .wn { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 700; align-self: center; }
-.wcard .prob { max-width: none; }
-.wex { color: var(--soft); font-size: 15px; }
-.wuse { font-size: 13.5px; color: var(--faint); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.strip-w { overflow-x: auto; padding-bottom: 2px; }
-.strip { display: grid; grid-template-columns: repeat(var(--n), minmax(30px, 1fr)); gap: 3px; min-width: calc(var(--n) * 33px); }
-.strip .h { font: 11px var(--f-m); color: var(--faint); text-align: center; }
-.strip .c { font: 600 12.5px var(--f-m); text-align: center; padding: 7px 0; border-radius: 5px; background: var(--sunk); }
-.strip .c.stop { background: var(--bad-bg); color: var(--bad); }
-.strip .lbl { grid-column: 1 / -1; font-size: 13px; color: var(--soft); margin-top: 8px; }
-.strip .bar { font-size: 12.5px; font-weight: 600; padding: 5px 8px; border-radius: 6px; background: var(--accent-bg); color: var(--accent-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.strip .bar.alt { background: var(--sunk); color: var(--soft); text-align: center; }
-.strip .bar.bad { background: var(--bad-bg); color: var(--bad); text-align: center; }
 </style>
 </head>
 <body>
-
 <div class="shell">
   <aside class="side">
-    <div class="brand">Delivery Control Tower<small>Tài liệu thiết kế</small></div>
+    <div class="brand">Delivery Control Tower<small>Học qua dữ liệu thật</small></div>
     <ol class="nav">
-      <li><a href="#top"><span>00</span>Tổng quan</a></li>
-      <li><a href="#p1"><span>01</span>Nghiệp vụ</a></li>
-      <li><a href="#p2"><span>02</span>Luồng dữ liệu</a></li>
-      <li><a href="#p3"><span>03</span>Kiến trúc</a></li>
-      <li><a href="#p4"><span>04</span>Mô hình dữ liệu</a></li>
-      <li><a href="#p5"><span>05</span>Logic xử lý stream</a></li>
-      <li><a href="#p6"><span>06</span>Sự cố</a></li>
-      <li><a href="#p7"><span>07</span>Quy trình</a></li>
+      <li><a href="#top"><span>00</span>Bộ dữ liệu</a></li>
+      <li><a href="#f1"><span>01</span>Walking skeleton</a></li>
+      <li><a href="#f2"><span>02</span>CDC đơn hàng</a></li>
+      <li><a href="#f3"><span>03</span>Data contract, DLQ</a></li>
+      <li><a href="#f4"><span>04</span>Silver</a></li>
+      <li><a href="#f5"><span>05</span>Scale</a></li>
+      <li><a href="#f6"><span>06</span>Control tower</a></li>
+      <li><a href="#f7"><span>07</span>Gold với dbt</a></li>
+      <li><a href="#f8"><span>08</span>Dashboard, health</a></li>
+      <li><a href="#f9"><span>09</span>Lakehouse trên AWS</a></li>
+      <li><a href="#sum"><span>✓</span>Tổng kết</a></li>
     </ol>
-    <button class="btn" id="theme" type="button"></button>
+    <button class="btn" id="theme" type="button">Giao diện tối</button>
   </aside>
 
-<main class="wrap">
-  <div class="intro" id="top">
-    <p class="eyebrow">Delivery Control Tower · tài liệu thiết kế</p>
-    <h1>Hiểu hệ thống từng phần</h1>
-    <p class="lede">Bảy phần, mỗi phần trả lời đúng một câu hỏi. Đọc theo thứ tự: hiểu nghiệp vụ, rồi vẽ luồng dữ liệu, rồi mới chọn công cụ và thiết kế bảng.</p>
-    <ol class="map">
-      <li><a href="#p1"><span class="no">01</span><b>Nghiệp vụ</b><span class="qq">Công ty cần biết gì, ai cần, nhanh cỡ nào?</span><span class="not">Chưa nói: mọi thứ kỹ thuật</span></a></li>
-      <li><a href="#p2"><span class="no">02</span><b>Luồng dữ liệu</b><span class="qq">Dữ liệu đi từ đâu, qua những bước nào, tới ai?</span><span class="not">Chưa nói: tên công cụ, tên bảng</span></a></li>
-      <li><a href="#p3"><span class="no">03</span><b>Kiến trúc</b><span class="qq">Mỗi bước chạy trên công cụ gì, vì sao chọn nó?</span><span class="not">Chưa nói: bảng, cột, khóa</span></a></li>
-      <li><a href="#p4"><span class="no">04</span><b>Mô hình dữ liệu</b><span class="qq">Bảng nào, một dòng là gì, khóa là gì?</span><span class="not">Chưa nói: công cụ, cách tính</span></a></li>
-      <li><a href="#p5"><span class="no">05</span><b>Logic xử lý stream</b><span class="qq">Tính trên dòng dữ liệu không bao giờ dừng thế nào? Theo sách <i>Streaming Systems</i>.</span><span class="not">Chưa nói: sự cố</span></a></li>
-      <li><a href="#p6"><span class="no">06</span><b>Sự cố</b><span class="qq">Ở từng bước, cái gì có thể hỏng, xử lý bằng pattern nào? Theo sách <i>DE Design Patterns</i>.</span></a></li>
-      <li><a href="#p7"><span class="no">07</span><b>Quy trình</b><span class="qq">Project được làm và kiểm chứng theo quy trình nào?</span></a></li>
-    </ol>
-    <p class="thread">Sợi chỉ nối các phần là <b>7 bước của luồng dữ liệu</b>, <span class="bs">B1</span> tới <span class="bs">B7</span>, định nghĩa ở phần 2. Phần 3, 4 và 6 đều xếp theo 7 bước đó. Ví dụ xuyên suốt: đơn <code>ORD_002</code> trên xe <code>VAN-0001</code>.</p>
+  <main class="wrap">
+
+<!-- ======================= 0. DATA SET ======================= -->
+<section class="part" id="top">
+  <div class="intro">
+    <div class="eyebrow">Delivery Control Tower · tài liệu thiết kế</div>
+    <h1>Học kiến trúc qua một chuyến xe</h1>
+    <p class="lede">Một xe, hai đơn hàng, sáu lần báo vị trí, trong đó có lần cố tình bị lỗi. Bộ dữ liệu nhỏ này đi qua cả 9 feature. Ở mỗi feature, bạn thấy dữ liệu trước, đoạn code xử lý nó, và dữ liệu sau.</p>
+    <div class="anat">
+      <span><b>1</b>Bài toán</span><span><b>2</b>Sơ đồ</span><span><b>3</b>Dữ liệu vào</span><span><b>4</b>Xử lý (code thật)</span><span><b>5</b>Dữ liệu ra</span><span><b>✓</b>Kết quả và test chứng minh</span>
+    </div>
+    <p class="note">Code trích từ repo, có rút gọn; đường dẫn file ghi ở đầu mỗi đoạn. Những giá trị không thể lấy từ code (số LSN, offset Kafka, tọa độ) được ghi là <em>minh họa</em>. Giờ trong bài là giờ Việt Nam cho dễ đọc; trong hệ thống, <code>event_ts</code> luôn lưu theo UTC (08:05 giờ VN = 01:05Z).</p>
   </div>
 
-  <!-- ============================ 1. BUSINESS ============================ -->
-  <section id="p1" class="part">
-    <h2><span class="n">1</span>Nghiệp vụ: công ty cần gì?</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>người dùng, quyết định của họ, các định nghĩa và con số yêu cầu</div><div class="out"><b>Chưa nói</b>dữ liệu đi đâu, dùng công cụ gì</div></div>
+  <h2><span class="n">Phần 0</span>Bộ dữ liệu dùng xuyên suốt</h2>
+  <p>Sáng thứ Sáu 20/11/2026, xe <code>VAN-0001</code> của kho <code>DEP-01</code> (District 1 Hub) rời kho lúc 08:00 với hai đơn. Đơn 1 là điểm giao đầu tiên, đơn 2 là điểm thứ hai.</p>
 
-    <div class="q">
-      <h3><span class="k">1.1</span>Công ty và vấn đề</h3>
-      <p>Một công ty giao hàng chặng cuối ở TP.HCM: <b>200 xe tải nhỏ</b>, khoảng <b>5.000 đơn mỗi ngày</b>, nhiều kho. Mỗi đơn có một <b>giờ hạn đã hứa</b> với khách. Mỗi xe chở nhiều đơn và giao theo thứ tự.</p>
-      <div class="prob"><b>Vấn đề hôm nay</b> Vị trí xe và trạng thái đơn nằm ở hai hệ thống tách rời. Điều phối viên chỉ biết đơn trễ <b>sau khi</b> hạn đã qua, lúc đó không còn làm gì được. Quản lý nhận tỉ lệ giao đúng giờ vào <b>sáng hôm sau</b>.</div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">1.2</span>Ai cần gì để quyết định gì</h3>
-      <div class="tw"><table class="wide">
-        <tr><th>Người dùng</th><th>Quyết định họ phải ra</th><th>Họ cần biết</th><th>Cần nhanh cỡ nào</th></tr>
-        <tr><td><b>Điều phối viên</b> (dispatcher)</td><td>Gọi khách báo trễ, hoặc chuyển đơn sang xe khác</td><td>Đơn nào <b>sắp</b> trễ, xe đang ở đâu, xe nào dừng bất thường</td><td>vài giây</td></tr>
-        <tr><td><b>Quản lý vận hành</b></td><td>Kho nào, tài xế nào, khung giờ nào cần cải thiện</td><td>Tỉ lệ đúng giờ, số điểm giao mỗi giờ, theo kho và ngày</td><td>vài phút; số chính thức mỗi sáng</td></tr>
-        <tr><td><b>Chuyên viên phân tích</b> (analyst)</td><td>Có nên đổi cách dự đoán giờ tới, đổi quy trình không</td><td>Lịch sử nhiều tuần: dự đoán đã sai bao nhiêu, giờ nào hay trễ</td><td>không cần nhanh, cần đúng và đủ</td></tr>
-      </table></div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">1.3</span>Một ngày của đơn ORD_002, nhìn bằng mắt nghiệp vụ</h3>
-      <ol class="story">
-        <li><div class="t">Tối qua</div><div class="b"><div class="who">Khách đặt hàng</div><p>Hứa giao trước <b>08:33</b> sáng mai.</p></div></li>
-        <li><div class="t">07:30</div><div class="b"><div class="who">Đơn được phân cho xe VAN-0001</div><p>Là điểm giao số 1. Cùng xe có ORD_005, điểm số 2, hạn 09:30.</p></div></li>
-        <li><div class="t">08:00</div><div class="b"><div class="who">Xe rời kho</div><p>Hai đơn chuyển sang "đang giao". Thiết bị trên xe báo vị trí mỗi 5 giây.</p></div></li>
-        <li class="ev"><div class="t">08:10</div><div class="b"><div class="who">Kẹt xe: dự đoán đơn sẽ trễ</div><p>Còn 7 km, xe chỉ chạy 12 km/h → dự đoán tới <b>08:45</b>, trễ 12 phút. Điều phối viên được báo ngay, khi còn 23 phút. Họ gọi khách (khách đồng ý chờ) và chuyển ORD_005 sang xe VAN-0007 để đơn đó khỏi trễ theo.</p></div></li>
-        <li><div class="t">08:47</div><div class="b"><div class="who">Giao xong, trễ 14 phút</div></div></li>
-        <li><div class="t">09:00</div><div class="b"><div class="who">Quản lý xem tỉ lệ đúng giờ hôm nay</div><p>Đã tính cả ORD_002. Đây là số <b>tạm</b>, có thể còn đổi.</p></div></li>
-        <li><div class="t">01:00</div><div class="b"><div class="who">Chốt sổ ngày hôm qua</div><p>Từ đây tỉ lệ của ngày 19/11 là số <b>chính thức</b>, dùng cho báo cáo.</p></div></li>
-        <li><div class="t">Tuần sau</div><div class="b"><div class="who">Analyst hỏi: dự đoán có đáng tin?</div><p>Lúc 08:18 hệ thống đoán 08:45, thực tế 08:47: sai 2 phút. Gộp cả tháng, kho Quận 7 giờ cao điểm sai trung bình 15 phút → đề xuất chỉnh cách dự đoán.</p></div></li>
-      </ol>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">1.4</span>Những việc xảy ra trong nghiệp vụ (business events)</h3>
-      <p>Mọi con số ở trên đều được tính từ hai loại "việc xảy ra":</p>
-      <div class="tw"><table class="wide">
-        <tr><th>Việc xảy ra</th><th>Ai tạo ra</th><th>Bao nhiêu</th><th>Đặc điểm nghiệp vụ</th></tr>
-        <tr><td><b>Xe báo vị trí</b></td><td>thiết bị trên xe (team thiết bị)</td><td>200 xe × 12 lần/phút ≈ 3,5 triệu/ngày</td><td>Mỗi lần báo là một việc mới, không bao giờ sửa. Mất sóng thì báo bù sau, có khi báo hai lần.</td></tr>
-        <tr><td><b>Đơn đổi trạng thái</b>: tạo → phân xe → đang giao → giao xong / thất bại</td><td>hệ thống đơn hàng (team khác)</td><td>~5.000 đơn × 4–5 lần ≈ 25.000/ngày</td><td>Hệ thống đơn chỉ giữ trạng thái <b>hiện tại</b>; trạng thái cũ bị ghi đè. Đơn có thể đổi xe giữa chừng.</td></tr>
-        <tr><td>Thông tin kho, xe</td><td>hệ thống đơn hàng</td><td>vài trăm dòng</td><td>Gần như không đổi, nhưng xe có thể chuyển kho.</td></tr>
-      </table></div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">1.5</span>Định nghĩa nghiệp vụ (để ai tính cũng ra một số)</h3>
-      <div class="tw"><table class="wide">
-        <tr><th>Mã</th><th>Khái niệm</th><th>Định nghĩa</th><th>Ví dụ</th></tr>
-        <tr><td>BR-1</td><td>Giao trễ</td><td>Giao xong sau giờ hạn</td><td>ORD_002: 08:47 &gt; 08:33 → trễ 14 phút</td></tr>
-        <tr><td>BR-2</td><td>Tỉ lệ đúng giờ</td><td>Số đơn đúng giờ ÷ (giao xong + thất bại). Đơn thất bại tính là <b>không</b> đúng giờ.</td><td>9 đúng giờ, 1 trễ → 90%</td></tr>
-        <tr><td>BR-3</td><td>Đơn có nguy cơ trễ</td><td>Đơn đang giao có giờ dự đoán tới vượt hạn ≥ 1 phút. Báo <b>một lần</b> mỗi đơn.</td><td>08:10: dự đoán 08:45 &gt; 08:33 → báo</td></tr>
-        <tr><td>BR-4</td><td>Ngày làm việc</td><td>Ngày theo giờ Việt Nam (UTC+7)</td><td>06:30 sáng 20/11 thuộc ngày 20/11, dù theo UTC là 23:30 ngày 19/11</td></tr>
-        <tr><td>BR-5</td><td>Chất lượng cảnh báo</td><td>Bao nhiêu % cảnh báo là đúng; bao nhiêu % đơn trễ được báo trước ≥ 15 phút</td><td>—</td></tr>
-        <tr><td>—</td><td>Dừng bất thường</td><td>Xe đứng yên quá N phút ở chỗ cách mọi điểm giao và kho hơn 100 m</td><td>VAN-0042 đứng 12 phút trong hẻm</td></tr>
-      </table></div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">1.6</span>Yêu cầu viết thành con số</h3>
-      <ul class="pts">
-        <li><b>Nhanh:</b> cảnh báo tới điều phối viên trong 10 giây (p95) kể từ lúc xe báo vị trí, và sớm ít nhất 15 phút trước khi trễ thật. Số tạm của quản lý chậm tối đa 5 phút.</li>
-        <li><b>Đúng:</b> vị trí báo trễ hay báo trùng <b>không</b> được làm đổi tỉ lệ đúng giờ.</li>
-        <li><b>Đủ:</b> không mất một lần báo vị trí hay một lần đổi trạng thái nào.</li>
-        <li><b>Riêng tư:</b> báo cáo không chứa địa chỉ nhà khách, chỉ khu vực.</li>
-        <li><b>Rẻ:</b> chạy trên laptop $0; mỗi lần demo trên AWS dưới $5.</li>
-      </ul>
-      <div class="key"><b>Điểm cần nhớ</b> Ba người dùng cần ba độ nhanh khác nhau (giây, phút, ngày). Đây là đầu vào quyết định toàn bộ luồng dữ liệu ở phần 2.</div>
-    </div>
-  </section>
-
-  <!-- ============================ 2. LOGICAL DATA FLOW ============================ -->
-  <section id="p2" class="part">
-    <h2><span class="n">2</span>Luồng dữ liệu: đi từ đâu, qua bước nào, tới ai?</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>các bước dữ liệu phải đi qua và vì sao cần từng bước</div><div class="out"><b>Chưa nói</b>Kafka, Flink, Iceberg, dbt… (phần 3) và tên bảng (phần 4)</div></div>
-
-    <div class="q">
-      <h3><span class="k">2.1</span>Đi ngược từ người dùng</h3>
-      <p>Thiết kế luồng bắt đầu từ <b>đầu ra</b>, không từ nguồn. Với mỗi người dùng: họ cần thấy gì, và cái đó tính từ đâu.</p>
-      <div class="tw"><table class="wide">
-        <tr><th>Người dùng</th><th>Đầu ra họ thấy</th><th>Tính từ</th><th>Độ nhanh</th></tr>
-        <tr><td>Điều phối viên</td><td>Giờ dự đoán tới của từng đơn đang giao; cảnh báo</td><td>Vị trí <b>mới nhất</b> của xe + tốc độ gần đây + các đơn đang trên xe đó</td><td>giây</td></tr>
-        <tr><td>Quản lý</td><td>Tỉ lệ đúng giờ theo kho, theo ngày</td><td>Các đơn đã đóng (giờ giao, hạn), <b>đã bỏ bản trùng</b></td><td>phút; chốt mỗi đêm</td></tr>
-        <tr><td>Analyst</td><td>Mọi câu hỏi về quá khứ</td><td>Toàn bộ lịch sử vị trí và lịch sử đổi trạng thái đơn</td><td>không gấp</td></tr>
-      </table></div>
-      <p>Cả ba đều cần cùng một thứ ở giữa: <b>dữ liệu sạch</b> (mỗi việc xảy ra đúng một lần, xếp theo lúc xảy ra). Nên luồng có một thân chung, rồi tách ba nhánh.</p>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">2.2</span>Bản đồ luồng</h3>
-      <figure>
-        <div class="svgw">
-          <svg viewBox="0 0 820 410" role="img" aria-label="Luồng dữ liệu logic: hai nguồn, bảy bước, ba người dùng">
-            <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
-            <rect class="src" x="6" y="66" width="140" height="44" rx="8"/><text class="t1" x="76" y="85">Xe báo vị trí</text><text class="t2" x="76" y="101">mỗi 5 giây</text>
-            <rect class="src" x="6" y="122" width="140" height="44" rx="8"/><text class="t1" x="76" y="141">Đơn đổi trạng thái</text><text class="t2" x="76" y="157">hệ thống team khác</text>
-            <path class="ar" d="M146,88 L172,108"/><path class="ar" d="M146,144 L172,124"/>
-            <rect class="stp" x="176" y="92" width="118" height="48" rx="8"/><text class="t1" x="235" y="112">B1 Thu nhận</text><text class="t2" x="235" y="128">mọi thay đổi</text>
-            <path class="ar" d="M294,116 L310,116"/>
-            <rect class="stp" x="314" y="92" width="118" height="48" rx="8"/><text class="t1" x="373" y="112">B2 Kiểm tra</text><text class="t2" x="373" y="128">tách hàng lỗi</text>
-            <path class="ar" d="M373,92 L373,58"/>
-            <rect class="rej" x="314" y="12" width="118" height="44" rx="8"/><text class="t1" x="373" y="31">Hàng lỗi</text><text class="t2" x="373" y="47">kèm lý do</text>
-            <path class="ar" d="M432,116 L448,116"/>
-            <rect class="stp" x="452" y="92" width="156" height="48" rx="8"/><text class="t1" x="530" y="112">B3 Lưu nguyên bản</text><text class="t2" x="530" y="128">không bao giờ sửa</text>
-            <path class="ar" d="M608,116 L622,116"/>
-            <rect class="stp" x="626" y="92" width="188" height="48" rx="8"/><text class="t1" x="720" y="112">B4 Làm sạch</text><text class="t2" x="720" y="128">bỏ trùng, theo giờ xảy ra</text>
-            <path class="ar" d="M727,140 L727,236"/>
-            <path class="ar" d="M690,140 L520,236"/>
-            <path class="ar" d="M660,140 L290,236"/>
-            <path class="ar dash" d="M500,140 L250,236"/>
-            <text class="tl" x="318" y="204" text-anchor="end">bản thô, khi cần dựng lại</text>
-            <rect class="stp" x="640" y="240" width="174" height="52" rx="8"/><text class="t1" x="727" y="261">B5 Tính ngay</text><text class="t2" x="727" y="278">giờ tới, cảnh báo</text>
-            <rect class="stp" x="420" y="240" width="180" height="52" rx="8"/><text class="t1" x="510" y="261">B6 Tổng hợp</text><text class="t2" x="510" y="278">tỉ lệ đúng giờ: tạm, chốt</text>
-            <rect class="stp" x="176" y="240" width="190" height="52" rx="8"/><text class="t1" x="271" y="261">B7 Truy vấn lịch sử</text><text class="t2" x="271" y="278">hỏi bất kỳ câu nào</text>
-            <path class="ar" d="M727,292 L727,346"/><text class="tl" x="735" y="324">&lt; 10 giây</text>
-            <path class="ar" d="M510,292 L510,346"/><text class="tl" x="518" y="324">5 phút · chốt 01:00</text>
-            <path class="ar" d="M271,292 L271,346"/><text class="tl" x="279" y="324">khi cần</text>
-            <rect class="usr" x="640" y="350" width="174" height="44" rx="8"/><text class="t1" x="727" y="377">Điều phối viên</text>
-            <rect class="usr" x="420" y="350" width="180" height="44" rx="8"/><text class="t1" x="510" y="377">Quản lý</text>
-            <rect class="usr" x="176" y="350" width="190" height="44" rx="8"/><text class="t1" x="271" y="377">Analyst</text>
-          </svg>
-        </div>
-        <figcaption>Thân chung B1→B4 chạy liên tục. Ba nhánh B5, B6, B7 đọc cùng dữ liệu sạch, mỗi nhánh với một độ nhanh. Không nhánh nào đọc dữ liệu chưa qua kiểm tra.</figcaption>
-      </figure>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">2.3</span>Từng bước: vấn đề và lựa chọn</h3>
-
-      <div class="step">
-        <p><span class="bs">B1</span> Thu nhận: lấy mọi thay đổi, không chụp ảnh định kỳ</p>
-        <div class="prob"><b>Vấn đề</b> Hệ thống đơn ghi đè trạng thái cũ. Nếu 5 phút mới đọc một lần, đơn đổi xe hai lần trong 5 phút thì mất một lần; mà analyst cần biết ORD_005 đổi xe lúc 08:12 để tính trễ cho đúng tài xế. Đọc liên tục thì đè tải lên database của team khác.</div>
-        <div class="sol"><b>Lựa chọn</b> Biến cả hai nguồn thành <b>dòng sự kiện</b>: mỗi lần báo vị trí là một sự kiện; mỗi lần đơn đổi là một sự kiện kèm giá trị trước và sau. Không đụng vào ứng dụng của team khác.</div>
-      </div>
-
-      <div class="step">
-        <p><span class="bs">B2</span> Kiểm tra: tách hàng lỗi, không dừng, không vứt</p>
-        <div class="prob"><b>Vấn đề</b> Một thiết bị hỏng gửi tọa độ ở Hà Nội. Để nó đi tiếp thì bản đồ sai; dừng cả luồng thì 199 xe khác mất theo; vứt lặng lẽ thì không ai biết thiết bị nào hỏng.</div>
-        <div class="sol"><b>Lựa chọn</b> Mỗi sự kiện được kiểm tra luật nghiệp vụ. Sai thì đưa vào "hàng lỗi" kèm lý do và bản gốc, để sửa và gửi lại sau.</div>
-      </div>
-
-      <div class="step">
-        <p><span class="bs">B3</span> Lưu nguyên bản: giữ đúng như nhận được, kể cả bản trùng</p>
-        <div class="prob"><b>Vấn đề</b> Cách làm sạch ở B4 có thể sai, công thức KPI có thể sai. Nếu chỉ giữ bản đã làm sạch thì khi phát hiện sai, không còn gì để tính lại.</div>
-        <div class="sol"><b>Lựa chọn</b> Lưu mọi sự kiện hợp lệ <b>nguyên văn, chỉ thêm, không sửa</b>. Mọi thứ phía sau phải dựng lại được từ đây.</div>
-        <div class="ana"><b>Ví dụ đời thường</b> Kế toán giữ mọi chứng từ gốc. Báo cáo sai thì làm lại báo cáo từ chứng từ, không sửa chứng từ.</div>
-      </div>
-
-      <div class="step">
-        <p><span class="bs">B4</span> Làm sạch: mỗi việc xảy ra đúng một lần, xếp theo lúc xảy ra</p>
-        <div class="prob"><b>Vấn đề</b> Xe qua hầm, vị trí 08:07 được báo bù lúc 08:11, và báo hai lần. Đếm cả bản trùng thì quãng đường gấp đôi; lấy "cái tới sau cùng" làm vị trí hiện tại thì xe nhảy lùi.</div>
-        <div class="sol"><b>Lựa chọn</b> Làm sạch <b>một lần</b>, ở một chỗ: mỗi lần báo vị trí giữ một bản; mỗi đơn biết trạng thái mới nhất theo thứ tự xảy ra; ghi chú cái nào tới trễ, trễ bao lâu. Ba nhánh sau dùng chung kết quả này, không ai tự làm sạch lại.</div>
-      </div>
-
-      <div class="step">
-        <p><span class="bs">B5</span> Tính ngay: dự đoán giờ tới và cảnh báo, mỗi khi xe báo vị trí</p>
-        <div class="prob"><b>Vấn đề</b> Điều phối viên cần biết trong vài giây. Chờ gom đủ dữ liệu rồi mới tính thì quá muộn.</div>
-        <div class="sol"><b>Lựa chọn</b> Giữ sẵn trong bộ nhớ "vị trí mới nhất của mỗi xe" và "các đơn đang giao trên mỗi xe". Mỗi lần xe báo vị trí, hoặc đơn đổi xe, tính lại giờ tới cho các đơn trên xe đó. Kết quả ghi vào một chỗ chỉ giữ <b>hiện trạng</b> để màn hình đọc nhanh.</div>
-      </div>
-
-      <div class="step">
-        <p><span class="bs">B6</span> Tổng hợp: số tạm mỗi 5 phút, số chính thức mỗi đêm</p>
-        <div class="prob"><b>Vấn đề</b> Tính tỉ lệ đúng giờ ngay khi sự kiện tới thì vị trí báo bù muộn sẽ làm số sai, phải sửa liên tục. Đợi hết ngày mới tính thì quản lý lại chờ tới sáng hôm sau như cũ.</div>
-        <div class="sol"><b>Lựa chọn</b> Mỗi 5 phút tính lại 2 giờ gần nhất từ dữ liệu sạch (số <b>tạm</b>). 01:00 tính lại cả ngày hôm qua (số <b>chính thức</b>). Sự kiện tới sau khi chốt thì được đếm, chỉ sửa số chốt khi có người quyết định.</div>
-      </div>
-
-      <div class="step">
-        <p><span class="bs">B7</span> Truy vấn lịch sử: hỏi bất kỳ câu nào về quá khứ</p>
-        <div class="sol"><b>Lựa chọn</b> Analyst hỏi bằng SQL trên dữ liệu sạch (B4) và bảng báo cáo (B6). Khi cần kiểm tra tận gốc, đọc bản nguyên văn (B3).</div>
-      </div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">2.4</span>Vì sao một thân chung và ba nhánh</h3>
-      <div class="tw"><table class="wide">
-        <tr><th>Cách khác</th><th>Hỏng ở đâu với nghiệp vụ này</th></tr>
-        <tr><td>Chỉ chạy định kỳ (batch), như hôm nay</td><td>Không có cảnh báo trước: vấn đề gốc vẫn còn.</td></tr>
-        <tr><td>Chỉ tính liên tục, kể cả KPI</td><td>Sự kiện tới trễ làm KPI phải sửa liên tục, phải nhớ rất nhiều; không có lúc nào số "chốt".</td></tr>
-        <tr><td>Hai đường riêng, mỗi đường tự làm sạch và tự tính KPI</td><td>Hai cách tính dần lệch nhau; quản lý thấy hai con số khác nhau.</td></tr>
-        <tr class="new"><td><b>Đã chọn:</b> làm sạch một lần; nhánh nhanh cho cảnh báo, nhánh định kỳ cho KPI</td><td>Cảnh báo nhanh, KPI đúng và có lúc chốt; mỗi định nghĩa chỉ tính ở một chỗ.</td></tr>
-      </table></div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">2.5</span>ORD_002 đi qua luồng</h3>
-      <div class="tw"><table class="wide">
-        <tr><th>Lúc</th><th>Sự kiện</th><th>Đi qua</th><th>Kết quả</th></tr>
-        <tr><td class="m">07:30</td><td>ORD_002 được phân cho VAN-0001</td><td>B1 → B4</td><td>Biết: ORD_002 trên VAN-0001, hạn 08:33</td></tr>
-        <tr><td class="m">08:00</td><td>ORD_002 "đang giao"</td><td>B1 → B4 → B5</td><td>ORD_002 vào danh sách đang giao của VAN-0001</td></tr>
-        <tr><td class="m">08:10</td><td>VAN-0001 báo vị trí: còn 7 km, 12 km/h</td><td>B1 → B4 → B5</td><td class="bad-t">Dự đoán 08:45 &gt; 08:33 → cảnh báo cho điều phối viên</td></tr>
-        <tr class="hl"><td class="m">08:11</td><td>Vị trí 08:07 báo bù, hai lần</td><td>B1 → B3 (giữ cả hai) → B4 (giữ một, ghi "trễ 4 phút")</td><td>Không làm xe lùi, không đếm đôi</td></tr>
-        <tr><td class="m">08:12</td><td>ORD_005 chuyển sang VAN-0007</td><td>B1 → B4 → B5</td><td>Dự đoán của ORD_005 tính lại theo VAN-0007</td></tr>
-        <tr><td class="m">08:47</td><td>ORD_002 giao xong</td><td>B1 → B4 → B5, B6</td><td>Rời danh sách đang giao; vào KPI: trễ 14 phút</td></tr>
-        <tr><td class="m">01:00</td><td>Chốt sổ</td><td>B6</td><td>Tỉ lệ ngày 19/11 thành số chính thức</td></tr>
-      </table></div>
-    </div>
-  </section>
-
-  <!-- ============================ 3. ARCHITECTURE ============================ -->
-  <section id="p3" class="part">
-    <h2><span class="n">3</span>Kiến trúc: mỗi bước chạy trên công cụ gì, vì sao?</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>công cụ cho từng bước B1–B7, chạy ở đâu, vì sao chọn</div><div class="out"><b>Chưa nói</b>bảng, cột, khóa (phần 4)</div></div>
-    <div class="legend"><span><span class="st ok">Đã chạy</span> có code và test trong repo</span><span><span class="st plan">Dự kiến</span> đã thiết kế, số là feature sẽ làm</span></div>
-
-    <div class="flow"><div class="lanes">
-      <div class="lane"><i>Thân chung<small>B1–B4</small></i>
-        <div class="box">Postgres → Debezium<small>B1 thay đổi đơn</small></div>
-        <div class="box">Kafka (Redpanda)<small>B1 mọi sự kiện</small></div>
-        <div class="box">Flink + Schema Registry<small>B2 kiểm tra, B3 lưu</small></div>
-        <div class="box">Flink → Iceberg<small>B4 làm sạch</small></div></div>
-      <div class="lane"><i>Nhánh nhanh<small>B5</small></i>
-        <div class="box plan">Flink control tower<small>giữ state</small></div>
-        <div class="box plan">Postgres serving<small>chỉ hiện trạng</small></div>
-        <div class="box plan">Grafana<small>điều phối viên</small></div>
-        <div class="box plan">Kafka alerts<small>cho hệ thống khác</small></div></div>
-      <div class="lane"><i>Nhánh định kỳ<small>B6</small></i>
-        <div class="box plan">dbt<small>5 phút + 01:00</small></div>
-        <div class="box plan">Iceberg<small>bảng báo cáo</small></div>
-        <div class="box">Trino<small>truy vấn</small></div>
-        <div class="box plan">Grafana<small>quản lý</small></div></div>
-      <div class="lane"><i>Lịch sử<small>B7</small></i>
-        <div class="box">Iceberg trên MinIO<small>file trên object storage</small></div>
-        <div class="box">Iceberg REST catalog<small>danh mục bảng</small></div>
-        <div class="box">Trino<small>SQL</small></div>
-        <div class="box">Analyst<small>—</small></div></div>
-    </div></div>
-
+  <div class="q">
+    <p class="tcap">Bảng <code>orders</code> trong Postgres (hệ thống đơn của team khác), lúc 08:00</p>
     <div class="tw"><table class="wide">
-      <tr><th>Bước</th><th>Công cụ (laptop)</th><th>Trên AWS</th><th>Vì sao chọn</th><th>Đã cân nhắc</th><th>Trạng thái</th></tr>
-      <tr><td><span class="bs">B1</span></td><td>Debezium đọc nhật ký giao dịch (WAL) của Postgres</td><td>RDS + MSK Connect</td><td>Lấy mọi thay đổi đã commit, kèm giá trị cũ, không truy vấn DB của team khác (ADR 0004)</td><td>đọc định kỳ theo <code>updated_at</code>; bắt team đơn tự gửi sự kiện</td><td><span class="st ok">002</span></td></tr>
-      <tr><td><span class="bs">B1</span></td><td>Kafka API (Redpanda)</td><td>MSK Serverless</td><td>Giữ sự kiện 7 ngày: bên đọc dừng một lúc vẫn đọc tiếp được; nhiều bên đọc cùng một dòng (ADR 0001)</td><td>Kinesis</td><td><span class="st ok">001</span></td></tr>
-      <tr><td><span class="bs">B2</span></td><td>Avro + Schema Registry; hàm kiểm tra Python trong Flink</td><td>Glue Schema Registry</td><td>Hợp đồng dữ liệu với team thiết bị; message nhỏ (52 byte); luật kiểm tra dùng chung với simulator (ADR 0008, 0010)</td><td>JSON không schema</td><td><span class="st ok">003</span></td></tr>
-      <tr><td><span class="bs">B3</span> <span class="bs">B4</span></td><td>Flink SQL</td><td>Managed Service for Apache Flink</td><td>Xử lý theo giờ xảy ra, có state, exactly-once (ADR 0002)</td><td>Spark Structured Streaming (micro-batch); consumer tự viết</td><td><span class="st ok">001, 004</span></td></tr>
-      <tr><td><span class="bs">B3</span> <span class="bs">B4</span> <span class="bs">B6</span></td><td>Iceberg trên MinIO + REST catalog</td><td>S3 + Glue Catalog</td><td>Bảng trên file rẻ; hỗ trợ upsert, đổi schema, xem lại quá khứ (ADR 0003)</td><td>Delta Lake, Hudi</td><td><span class="st ok">001</span></td></tr>
-      <tr><td><span class="bs">B5</span></td><td>Flink (SQL + hàm Python cho công thức giờ tới)</td><td>Managed Flink</td><td>Giữ "vị trí mới nhất" và "đơn đang giao" trong state, tính lại khi một bên đổi</td><td>mỗi lần báo vị trí truy vấn Postgres (đè tải DB)</td><td><span class="st plan">6</span></td></tr>
-      <tr><td><span class="bs">B5</span></td><td>Postgres <code>serving</code></td><td>RDS</td><td>Đọc hiện trạng trong mili giây, upsert theo khóa (ADR 0007)</td><td>Redis, DynamoDB</td><td><span class="st plan">6</span></td></tr>
-      <tr><td><span class="bs">B6</span></td><td>dbt + Trino, chạy theo lịch</td><td>dbt-athena trên ECS + EventBridge</td><td>SQL có test, có tài liệu; hai lịch chạy đơn giản không cần Airflow (ADR 0006)</td><td>tính KPI trong Flink; Airflow</td><td><span class="st plan">7</span></td></tr>
-      <tr><td><span class="bs">B7</span></td><td>Trino</td><td>Athena</td><td>SQL chuẩn trên chính các bảng Iceberg</td><td>DuckDB, Spark SQL</td><td><span class="st ok">001</span></td></tr>
-      <tr><td>hiển thị</td><td>Grafana</td><td>Grafana trên ECS</td><td>Bản đồ trực tiếp, cảnh báo và số liệu hệ thống trong một công cụ</td><td>Superset, QuickSight</td><td><span class="st plan">8</span></td></tr>
+      <tr><th>order_id</th><th>van_id</th><th>stop_seq</th><th>promised_end</th><th>status</th></tr>
+      <tr><td class="m">ORD-20261120-00001</td><td class="m">VAN-0001</td><td class="m">1</td><td class="m">08:33</td><td class="m">out_for_delivery</td></tr>
+      <tr><td class="m">ORD-20261120-00002</td><td class="m">VAN-0001</td><td class="m">2</td><td class="m">09:30</td><td class="m">out_for_delivery</td></tr>
     </table></div>
+    <p><code>promised_end</code> là giờ hạn đã hứa với khách. Đơn 1 được giao lúc 08:47 (trễ 14 phút), đơn 2 lúc 09:04 (kịp giờ).</p>
+  </div>
 
-    <div class="q">
-      <h3><span class="k">3.1</span>Ba nguyên tắc kiến trúc</h3>
-      <ul class="pts">
-        <li><b>Stream cho nhanh, batch cho đúng, cùng một nguồn</b> (ADR 0006): Flink lo cảnh báo, dbt lo KPI, cả hai đọc dữ liệu đã làm sạch ở B4.</li>
-        <li><b>Laptop và AWS chỉ khác file cấu hình</b> (ADR 0005): cùng code; mỗi công cụ local có một dịch vụ AWS tương ứng. Bản AWS chỉ dựng khi demo rồi xóa.</li>
-        <li><b>Quyết định khó đảo ngược phải có ADR</b> trong <code>docs/decisions/</code>: bối cảnh, các lựa chọn, cái giá.</li>
-      </ul>
-      <div class="prob"><b>Còn mở cho feature 6</b> B5 nên đọc từ đâu? Dữ liệu sạch ở B4 có sau khoảng 70 giây (ghi 30 giây một lần, rồi đọc lại 10 giây một lần), nên không đạt cảnh báo trong 10 giây. Nhiều khả năng B5 phải đọc thẳng Kafka và tự bỏ bản trùng trong bộ nhớ. Chốt ở spec 006.</div>
-    </div>
-  </section>
-
-  <!-- ============================ 4. DATA MODEL ============================ -->
-  <section id="p4" class="part">
-    <h2><span class="n">4</span>Mô hình dữ liệu: bảng nào, một dòng là gì, khóa là gì?</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>tầng, bảng, grain, khóa, star schema và vì sao</div><div class="out"><b>Chưa nói</b>công cụ nào ghi (phần 3), tính thế nào (phần 5)</div></div>
-
-    <div class="q">
-      <h3><span class="k">4.1</span>Mỗi bước ghi ra một tầng</h3>
-      <div class="ana"><b>Ví dụ đời thường, nhà bếp</b> <b>bronze</b> là kho nguyên liệu, giữ nguyên thùng kèm hóa đơn. <b>Silver</b> là đồ đã sơ chế: rửa sạch, bỏ phần hỏng. <b>Gold</b> là món trên đĩa, nấu theo thực đơn (câu hỏi kinh doanh). <b>Serving</b> là quầy giữ nóng: chỉ món đang bán.</div>
-      <div class="tw"><table class="wide">
-        <tr><th>Bước</th><th>Tầng</th><th>Giữ cái gì</th><th>Cách ghi</th><th>Ai đọc</th></tr>
-        <tr><td><span class="bs">B2</span></td><td>bronze (hàng lỗi)</td><td>sự kiện bị từ chối + lý do + bản gốc</td><td>chỉ thêm</td><td>người vận hành</td></tr>
-        <tr><td><span class="bs">B3</span></td><td><b>bronze</b></td><td>mọi sự kiện đúng như nhận, kể cả bản trùng</td><td>chỉ thêm, không sửa</td><td>B4, người debug</td></tr>
-        <tr><td><span class="bs">B4</span></td><td><b>silver</b></td><td>mỗi việc xảy ra một dòng; mỗi đơn một dòng mới nhất</td><td>upsert theo khóa nghiệp vụ</td><td>B5, B6, analyst</td></tr>
-        <tr><td><span class="bs">B5</span></td><td><b>serving</b></td><td>hiện trạng: mỗi xe, mỗi đơn đang giao, mỗi cảnh báo</td><td>upsert, chỉ khi dữ liệu mới hơn</td><td>màn hình điều phối</td></tr>
-        <tr><td><span class="bs">B6</span></td><td><b>gold</b></td><td>sự việc kinh doanh và số tổng hợp</td><td>tính lại 2 giờ gần nhất; ghi đè ngày đã chốt</td><td>quản lý, analyst</td></tr>
-      </table></div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">4.2</span>Bảng chính: grain, khóa, bản nào thắng</h3>
-      <p>Luật của project: mỗi bảng phải nói rõ <b>grain</b> (một dòng là gì), <b>khóa</b> (dùng để bỏ trùng) và <b>khóa thứ tự</b> (có hai bản thì bản nào thắng). Khóa phải lấy từ nghiệp vụ, không lấy vị trí trong Kafka, vì đọc lại thì vị trí đổi.</p>
-      <div class="tw"><table class="wide">
-        <tr><th>Tầng</th><th>Bảng</th><th>Một dòng là</th><th>Khóa</th><th>Bản nào thắng</th><th></th></tr>
-        <tr><td>bronze</td><td><code>gps_pings</code></td><td>một message vị trí như nhận được</td><td>— (giữ hết)</td><td>—</td><td><span class="st ok">001</span></td></tr>
-        <tr><td>bronze</td><td><code>orders_cdc</code></td><td>một lần thay đổi đơn (trước, sau)</td><td>— (giữ hết)</td><td>—</td><td><span class="st ok">002</span></td></tr>
-        <tr><td>silver</td><td><code>gps_pings</code></td><td>một lần báo vị trí thật</td><td class="m">(vehicle_id, event_ts)</td><td>bản tới đầu tiên</td><td><span class="st ok">004</span></td></tr>
-        <tr><td>silver</td><td><code>orders</code></td><td>một đơn, trạng thái mới nhất</td><td class="m">order_id</td><td>bản commit sau cùng (<code>source_lsn</code> lớn nhất)</td><td><span class="st ok">004</span></td></tr>
-        <tr><td>silver</td><td><code>order_status_history</code></td><td>một trạng thái đơn đã đạt</td><td class="m">(order_id, status)</td><td>lần commit đầu tiên đạt trạng thái đó</td><td><span class="st ok">004</span></td></tr>
-        <tr><td>serving</td><td><code>order_eta</code></td><td>một đơn đang giao</td><td class="m">order_id</td><td>tính sau cùng</td><td><span class="st plan">6</span></td></tr>
-        <tr><td>serving</td><td><code>alerts</code></td><td>một cảnh báo</td><td class="m">alert_id</td><td>—</td><td><span class="st plan">6</span></td></tr>
-        <tr><td>gold</td><td><code>fct_delivery</code></td><td>một đơn đã đóng</td><td class="m">order_id</td><td>lần tính sau cùng</td><td><span class="st plan">7</span></td></tr>
-        <tr><td>gold</td><td><code>agg_depot_daily</code></td><td>kho × ngày giờ VN</td><td class="m">(depot_id, local_date)</td><td>lần tính sau cùng</td><td><span class="st plan">7</span></td></tr>
-      </table></div>
-      <p>Hai loại thời gian trong mọi bảng: <b>thời gian nghiệp vụ</b> (<code>event_ts</code>, lúc việc xảy ra) dùng để tính KPI; <b>thời gian hệ thống</b> (<code>ingest_ts</code>, lúc hệ thống nhận) chỉ dùng để đo trễ và debug.</p>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">4.3</span>Gold là star schema</h3>
-      <p>Gold theo kiểu Kimball: <b>fact</b> ở giữa (việc xảy ra: một lần giao), <b>dimension</b> xung quanh (ngữ cảnh: xe, kho, ngày). Dòng của ORD_002 trong <code>fct_delivery</code>:</p>
-      <div class="tw"><table class="wide">
-        <tr><th>order_id</th><th>local_date</th><th>depot_id</th><th>van_key</th><th>promised_end</th><th>closed_at</th><th>is_on_time</th><th>minutes_late</th><th>eta_error_t15_min</th><th>is_final</th></tr>
-        <tr><td class="m">ORD_002</td><td class="m">2026-11-19</td><td class="m">D01</td><td class="m">17</td><td class="m">08:33</td><td class="m">08:47</td><td class="m">false</td><td class="m">14</td><td class="m">2</td><td class="m">true</td></tr>
-      </table></div>
-      <div class="prob"><b>Vấn đề</b> Ngày 01/12 VAN-0001 chuyển từ kho Q1 sang kho Q7. Nếu bảng xe chỉ giữ hiện trạng, mọi đơn tháng 11 của VAN-0001 bỗng tính cho Q7, và KPI tháng 11 của Q1 bị viết lại.</div>
-      <div class="sol"><b>Cách giải: SCD Type 2.</b> <code>dim_van</code> giữ mỗi phiên bản của xe một dòng, có khoảng hiệu lực. Fact nối với phiên bản <b>đúng tại lúc giao</b> (<code>closed_at</code>), không nối với dòng hiện tại.</div>
-      <div class="tw"><table>
-        <tr><th>van_key</th><th>van_id</th><th>depot_id</th><th>valid_from</th><th>valid_to</th></tr>
-        <tr><td class="m">17</td><td class="m">VAN-0001</td><td class="m">D01 (Q1)</td><td class="m">2026-11-01</td><td class="m">2026-12-01</td></tr>
-        <tr><td class="m">58</td><td class="m">VAN-0001</td><td class="m">D07 (Q7)</td><td class="m">2026-12-01</td><td class="m">—</td></tr>
-      </table></div>
-      <p>Các dimension khác: <code>dim_depot</code>, <code>dim_date</code>. <code>agg_depot_daily</code> tính sẵn để dashboard không quét <code>fct_delivery</code> mỗi lần mở. <code>closed_days</code> ghi mỗi lần chốt sổ và số sự kiện tới sau khi chốt.</p>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">4.4</span>Vì sao tổ chức như vậy</h3>
-      <div class="tw"><table class="wide">
-        <tr><th>Cách khác</th><th>Vấn đề với bài toán này</th></tr>
-        <tr><td>Không có bronze, chỉ giữ bảng đã sạch</td><td>Cách làm sạch có lỗi thì không còn gì để dựng lại.</td></tr>
-        <tr><td>Analyst đọc thẳng bronze</td><td>Mỗi người tự bỏ trùng một kiểu, mỗi người một con số.</td></tr>
-        <tr><td>Gold là một bảng phẳng to (One Big Table)</td><td>Dễ query, nhưng "xe đổi kho" sẽ viết lại lịch sử.</td></tr>
-        <tr><td>Data Vault</td><td>Hợp khi nhiều nguồn, nhiều team; quá nặng cho ba nguồn, một người.</td></tr>
-        <tr><td>Màn hình điều phối đọc thẳng silver hoặc gold</td><td>Bảng trên file không trả lời trong mili giây; cần serving riêng.</td></tr>
-        <tr class="new"><td><b>Đã chọn:</b> bronze → silver → gold (star, SCD2) + serving</td><td>Mỗi tầng một việc, tầng sau dựng lại được từ tầng trước, mỗi KPI định nghĩa ở một chỗ.</td></tr>
-      </table></div>
-      <div class="key"><b>Quy tắc</b> Bronze không bao giờ sửa. Silver và gold sai thì dựng lại từ bronze, và dựng lại bao nhiêu lần cũng ra cùng kết quả.</div>
-    </div>
-  </section>
-
-  <!-- ============================ 5. STREAM LOGIC ============================ -->
-  <section id="p5" class="part">
-    <h2><span class="n">5</span>Logic xử lý stream: tính trên dòng dữ liệu không bao giờ dừng</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>khái niệm từ sách <i>Streaming Systems</i> (Akidau, Chernyak, Lax) và chỗ dùng trong B4, B5, B6</div><div class="out"><b>Chưa nói</b>sự cố và cách chống (phần 6)</div></div>
-    <p>Batch tính trên dữ liệu <b>đã đủ</b>. Stream tính trên dữ liệu <b>không bao giờ đủ</b>: sự kiện tới mãi, có cái tới trễ, có cái tới hai lần. Sách gom mọi bài toán stream vào 4 câu hỏi:</p>
-    <div class="tw"><table>
-      <tr><th>Câu hỏi</th><th>Nghĩa</th><th>Ví dụ trong project</th></tr>
-      <tr><td><b>What</b></td><td>Tính cái gì?</td><td>bỏ trùng, tốc độ trung bình, giờ tới, tỉ lệ đúng giờ</td></tr>
-      <tr><td><b>Where</b></td><td>Gom sự kiện theo khung thời gian nào? (window)</td><td>mỗi ngày, 5 phút gần nhất, một lần xe dừng</td></tr>
-      <tr><td><b>When</b></td><td>Khi nào công bố kết quả?</td><td>mỗi lần báo vị trí, mỗi 5 phút, 01:00</td></tr>
-      <tr><td><b>How</b></td><td>Kết quả mới thay kết quả cũ thế nào?</td><td>ghi đè theo khóa, rút lại kết quả sai</td></tr>
-    </table></div>
-
-    <div class="q">
-      <h3><span class="k">5.1</span>Hai đồng hồ: lúc xảy ra và lúc nhận</h3>
-      <div class="tw"><table>
-        <tr><th>Thứ tự tới</th><th>Lúc xảy ra (<code>event_ts</code>)</th><th>Lúc nhận (<code>ingest_ts</code>)</th></tr>
-        <tr><td>1</td><td class="m">08:10:00</td><td class="m">08:10:01</td></tr>
-        <tr class="hl"><td>2</td><td class="m">08:07:00</td><td class="m">08:11:02</td></tr>
-        <tr class="hl"><td>3 (bản trùng)</td><td class="m">08:07:00</td><td class="m">08:11:03</td></tr>
-      </table></div>
-      <div class="ana"><b>Ví dụ đời thường</b> Lá thư có ngày đóng dấu bưu điện (lúc xảy ra) và ngày bạn nhận (lúc nhận). Muốn biết "tháng 11 ai gửi thư" thì nhìn dấu bưu điện.</div>
-      <div class="sol"><b>Quy tắc</b> Mọi logic nghiệp vụ dùng lúc xảy ra. Lúc nhận chỉ để đo trễ.</div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">5.2</span>Stream và table là hai mặt của một thứ</h3>
-      <div class="ana"><b>Ví dụ đời thường</b> Sao kê ngân hàng là stream (+5 triệu, −2 triệu, …). Số dư là table. Từ sao kê luôn tính lại được số dư; từ số dư không biết lại được sao kê.</div>
-      <p>Trong project: bảng đơn của team khác là table; B1 biến nó thành stream (mọi lần đổi). B4 cộng dồn stream lại thành table (mỗi đơn một dòng mới nhất). Giữ stream ở B3 thì lúc nào cũng tính lại được table.</p>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">5.3</span>Where: cắt dòng dữ liệu thành từng khúc (window)</h3>
-
-      <div class="prob"><b>Vấn đề</b> Câu hỏi "tốc độ trung bình của VAN-0001 là bao nhiêu?" nghe đơn giản. Với batch (file của ngày hôm qua) thì cộng hết rồi chia. Nhưng ở đây dữ liệu tới <b>mãi không dừng</b>: lúc 08:10 thì "hết" là hết tới đâu? Không bao giờ có lúc "đã đủ" để chia.</div>
-      <div class="sol"><b>Cách giải</b> Phải nói rõ "trung bình của <b>khoảng nào</b>". Window (cửa sổ thời gian) chính là câu trả lời cho "khoảng nào": một quy tắc cắt dòng dữ liệu vô tận thành từng khúc có đầu có cuối, rồi tính trên từng khúc.</div>
-      <div class="ana"><b>Ví dụ đời thường</b> Camera an ninh quay liên tục cả ngày. Muốn xem lại thì phải cắt ra thành clip: clip mỗi giờ một đoạn, hay clip "5 phút trước lúc có người vào", hay clip "từ lúc có người vào tới lúc người đó đi". Mỗi cách cắt hợp với một câu hỏi khác nhau. Window cũng vậy.</div>
-      <p>Project có năm kiểu câu hỏi, ứng với năm cách xử lý. Hai cách đầu thật ra không cắt theo giờ; ba cách sau là ba loại window kinh điển trong sách. Đi lần lượt từ đơn giản tới khó. Để dễ nhìn, hình bên dưới vẽ mỗi ô là <b>một phút</b> (thực tế xe báo 5 giây một lần).</p>
-
-      <div class="wcard">
-        <h4><span class="wn">1</span>Không cần cắt <small>xử lý từng sự kiện một</small></h4>
-        <p><b>Câu hỏi:</b> "Lần báo vị trí này có hợp lệ không?" Ví dụ một lần báo nói xe đang ở Hà Nội.</p>
-        <p><b>Vì sao không cần window:</b> chỉ nhìn chính lần báo đó là đủ biết sai, không cần so với lần báo nào khác.</p>
-        <p class="wex"><b>Đời thường:</b> bảo vệ soát vé từng người ở cửa, không cần biết người trước là ai.</p>
-        <p class="wuse">Dùng ở <span class="bs">B2</span> Kiểm tra · <span class="st ok">đã làm</span></p>
-      </div>
-
-      <div class="wcard">
-        <h4><span class="wn">2</span>Không cắt theo giờ, chỉ "nhớ theo xe" <small>sách gọi: global window theo khóa</small></h4>
-        <p><b>Câu hỏi:</b> "Lần báo này đã nhận rồi chưa?" (để bỏ bản trùng) và "Vị trí mới nhất của mỗi xe là gì?"</p>
-        <p><b>Cách làm:</b> giữ một cuốn sổ, mỗi dòng là một khóa. Khóa của lần báo vị trí là <code>(xe, lúc xảy ra)</code>.</p>
-        <div class="tw"><table>
-          <tr><th>Lúc nhận</th><th>Lần báo tới</th><th>Tra sổ</th><th>Làm gì</th></tr>
-          <tr><td class="m">08:11:02</td><td>VAN-0001, xảy ra 08:07:00</td><td>chưa có</td><td class="ok-t">giữ, ghi vào sổ</td></tr>
-          <tr class="hl"><td class="m">08:11:03</td><td>VAN-0001, xảy ra 08:07:00 (gửi lại)</td><td>đã có</td><td class="bad-t">bỏ</td></tr>
-        </table></div>
-        <p><b>Vì sao không cắt theo giờ:</b> bản trùng có thể tới sau 1 phút hay 3 tiếng. Cắt khúc 5 phút thì bản trùng tới ở khúc sau sẽ không bị nhận ra.</p>
-        <p><b>Cái giá:</b> sổ không thể dài mãi, nên mỗi dòng tự xóa sau 24 giờ (gọi là TTL). Bản trùng tới sau 24 giờ do tầng lưu trữ chặn lại (xem L6 ở phần 6).</p>
-        <p class="wex"><b>Đời thường:</b> sổ khách check-in của khách sạn: có tên rồi thì không ghi lại.</p>
-        <p class="wuse">Dùng ở <span class="bs">B4</span> bỏ trùng · <span class="st ok">đã làm</span> &nbsp; <span class="bs">B5</span> vị trí mới nhất · <span class="st plan">chưa làm, feature 6</span></p>
-      </div>
-
-      <div class="wcard">
-        <h4><span class="wn">3</span>Cửa sổ cố định <small>tumbling: khúc dài bằng nhau, nối tiếp, không chồng nhau</small></h4>
-        <p><b>Câu hỏi:</b> "Ngày 19/11 kho Q7 giao đúng giờ bao nhiêu %?"</p>
-        <p><b>Cách làm:</b> chia thời gian thành từng ngày. Mỗi đơn rơi vào <b>đúng một</b> ngày, theo giờ giao xong (giờ Việt Nam). Rồi tính tỉ lệ trong từng ngày.</p>
-        <div class="tw"><table>
-          <tr><th>Đơn</th><th>Giao xong lúc (giờ VN)</th><th>Rơi vào khúc</th></tr>
-          <tr><td class="m">ORD_002</td><td class="m">19/11 08:47</td><td>ngày 19/11</td></tr>
-          <tr><td class="m">ORD_731</td><td class="m">19/11 23:58</td><td>ngày 19/11</td></tr>
-          <tr><td class="m">ORD_745</td><td class="m">20/11 00:03</td><td>ngày 20/11</td></tr>
-        </table></div>
-        <p><b>Vì sao hợp:</b> báo cáo theo ngày cần mỗi đơn được đếm đúng một lần, không sót, không đếm đôi. Khúc nối tiếp và không chồng nhau đảm bảo đúng điều đó.</p>
-        <p><b>Chỗ dễ sai:</b> phải cắt theo giờ Việt Nam. Đơn giao 06:30 sáng 20/11 giờ VN là 23:30 ngày 19/11 giờ UTC; cắt theo UTC thì đơn đó rơi nhầm vào ngày hôm trước.</p>
-        <p class="wex"><b>Đời thường:</b> tờ lịch, hoặc chốt két cuối ngày ở cửa hàng: mỗi hóa đơn thuộc đúng một ngày.</p>
-        <p class="wuse">Dùng ở <span class="bs">B6</span> Tổng hợp KPI · <span class="st plan">chưa làm, feature 7</span></p>
-      </div>
-
-      <div class="wcard">
-        <h4><span class="wn">4</span>Cửa sổ trượt <small>sliding: luôn nhìn lại "5 phút gần nhất"</small></h4>
-        <p><b>Câu hỏi:</b> "Xe đang chạy nhanh cỡ nào, để dự đoán giờ tới?"</p>
-        <p><b>Vấn đề:</b> tốc độ của từng lần báo nhảy lung tung. Lúc 08:06 xe dừng đèn đỏ, tốc độ 0. Nếu dùng đúng số đó thì dự đoán "không bao giờ tới".</p>
-        <div class="strip-w"><div class="strip" style="--n:7">
-          <span class="h">08:05</span><span class="h">08:06</span><span class="h">08:07</span><span class="h">08:08</span><span class="h">08:09</span><span class="h">08:10</span><span class="h">08:11</span>
-          <span class="c">30</span><span class="c stop">0</span><span class="c">18</span><span class="c">6</span><span class="c">18</span><span class="c">18</span><span class="c">24</span>
-          <span class="lbl" style="grid-row:3">km/h đo được mỗi phút. Mỗi lần có số mới, lấy trung bình của 5 phút ngay trước đó:</span>
-          <span class="bar" style="grid-column:2/7;grid-row:4">lúc 08:10 → 12 km/h</span>
-          <span class="bar" style="grid-column:3/8;grid-row:5">lúc 08:11 → 16,8 km/h</span>
-        </div></div>
-        <ul class="pts">
-          <li>Lúc 08:10: (0 + 18 + 6 + 18 + 18) ÷ 5 = <b>12 km/h</b>. Đây là con số dùng để dự đoán ORD_002 tới lúc 08:45 (phần 1).</li>
-          <li>Lúc 08:11: khúc <b>trượt</b> sang phải một phút, bỏ số 08:06, thêm số 08:11: (18 + 6 + 18 + 18 + 24) ÷ 5 = <b>16,8 km/h</b>.</li>
-        </ul>
-        <p><b>Vì sao không dùng cửa sổ cố định 5 phút?</b> Cắt cố định thì khúc là 08:05–08:10, 08:10–08:15. Lúc 08:10 khúc mới chỉ có <b>một</b> số đo (18), nên "trung bình" lại nhiễu như một lần đo. Và con số chỉ đổi 5 phút một lần, quá chậm cho điều phối viên. Cửa sổ trượt thì lúc nào cũng có đủ 5 phút dữ liệu phía sau.</p>
-        <p class="wex"><b>Đời thường:</b> điểm trung bình 5 bài kiểm tra gần nhất: có bài mới thì bỏ bài cũ nhất.</p>
-        <p class="wuse">Dùng ở <span class="bs">B5</span> Tính giờ tới · <span class="st plan">chưa làm, feature 6</span></p>
-      </div>
-
-      <div class="wcard">
-        <h4><span class="wn">5</span>Cửa sổ phiên <small>session: dài bao lâu do dữ liệu quyết định</small></h4>
-        <p><b>Câu hỏi:</b> "Xe nào đang dừng quá 10 phút ở chỗ không phải điểm giao?"</p>
-        <p><b>Vấn đề:</b> không biết trước một lần dừng kéo dài bao lâu. VAN-0042 dừng trong hẻm từ 08:08 tới 08:20, tức 12 phút:</p>
-        <div class="strip-w"><div class="strip" style="--n:18">
-          <span class="h">:05</span><span class="h">:06</span><span class="h">:07</span><span class="h">:08</span><span class="h">:09</span><span class="h">:10</span><span class="h">:11</span><span class="h">:12</span><span class="h">:13</span><span class="h">:14</span><span class="h">:15</span><span class="h">:16</span><span class="h">:17</span><span class="h">:18</span><span class="h">:19</span><span class="h">:20</span><span class="h">:21</span><span class="h">:22</span>
-          <span class="c">20</span><span class="c">15</span><span class="c">5</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c stop">0</span><span class="c">10</span><span class="c">25</span><span class="c">30</span>
-          <span class="lbl" style="grid-row:3">Nếu cắt cố định 5 phút, lần dừng bị chặt thành nhiều mảnh:</span>
-          <span class="bar alt" style="grid-column:1/6;grid-row:4">dừng 2 phút</span>
-          <span class="bar alt" style="grid-column:6/11;grid-row:4">dừng 5 phút</span>
-          <span class="bar alt" style="grid-column:11/16;grid-row:4">dừng 5 phút</span>
-          <span class="lbl" style="grid-row:5">Nếu cắt theo phiên, cả lần dừng là một khúc:</span>
-          <span class="bar bad" style="grid-column:4/16;grid-row:6">một phiên dừng 08:08–08:20 = 12 phút → cảnh báo</span>
-        </div></div>
-        <p><b>Vì sao không dùng cửa sổ cố định?</b> Như hình: không mảnh nào dài quá 5 phút, nên điều kiện "dừng quá 10 phút" không bao giờ đúng, dù xe đã đứng 12 phút.</p>
-        <p><b>Cách làm:</b> gom các lần báo "đứng yên" liền nhau của cùng một xe thành một phiên. Phiên mở khi xe dừng, đóng khi xe chạy lại. Độ dài phiên chính là độ dài lần dừng.</p>
-        <p class="wex"><b>Đời thường:</b> một cuộc gọi điện thoại: bắt đầu khi nhấc máy, kết thúc khi gác máy; dài ngắn tùy cuộc.</p>
-        <p class="wuse">Dùng ở <span class="bs">B5</span> Cảnh báo dừng bất thường · <span class="st plan">chưa làm, feature 6</span></p>
-        <div class="prob"><b>Chỗ còn mở</b> Cảnh báo phải phát lúc 08:18, khi phiên vừa đủ 10 phút và <b>vẫn đang mở</b>. Flink SQL mặc định chỉ trả kết quả khi phiên đóng (08:20, xe đã chạy lại), tức là quá muộn. Cách giải sẽ chốt ở spec 006.</div>
-      </div>
-
-      <div class="q">
-        <h3>Tóm lại: gặp câu hỏi kiểu nào thì cắt kiểu nào</h3>
-        <div class="tw"><table class="wide">
-          <tr><th>Câu hỏi có dạng</th><th>Cách cắt</th><th>Ví dụ trong project</th></tr>
-          <tr><td>"Cái này có hợp lệ không?"</td><td>Không cần cắt</td><td>Lần báo vị trí ở Hà Nội</td></tr>
-          <tr><td>"Đã thấy cái này chưa?" / "Cái mới nhất là gì?"</td><td>Nhớ theo khóa, có hạn xóa</td><td>Bỏ bản trùng; vị trí mới nhất mỗi xe</td></tr>
-          <tr><td>"Bao nhiêu trong <b>mỗi</b> ngày / giờ?"</td><td>Cố định</td><td>Tỉ lệ đúng giờ theo ngày</td></tr>
-          <tr><td>"Bao nhiêu trong <b>N phút gần nhất</b>?"</td><td>Trượt</td><td>Tốc độ trung bình 5 phút</td></tr>
-          <tr><td>"Việc này kéo dài <b>bao lâu</b>?"</td><td>Phiên</td><td>Xe dừng bao lâu</td></tr>
-        </table></div>
-        <div class="key"><b>Điểm cần nhớ</b> Window là cách cắt, không phải tính năng riêng của Flink. <code>GROUP BY</code> theo ngày trong SQL thông thường cũng là cửa sổ cố định.</div>
-      </div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">5.4</span>When: watermark và trigger</h3>
-      <div class="prob"><b>Vấn đề</b> Window "ngày 19/11" bao giờ thì đủ? Xe mất sóng có thể báo bù vào sáng hôm sau. Chờ mãi thì không có số; công bố sớm thì số có thể sai.</div>
-      <p><b>Watermark</b> là ước đoán "mọi sự kiện xảy ra trước T coi như đã tới". Project dùng T = lúc xảy ra lớn nhất đã thấy trừ 30 giây.</p>
-      <div class="tw"><table class="wide">
-        <tr><th>Lúc nhận</th><th>Sự kiện (lúc xảy ra)</th><th>Lớn nhất đã thấy</th><th>Watermark (−30 giây)</th><th>Sự kiện này</th></tr>
-        <tr><td class="m">08:10:01</td><td class="m">08:10:00</td><td class="m">08:10:00</td><td class="m">08:09:30</td><td class="ok-t">đúng giờ</td></tr>
-        <tr><td class="m">08:11:01</td><td class="m">08:11:00</td><td class="m">08:11:00</td><td class="m">08:10:30</td><td class="ok-t">đúng giờ</td></tr>
-        <tr class="hl"><td class="m">08:11:02</td><td class="m">08:07:00</td><td class="m">08:11:00</td><td class="m">08:10:30</td><td class="bad-t">trễ: 08:07 &lt; watermark</td></tr>
-      </table></div>
-      <div class="ana"><b>Ví dụ đời thường</b> Bưu tá nói "thư gửi trước thứ Hai coi như tới hết rồi". Đó là ước đoán; thỉnh thoảng vẫn có thư lạc tới muộn.</div>
-      <p><b>Trigger</b> quyết định khi nào công bố kết quả. KPI ngày ở <span class="bs">B6</span> dùng cả ba loại kết quả của sách:</p>
-      <div class="tw"><table class="wide">
-        <tr><th>Sách gọi</th><th>Thi cử</th><th>KPI ngày 19/11</th></tr>
-        <tr><td><b>Early</b>: trước khi watermark qua cuối window</td><td>Điểm tạm từng môn</td><td>Mỗi 5 phút, số tạm. Mỗi lần tính lại 2 giờ gần nhất, nên sự kiện trễ tới 2 giờ được tính vào ở lần sau.</td></tr>
-        <tr><td><b>On-time</b>: khi watermark qua cuối window</td><td>Công bố chính thức</td><td>01:00 ngày 20/11: số chính thức. 01:00 đóng vai watermark của ngày.</td></tr>
-        <tr><td><b>Late</b>: sự kiện tới sau đó, trong hạn <b>allowed lateness</b></td><td>Phúc khảo có hạn</td><td>Project chọn <b>không tự sửa</b> số chốt: sự kiện vẫn được lưu và đếm; sửa khi có người quyết định.</td></tr>
-      </table></div>
-      <p>Cảnh báo ở <span class="bs">B5</span> thì ngược lại: <b>không chờ watermark</b>, phát ngay mỗi lần báo vị trí, vì chờ là chậm.</p>
-      <div class="key"><b>Điểm cần nhớ</b> Watermark là đánh đổi giữa <b>nhanh</b> và <b>đủ</b>. Cảnh báo chọn nhanh (30 giây), KPI chốt chọn đủ (tới 01:00).</div>
-    </div>
-
-    <div class="q">
-      <h3><span class="k">5.5</span>How: kết quả mới thay kết quả cũ</h3>
-      <div class="prob"><b>Vấn đề</b> Lúc 08:00 có kết quả "ORD_005 trên VAN-0001, tới 09:14". 08:12 ORD_005 chuyển sang VAN-0007. Chỉ thêm dòng thì màn hình có hai dòng cho ORD_005.</div>
-      <div class="tw"><table class="wide">
-        <tr><th>Sách gọi</th><th>Nghĩa</th><th>Ví dụ đời thường</th><th>Trong project</th></tr>
-        <tr><td><b>Discarding</b></td><td>Chỉ gửi phần mới</td><td>Biên lai từng lần nộp</td><td>Không dùng</td></tr>
-        <tr><td><b>Accumulating</b></td><td>Gửi kết quả đầy đủ, thay kết quả trước</td><td>Bảng điểm tổng in lại</td><td><span class="bs">B6</span> tính lại và ghi đè; <span class="bs">B5</span> upsert theo đơn</td></tr>
-        <tr><td><b>Accumulating &amp; retracting</b></td><td>Gửi kết quả mới và rút kết quả cũ</td><td>Báo đăng đính chính</td><td><span class="bs">B5</span> khi đơn đổi xe: rút cặp (ORD_005, VAN-0001), thêm cặp (ORD_005, VAN-0007)</td></tr>
-      </table></div>
-      <div class="prob"><b>Còn mở cho feature 6</b> Cảnh báo dừng phải phát khi phiên <b>còn mở</b>. Window phiên trong Flink SQL mặc định chỉ công bố khi phiên đóng, tức khi xe đã chạy lại. Cần early trigger, <code>MATCH_RECOGNIZE</code> hoặc PyFlink có state.</div>
-    </div>
-  </section>
-
-  <!-- ============================ 6. FAILURES ============================ -->
-  <section id="p6" class="part">
-    <h2><span class="n">6</span>Sự cố: ở từng bước, cái gì có thể hỏng?</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>16 lỗi xếp theo bước B1–B7, mỗi lỗi một pattern từ sách <i>Data Engineering Design Patterns</i> (Konieczny)</div><div class="out"><b>Cách đọc</b>Vấn đề → Cách làm → Đánh đổi → Kiểm chứng (test nào)</div></div>
-
-    <h3 class="grp"><span class="bs">B1</span> Thu nhận</h3>
-    <div class="err">
-      <div class="hd"><span class="no">L1</span>Team thiết bị đổi schema <span class="pn">Schema Compatibility Enforcer</span><span class="st ok">Đã chạy · 003</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Firmware mới đổi tên trường <code>lat</code>; job đang chạy không đọc được nữa.</dd>
-        <dt class="c">Cách làm</dt><dd>Registry ở chế độ FULL_TRANSITIVE: chỉ được thêm hoặc bỏ trường có giá trị mặc định. CI kiểm tra schema trước khi merge.</dd>
-        <dt>Đánh đổi</dt><dd>Thay đổi phá vỡ phải ra topic mới (<code>.v2</code>).</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_compat.py</code>; <code>test_v1_and_v2_pings_reach_bronze</code>.</dd>
-      </dl>
-    </div>
-    <div class="err">
-      <div class="hd"><span class="no">L2</span>Thay đổi đơn bị gửi lại, tới sai thứ tự <span class="pn">Change Data Capture</span><span class="st ok">Đã chạy · 002, 004</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Debezium khởi động lại gửi lại vài thay đổi; bản cũ tới sau bản mới. Lấy "bản tới sau cùng" thì đơn đã giao lại thành "đang giao".</dd>
-        <dt class="c">Cách làm</dt><dd>Thứ tự là thứ tự commit (<code>source_lsn</code>), không phải thứ tự tới. Silver giữ bản commit sau cùng.</dd>
-        <dt>Đánh đổi</dt><dd>Debezium dừng lâu thì Postgres phải giữ nhật ký chưa đọc (tối đa 1 GB), cần theo dõi (L16).</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_order_latest_version_wins_despite_duplicates_and_disorder</code>; <code>test_connector_restart_loses_and_duplicates_nothing</code>.</dd>
-      </dl>
-    </div>
-
-    <h3 class="grp"><span class="bs">B2</span> Kiểm tra</h3>
-    <div class="err">
-      <div class="hd"><span class="no">L3</span>Message hỏng làm dừng cả luồng <span class="pn">Dead-Letter</span><span class="st ok">Đã chạy · 003</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Byte không phải Avro, hoặc tọa độ ở Hà Nội. Trước đây job dừng và cả 200 xe ngừng vào.</dd>
-        <dt class="c">Cách làm</dt><dd>Hàm kiểm tra gắn lý do (<code>not_decodable</code>, <code>out_of_bbox</code>, …). Message lỗi vào bảng và topic hàng lỗi, kèm byte gốc để gửi lại.</dd>
-        <dt>Đánh đổi</dt><dd>Kiểm tra bằng Python chậm hơn Java (đo ở feature 5). Registry không trả lời thì <b>không</b> coi là message hỏng: job dừng và thử lại.</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_garbage_goes_to_dlq_once_and_job_keeps_running</code>; 31 sự kiện lỗi → <code>make dlq-status</code> đếm đúng 31.</dd>
-      </dl>
-    </div>
-
-    <h3 class="grp"><span class="bs">B3</span> Lưu nguyên bản</h3>
-    <div class="err">
-      <div class="hd"><span class="no">L4</span>Máy chết giữa lúc ghi <span class="pn">Checkpointer</span><span class="pn">Transactional Writer</span><span class="st ok">Đã chạy · 001, 004</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Đọc lại từ đầu thì ghi trùng; đọc tiếp từ chỗ cuối thì mất phần đã đọc mà chưa ghi.</dd>
-        <dt class="c">Cách làm</dt><dd>Mỗi 30 giây lưu checkpoint (vị trí đọc + dữ liệu chờ ghi). Iceberg chỉ commit khi checkpoint thành công, nên hai thứ luôn khớp (exactly-once). <code>make down</code> dừng bằng savepoint để lần sau đọc tiếp đúng chỗ.</dd>
-        <dt>Đánh đổi</dt><dd>Dữ liệu chậm ~30 giây. Không có HA, mất điện thật có thể ghi lặp vài dòng bronze; silver vẫn đúng (L6).</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_exactly_n_rows</code> (480 vào, 480 ra); <code>test_taskmanager_kill_mid_load_keeps_silver_exact</code>.</dd>
-      </dl>
-    </div>
-    <div class="err">
-      <div class="hd"><span class="no">L5</span>Quá nhiều file nhỏ <span class="pn">Compactor</span><span class="pn">Horizontal Partitioner</span><span class="st ok">Đã chạy · 005</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Ghi 30 giây một lần và mỗi upsert sinh file mới; chia 16 ô mỗi ngày cho ra file khoảng 5 MB (nên là 128–512 MB). Sau vài ngày query phải mở hàng nghìn file.</dd>
-        <dt class="c">Cách làm</dt><dd>Partition theo ngày xảy ra, file xếp theo <code>(vehicle_id, event_ts)</code>. Dịch vụ bảo trì gộp file silver mỗi 30 phút, bronze mỗi giờ; mỗi ngày xóa snapshot cũ hơn 7 ngày và file mồ côi (ADR 0012).</dd>
-        <dt>Đánh đổi</dt><dd>Giữa hai lần gộp, đọc bảng upsert phải áp tối đa 30 phút file xóa.</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_compaction_during_live_writes_keeps_silver_exact</code>; <code>test_compaction_reads_fewer_files_for_one_van_and_keeps_every_row</code>.</dd>
-      </dl>
-    </div>
-
-    <h3 class="grp"><span class="bs">B4</span> Làm sạch</h3>
-    <div class="err">
-      <div class="hd"><span class="no">L6</span>Cùng một lần báo vị trí tới nhiều lần <span class="pn">Windowed Deduplicator</span><span class="pn">Merger</span><span class="st ok">Đã chạy · 004</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Thiết bị không chắc đã gửi được nên gửi lại. Đếm cả bản trùng thì quãng đường gấp đôi.</dd>
-        <dt class="c">Cách làm</dt><dd>Hai lớp: nhớ khóa <code>(vehicle_id, event_ts)</code> 24 giờ, giữ bản tới đầu tiên; và ghi upsert theo khóa, nên bản trùng tới sau 24 giờ cũng chỉ ghi đè đúng dòng đó (ADR 0011).</dd>
-        <dt>Đánh đổi</dt><dd>Mỗi upsert sinh một file xóa, đọc chậm dần tới khi gộp file (L5).</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_clean_and_chaos_runs_give_identical_silver</code>: cùng một ngày gửi sạch và gửi bẩn, silver giống hệt.</dd>
-      </dl>
-    </div>
-    <div class="err">
-      <div class="hd"><span class="no">L7</span>Sự kiện tới trễ, sai thứ tự <span class="pn">Late Data Detector</span><span class="st ok">Đã chạy · 004</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Vị trí 08:07 tới lúc 08:11. Lấy "cái tới sau cùng" thì xe lùi; bỏ đi thì mất dữ liệu.</dd>
-        <dt class="c">Cách làm</dt><dd>Xếp theo lúc xảy ra. Sự kiện trễ vẫn vào silver, ghi <code>is_late = true</code>, <code>lateness_s = 242</code>. Cờ này tính từ dữ liệu, nên dựng lại lần nào cũng ra cùng kết quả.</dd>
-        <dt>Đánh đổi</dt><dd>Sự kiện trễ hơn 30 giây không kích hoạt lại cảnh báo cũ.</dd>
-        <dt>Kiểm chứng</dt><dd><code>test_two_hour_late_ping_is_kept_and_marked_late</code>.</dd>
-      </dl>
-    </div>
-    <div class="err">
-      <div class="hd"><span class="no">L8</span>Bộ nhớ phình mãi <span class="pn">state TTL</span><span class="st ok">Đã chạy · 004</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Nhớ mọi khóa đã thấy: 30 ngày là 100 triệu khóa, hết bộ nhớ.</dd>
-        <dt class="c">Cách làm</dt><dd>Mỗi thứ nhớ có hạn xóa: vị trí 24 giờ, đơn 7 ngày.</dd>
-        <dt>Đánh đổi</dt><dd>Bản trùng tới sau hạn được upsert (L6) chặn lại, nhưng làm mới giờ nhận của dòng đó.</dd>
-        <dt>Kiểm chứng</dt><dd>Toàn bộ container dưới 6 GB khi chạy dữ liệu dev.</dd>
-      </dl>
-    </div>
-
-    <h3 class="grp"><span class="bs">B5</span> Tính ngay</h3>
-    <div class="err plan">
-      <div class="hd"><span class="no">L9</span>Chạy lại gửi cảnh báo hai lần <span class="pn">Keyed Idempotency</span><span class="st plan">Dự kiến · 6</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Flink chết lúc 08:10:30, quay về checkpoint, tính lại cảnh báo ORD_002. Chỉ thêm dòng thì điều phối viên thấy hai cảnh báo.</dd>
-        <dt class="c">Cách làm</dt><dd>Mỗi bảng serving có khóa; ghi upsert, chỉ ghi đè nếu dữ liệu mới hơn.</dd>
-        <dt>Đánh đổi</dt><dd>Serving chỉ giữ hiện trạng; lịch sử nằm ở silver, gold.</dd>
-        <dt>Kiểm chứng</dt><dd>Test dự kiến: dừng giữa kịch bản, chạy lại, vẫn đúng một cảnh báo.</dd>
-      </dl>
-    </div>
-    <div class="err plan">
-      <div class="hd"><span class="no">L10</span>Bật lại sau 1 giờ: bão cảnh báo cũ <span class="pn">alert horizon</span><span class="st plan">Dự kiến · 6</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Xử lý dồn 1 giờ dữ liệu, mọi vị trí cũ đều có thể phát cảnh báo cho tình huống đã qua.</dd>
-        <dt class="c">Cách làm</dt><dd>Sự kiện xảy ra cách đây hơn 10 phút chỉ cập nhật vị trí, không phát cảnh báo.</dd>
-        <dt>Đánh đổi</dt><dd>Trong lúc dồn có thể lỡ cảnh báo thật; yêu cầu là cảnh báo trở lại trong 15 phút.</dd>
-        <dt>Kiểm chứng</dt><dd>Test dự kiến: dừng 1 giờ, bật lại, không cảnh báo cho sự kiện cũ hơn 10 phút.</dd>
-      </dl>
-    </div>
-
-    <h3 class="grp"><span class="bs">B6</span> Tổng hợp</h3>
-    <div class="err plan">
-      <div class="hd"><span class="no">L11</span>Sự kiện trễ làm số tạm thiếu <span class="pn">Static Late Data Integrator</span><span class="st plan">Dự kiến · 7</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Số lúc 08:05 tính xong khi vị trí 08:07 chưa tới.</dd>
-        <dt class="c">Cách làm</dt><dd>Mỗi lần chạy (5 phút) tính lại 2 giờ gần nhất, ghi đè theo khóa.</dd>
-        <dt>Đánh đổi</dt><dd>Số trong ngày là số tạm, có thể đổi trong 2 giờ; màn hình phải ghi rõ.</dd>
-        <dt>Kiểm chứng</dt><dd>Test dự kiến: dữ liệu sạch và bẩn (trễ tới 2 giờ, trùng, sai thứ tự) cho KPI giống hệt.</dd>
-      </dl>
-    </div>
-    <div class="err plan">
-      <div class="hd"><span class="no">L12</span>Sự kiện tới sau khi chốt sổ <span class="pn">Data Overwrite</span><span class="st plan">Dự kiến · 7</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>02:30 một xe mới báo bù vị trí hôm qua. Tự sửa thì báo cáo đã gửi bị đổi; lờ đi thì sai lặng lẽ.</dd>
-        <dt class="c">Cách làm</dt><dd>Vẫn lưu; đếm vào <code>closed_days.late_after_close</code>. Sửa bằng <code>make reclose DAY=…</code>: ghi đè cả ngày, chạy lại bao nhiêu lần cũng ra cùng số.</dd>
-        <dt>Đánh đổi</dt><dd>Sửa ngày đã chốt là việc tay, có log.</dd>
-        <dt>Kiểm chứng</dt><dd>Test dự kiến: sự kiện sau 01:00 không đổi số chốt nhưng tăng bộ đếm.</dd>
-      </dl>
-    </div>
-    <div class="err plan">
-      <div class="hd"><span class="no">L13</span>Công thức KPI có lỗi <span class="pn">Audit-Write-Audit-Publish</span><span class="st plan">Dự kiến · 7</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Code tính đơn thất bại là đúng giờ; tỉ lệ đẹp hơn thực tế.</dd>
-        <dt class="c">Cách làm</dt><dd>Kiểm tra nguồn còn tươi → dựng bảng → test kết quả (khóa không trùng, đơn thất bại luôn không đúng giờ). Test hỏng thì không công bố.</dd>
-        <dt>Đánh đổi</dt><dd>Số đứng yên tới khi sửa, nên cần cảnh báo cho người vận hành.</dd>
-        <dt>Kiểm chứng</dt><dd>dbt test trong CI; dữ liệu mẫu cố ý sai phải làm CI đỏ.</dd>
-      </dl>
-    </div>
-    <div class="err plan">
-      <div class="hd"><span class="no">L14</span>Xe đổi kho viết lại lịch sử <span class="pn">SCD Type 2</span><span class="st plan">Dự kiến · 7</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Xem 4.3: KPI tháng 11 của Q1 bị đổi khi xe sang Q7.</dd>
-        <dt class="c">Cách làm</dt><dd>Giữ mọi phiên bản xe; fact nối phiên bản đúng tại lúc giao.</dd>
-        <dt>Đánh đổi</dt><dd>Phép nối theo khoảng thời gian, phức tạp hơn.</dd>
-        <dt>Kiểm chứng</dt><dd>dbt test dự kiến: đổi kho không đổi KPI tháng trước.</dd>
-      </dl>
-    </div>
-    <div class="err plan">
-      <div class="hd"><span class="no">L15</span>Lộ địa chỉ khách <span class="pn">Anonymizer</span><span class="st plan">Dự kiến · 7</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Tọa độ điểm giao là nhà khách; quản lý chỉ cần khu vực.</dd>
-        <dt class="c">Cách làm</dt><dd>Gold chỉ lưu <code>dest_area</code> (ô khoảng 150 m).</dd>
-        <dt>Đánh đổi</dt><dd>Không phân tích được ở mức từng nhà.</dd>
-        <dt>Kiểm chứng</dt><dd>dbt test: không bảng gold nào có tọa độ điểm giao.</dd>
-      </dl>
-    </div>
-
-    <h3 class="grp">Toàn luồng</h3>
-    <div class="err plan">
-      <div class="hd"><span class="no">L16</span>Luồng chậm hoặc dừng lặng lẽ <span class="pn">Lag Detector</span><span class="pn">Flow Interruption Detector</span><span class="st plan">Dự kiến · 8</span></div>
-      <dl class="pat">
-        <dt class="v">Vấn đề</dt><dd>Màn hình vẫn hiện số, nhưng là số cũ, không ai biết.</dd>
-        <dt class="c">Cách làm</dt><dd>Báo khi độ trễ đọc tăng quá 5 phút, checkpoint hỏng, nhật ký Postgres giữ quá 500 MB, hoặc 2 phút không có dữ liệu mới. Hiện có <code>make cdc-status</code>, <code>dlq-status</code>, <code>silver-status</code> để xem bằng tay.</dd>
-        <dt>Đánh đổi</dt><dd>Ngưỡng thấp thì báo động giả nhiều.</dd>
-        <dt>Kiểm chứng</dt><dd>Test dự kiến: dừng simulator, có cảnh báo trong 2 phút.</dd>
-      </dl>
-    </div>
-  </section>
-
-  <!-- ============================ 7. PROCESS ============================ -->
-  <section id="p7" class="part">
-    <h2><span class="n">7</span>Quy trình: project được làm và kiểm chứng thế nào?</h2>
-    <div class="scope"><div class="in"><b>Phần này nói</b>các bước làm một feature, ví dụ thật là feature 004 (silver)</div><div class="out"><b>Cách đọc</b>mỗi bước có tài liệu riêng trong repo</div></div>
+  <div class="q">
+    <p class="tcap">Các lần xe báo vị trí (topic <code>gps.pings.v1</code>), xếp theo <b>thứ tự tới hệ thống</b></p>
     <div class="tw"><table class="wide">
-      <tr><th>Bước</th><th>Tài liệu</th><th>Ở feature 004</th><th>Vì sao</th></tr>
-      <tr><td>1. Ý định</td><td><code>docs/intent.md</code>, <code>roadmap.md</code></td><td>Hàng 4: silver, khử trùng, chaos mode</td><td>Biết làm cho ai, để làm gì</td></tr>
-      <tr><td>2. Spec: <b>cái gì, vì sao</b>, chưa có code</td><td><code>specs/004-silver/spec.md</code></td><td>AC2: "cùng một ngày gửi sạch và gửi bẩn → silver giống hệt"</td><td>Thống nhất "xong" nghĩa là gì trước khi code</td></tr>
-      <tr><td>3. Duyệt</td><td>dòng Status</td><td>Approved 2026-11-19</td><td>Chủ project quyết định, không phải người code</td></tr>
-      <tr><td>4. Plan: <b>làm thế nào</b>, có spike</td><td><code>plan.md</code></td><td>Spike nửa ngày phát hiện Iceberg không lấy khóa upsert từ DDL</td><td>Thử phần rủi ro nhất trước</td></tr>
-      <tr><td>5. Test trước, code sau</td><td><code>tests/</code></td><td>Test AC2 viết trước <code>silver_gps.sql</code></td><td>Test là định nghĩa "đúng"; test hỏng thì sửa code, không sửa test</td></tr>
-      <tr><td>6. ADR</td><td><code>docs/decisions/0011-*.md</code></td><td>So 5 cách làm silver, ghi cái giá</td><td>Quyết định khó đảo ngược phải có lý do</td></tr>
-      <tr><td>7. Kiểm tra</td><td><code>make check</code>, <code>make e2e</code>, <code>make e2e-restart</code></td><td>Lint + unit (giống CI) · e2e trên Docker · giết máy giữa chừng</td><td>"Chạy trên máy tôi" không đủ</td></tr>
-      <tr><td>8. Review, PR</td><td>Review diff theo checklist</td><td>So diff với spec, plan</td><td>Bắt chỗ làm thiếu hoặc thừa</td></tr>
-      <tr><td>9. Cập nhật tài liệu</td><td><code>project-spec.md</code>, <code>requirements.md</code></td><td>Spec → Implemented; ghi chỗ lệch kế hoạch</td><td>Tài liệu luôn khớp code</td></tr>
+      <tr><th>ping</th><th>event_ts (lúc xảy ra)</th><th>ingest_ts (lúc tới)</th><th>speed_kmh</th><th>chuyện gì xảy ra</th></tr>
+      <tr><td class="m">G1</td><td class="m">08:05:00</td><td class="m">08:05:01</td><td class="m">14</td><td>bình thường</td></tr>
+      <tr><td class="m">G2</td><td class="m">08:06:00</td><td class="m">08:06:01</td><td class="m">0</td><td>đứng đèn đỏ</td></tr>
+      <tr><td class="m">G4</td><td class="m">08:10:00</td><td class="m">08:10:01</td><td class="m">12</td><td>kẹt xe, còn 7,0 km tới điểm giao 1</td></tr>
+      <tr class="hl"><td class="m">G3</td><td class="m">08:07:00</td><td class="m">08:11:02</td><td class="m">6</td><td>đi qua hầm, mất sóng, <b>gửi bù muộn 4 phút</b></td></tr>
+      <tr class="hl"><td class="m">G3′</td><td class="m">08:07:00</td><td class="m">08:11:03</td><td class="m">6</td><td>thiết bị không chắc đã gửi được nên <b>gửi lại</b></td></tr>
+      <tr class="bad"><td class="m">GX</td><td class="m">08:12:00</td><td class="m">08:12:01</td><td class="m">—</td><td>thiết bị lỗi: <code>lat = 21.03</code>, tức là ở Hà Nội</td></tr>
     </table></div>
-    <div class="tw"><table class="wide">
-      <tr><th>Mức test</th><th>Kiểm cái gì</th><th>Chạy bằng</th><th>Trạng thái</th></tr>
-      <tr><td>Unit</td><td>Hàm thuần: kiểm tra, chaos, simulator, tương thích schema; không cần Docker</td><td><code>make check</code>, CI mỗi PR</td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td>End-to-end</td><td>Dữ liệu thật qua cả hệ thống Docker</td><td><code>make e2e</code></td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td>Sự cố</td><td>Giết máy, dựng lại từ bronze: không mất, không trùng</td><td><code>make e2e-restart</code></td><td><span class="st ok">Đã chạy</span></td></tr>
-      <tr><td>Tương đương</td><td>Dữ liệu sạch và bẩn cho cùng kết quả</td><td>simulator <code>--chaos</code></td><td><span class="st ok">silver</span> <span class="st plan">gold · 7</span></td></tr>
-      <tr><td>Dữ liệu</td><td>Khóa, null, luật nghiệp vụ trên gold</td><td>dbt test</td><td><span class="st plan">7</span></td></tr>
-      <tr><td>Hiệu năng</td><td>100 triệu sự kiện, ghi kèm cấu hình máy</td><td><code>make bench</code></td><td><span class="st plan">5</span></td></tr>
-    </table></div>
+    <p class="note">Bảng chỉ giữ 6 ping để dễ theo dõi; thật ra xe báo 5 giây một lần. Mỗi ping còn có <code>lat</code>, <code>lon</code>, <code>heading_deg</code>.</p>
+  </div>
 
-    <div class="q">
-      <h3>Tóm tắt: một bước, bốn góc nhìn</h3>
-      <div class="tw"><table class="wide">
-        <tr><th>Bước</th><th>Luồng (phần 2)</th><th>Công cụ (phần 3)</th><th>Bảng (phần 4)</th><th>Lỗi (phần 6)</th></tr>
-        <tr><td><span class="bs">B1</span></td><td>lấy mọi thay đổi</td><td>Debezium, Kafka</td><td>—</td><td>L1, L2</td></tr>
-        <tr><td><span class="bs">B2</span></td><td>tách hàng lỗi</td><td>Flink + Schema Registry</td><td>bronze hàng lỗi</td><td>L3</td></tr>
-        <tr><td><span class="bs">B3</span></td><td>lưu nguyên văn</td><td>Flink → Iceberg</td><td>bronze</td><td>L4, L5</td></tr>
-        <tr><td><span class="bs">B4</span></td><td>mỗi việc một lần, theo lúc xảy ra</td><td>Flink → Iceberg</td><td>silver</td><td>L6, L7, L8</td></tr>
-        <tr><td><span class="bs">B5</span></td><td>tính giờ tới, cảnh báo</td><td>Flink → Postgres</td><td>serving</td><td>L9, L10</td></tr>
-        <tr><td><span class="bs">B6</span></td><td>số tạm, số chốt</td><td>dbt + Trino</td><td>gold</td><td>L11–L15</td></tr>
-        <tr><td><span class="bs">B7</span></td><td>hỏi về quá khứ</td><td>Trino</td><td>silver, gold</td><td>—</td></tr>
-      </table></div>
+  <div class="warn"><b>Dữ liệu này cố tình bẩn</b>
+    Bốn lỗi mà thiết bị thật vẫn gây ra, và feature giải quyết từng lỗi:
+    <ul>
+      <li><b>Hỏng</b>: GX có tọa độ ngoài thành phố → feature 3.</li>
+      <li><b>Trùng</b>: G3 tới hai lần → feature 4.</li>
+      <li><b>Trễ</b>: G3 xảy ra 08:07 nhưng 08:11 mới tới → feature 4.</li>
+      <li><b>Sai thứ tự</b>: G3 xảy ra trước G4 nhưng tới sau G4 → feature 4 và 6.</li>
+    </ul>
+  </div>
+
+  <div class="q">
+    <h3>Toàn cảnh: dữ liệu đi đâu</h3>
+    <div class="flow">
+      <div class="row"><i>Nguồn</i>
+        <span class="nd">Simulator GPS<small>200 xe, 5 giây/lần</small><span class="ft">F1</span></span>
+        <span class="nd">Redpanda (Kafka)<small>gps.pings.v1</small><span class="ft">F1</span></span>
+        <span class="nd">Schema Registry<small>Avro, DLQ</small><span class="ft">F3</span></span>
+      </div>
+      <div class="row"><i>Nguồn</i>
+        <span class="nd">Postgres orders<small>team khác</small><span class="ft">F2</span></span>
+        <span class="nd">Debezium<small>đọc WAL</small><span class="ft">F2</span></span>
+        <span class="nd">Redpanda (Kafka)<small>cdc.public.orders</small><span class="ft">F2</span></span>
+      </div>
+      <div class="row"><i>Nhánh nhanh<br><small>giây</small></i>
+        <span class="nd new">Flink control_tower<small>state theo từng xe</small><span class="ft">F6</span></span>
+        <span class="nd out">Postgres serving<small>order_eta, alerts</small><span class="ft">F6</span></span>
+        <span class="nd out">Điều phối viên<small>dashboard</small><span class="ft">F8</span></span>
+      </div>
+      <div class="row"><i>Nhánh lịch sử<br><small>phút, ngày</small></i>
+        <span class="nd new">Iceberg bronze<small>nguyên bản</small><span class="ft">F1</span></span>
+        <span class="nd new">Iceberg silver<small>sạch</small><span class="ft">F4</span></span>
+        <span class="nd new">dbt → gold<small>KPI</small><span class="ft">F7</span></span>
+        <span class="nd out">Trino / Athena<small>quản lý, analyst</small><span class="ft">F9</span></span>
+      </div>
+      <p>Cả hai nhánh đều đọc từ Kafka. Nhánh nhanh không chờ silver, vì silver chậm vài chục giây (lý do ở feature 6). F5 không thêm khối nào: nó đổi cách các khối chạy để chịu được 100 triệu sự kiện.</p>
     </div>
-  </section>
-</main>
+  </div>
+</section>
+
+<!-- ======================= FEATURE 1 ======================= -->
+<section class="part" id="f1">
+  <h2><span class="n">Feature 1 <span class="st ok">Đã chạy</span></span>Walking skeleton: một ping đi hết đường</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Chưa có gì chạy từ đầu tới cuối. Ghép nhiều thành phần cùng lúc thì khi hỏng không biết hỏng ở đâu. Việc đầu tiên: chứng minh <b>một</b> ping từ simulator tới được bảng trên lakehouse và hỏi được bằng SQL. Chưa bỏ trùng, chưa tính ETA.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ</h3>
+    <div class="flow">
+      <div class="row">
+        <span class="nd new">Simulator</span>
+        <span class="nd new">Redpanda<small>gps.pings.v1</small></span>
+        <span class="nd new">Flink bronze_gps</span>
+        <span class="nd new">Iceberg<small>bronze.gps_pings</small></span>
+        <span class="nd out">Trino<small>SQL</small></span>
+      </div>
+      <p>Iceberg lưu file Parquet trên MinIO (S3 chạy local) và đăng ký bảng ở REST catalog.</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Dữ liệu vào: ping G1</h3>
+    <p>Simulator gửi G1 lên Kafka, <b>key = <code>vehicle_id</code></b>. Dưới đây viết dạng JSON cho dễ đọc; trên dây thực tế là Avro (feature 3).</p>
+    <figure class="code"><figcaption><b>JSON</b> giá trị message, theo <code>schemas/gps.pings.v1-value/v1.avsc</code></figcaption>
+<pre><code>{
+  "vehicle_id":  "VAN-0001",
+  "event_ts":    "2026-11-20T01:05:00Z",   <span class="c">// 08:05 giờ VN, lúc ping được đo</span>
+  "lat":         10.7712,                  <span class="c">// minh họa</span>
+  "lon":         106.6861,
+  "speed_kmh":   14.0,
+  "heading_deg": 45.0
+}</code></pre></figure>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Xử lý: Flink SQL đọc Kafka, ghi Iceberg</h3>
+    <figure class="code"><figcaption><b>SQL</b> <code>flink/jobs/bronze_gps.sql</code> (rút gọn)</figcaption>
+<pre><code><span class="k">CREATE TEMPORARY TABLE</span> gps_raw (
+  `value`         BYTES,                                       <span class="c">-- bytes nguyên bản</span>
+  ingest_ts       TIMESTAMP_LTZ(3) <span class="k">METADATA FROM</span> 'timestamp' VIRTUAL,  <span class="c">-- lúc Kafka nhận</span>
+  kafka_partition INT              <span class="k">METADATA FROM</span> 'partition' VIRTUAL,
+  kafka_offset    BIGINT           <span class="k">METADATA FROM</span> 'offset'    VIRTUAL
+) <span class="k">WITH</span> ('connector' = 'kafka', 'topic' = '${GPS_TOPIC}', 'format' = 'raw', …);
+
+<span class="k">INSERT INTO</span> lakehouse.bronze.gps_pings
+<span class="k">SELECT</span> d.vehicle_id, d.event_ts, d.lat, d.lon, d.speed_kmh, d.heading_deg,
+       d.ingest_ts, d.kafka_partition, d.kafka_offset
+<span class="k">FROM</span> gps_decoded            <span class="c">-- decode_gps(value, …): Avro → cột (thêm ở feature 3)</span>
+<span class="k">WHERE</span> d.error_reason <span class="k">IS NULL</span>;</code></pre></figure>
+    <p>Flink lưu checkpoint 30 giây một lần (vị trí đọc Kafka và dữ liệu chờ ghi). Iceberg chỉ commit khi checkpoint xong, nên hai thứ luôn khớp: máy chết giữa chừng thì chạy lại không mất và không ghi đôi (exactly-once).</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Dữ liệu ra: một dòng trong bronze</h3>
+    <figure class="code"><figcaption><b>SQL</b> chạy trên Trino</figcaption>
+<pre><code><span class="k">SELECT</span> vehicle_id, event_ts, speed_kmh, ingest_ts, kafka_partition, kafka_offset
+<span class="k">FROM</span> lakehouse.bronze.gps_pings
+<span class="k">WHERE</span> vehicle_id = 'VAN-0001'
+<span class="k">ORDER BY</span> event_ts;</code></pre></figure>
+    <div class="tw"><table class="wide">
+      <tr><th>vehicle_id</th><th>event_ts</th><th>speed_kmh</th><th>ingest_ts</th><th>kafka_partition</th><th>kafka_offset</th></tr>
+      <tr class="new"><td class="m">VAN-0001</td><td class="m">08:05:00</td><td class="m">14.0</td><td class="m">08:05:01</td><td class="m">3</td><td class="m">1042</td></tr>
+    </table></div>
+    <p class="note">Partition và offset là minh họa. Từ đây mỗi dòng có hai đồng hồ: <code>event_ts</code> (lúc việc xảy ra, dùng cho mọi logic nghiệp vụ) và <code>ingest_ts</code> (lúc hệ thống nhận, chỉ để đo trễ và debug).</p>
+  </div>
+
+  <div class="key"><b>Kết quả feature 1</b>
+    Mỗi khối có một việc: Kafka giữ sự kiện 7 ngày để bên đọc dừng một lúc vẫn đọc tiếp được; Flink đọc Kafka và ghi bảng exactly-once; Iceberg biến file trên object storage thành bảng có transaction; Trino trả lời SQL. Hệ thống đã biết xe <b>ở đâu</b>, nhưng chưa biết xe <b>chở đơn nào</b>.<br>
+    <b>Kiểm chứng:</b> <code>test_exactly_n_rows</code> (gửi đúng N ping → đúng N dòng); cả stack dưới 6 GB RAM.
+  </div>
+  <p class="adr">Quyết định: ADR 0001 (Redpanda local, MSK trên AWS) · 0002 (Flink, SQL trước) · 0003 (Iceberg) · 0005 (local trước, AWS khi demo).</p>
+</section>
+
+<!-- ======================= FEATURE 2 ======================= -->
+<section class="part" id="f2">
+  <h2><span class="n">Feature 2 <span class="st ok">Đã chạy</span></span>CDC: biết xe đang chở đơn nào</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Đơn hàng nằm trong Postgres của team khác. Không được sửa ứng dụng của họ, cũng không nên truy vấn database của họ liên tục. Khó hơn nữa: bảng <code>orders</code> <b>ghi đè</b> trạng thái. Đọc 5 phút một lần thì một đơn đổi trạng thái hai lần trong 5 phút sẽ mất một lần.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ</h3>
+    <div class="flow">
+      <div class="row">
+        <span class="nd">Postgres orders<small>COMMIT → WAL</small></span>
+        <span class="nd new">Debezium<small>Kafka Connect</small></span>
+        <span class="nd new">Redpanda<small>cdc.public.orders</small></span>
+        <span class="nd new">Flink bronze_cdc</span>
+        <span class="nd new">Iceberg<small>bronze.orders_cdc</small></span>
+      </div>
+      <p>Bảng <code>depots</code> và <code>vans</code> đi cùng đường, vào <code>bronze.depots_cdc</code> và <code>bronze.vans_cdc</code>.</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Dữ liệu vào: một lần đổi trạng thái</h3>
+    <p>08:00, xe rời kho. Ứng dụng đơn hàng chạy:</p>
+    <figure class="code"><figcaption><b>SQL</b> trong Postgres của team đơn hàng (theo <code>simulator/orders_db.py</code>)</figcaption>
+<pre><code><span class="k">UPDATE</span> orders
+<span class="k">SET</span>    status = 'out_for_delivery', out_for_delivery_at = '2026-11-20 08:00+07', updated_at = …
+<span class="k">WHERE</span>  order_id = 'ORD-20261120-00001' <span class="k">AND</span> status = 'assigned';</code></pre></figure>
+    <p>Khi transaction commit, Postgres ghi thay đổi vào nhật ký giao dịch (WAL). Debezium đọc WAL và gửi một message lên Kafka, kèm <b>giá trị trước và sau</b> (bảng đặt <code>REPLICA IDENTITY FULL</code> nên "trước" có đủ cột):</p>
+    <figure class="code"><figcaption><b>JSON</b> message Debezium (rút gọn)</figcaption>
+<pre><code>{
+  "op": "u",                                  <span class="c">// c = tạo, u = sửa, r = đọc snapshot lúc đầu</span>
+  "before": { "order_id": "ORD-20261120-00001", "status": "assigned",         … },
+  "after":  { "order_id": "ORD-20261120-00001", "status": "out_for_delivery",
+              "van_id": "VAN-0001", "stop_seq": 1,
+              "promised_end": "2026-11-20T01:33:00Z", … },
+  "source": { "lsn": 7388, "txId": 912, "ts_ms": … }   <span class="c">// lsn: vị trí trong WAL (minh họa)</span>
+}</code></pre></figure>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Dữ liệu ra: cả lịch sử của đơn 1 trong bronze</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>op</th><th>after.status</th><th>source_lsn</th><th>commit_ts</th><th>ingest_ts</th></tr>
+      <tr><td class="m">c</td><td class="m">created</td><td class="m">7101</td><td class="m">19/11 20:15</td><td class="m">19/11 20:15</td></tr>
+      <tr><td class="m">u</td><td class="m">assigned</td><td class="m">7240</td><td class="m">07:30</td><td class="m">07:30</td></tr>
+      <tr><td class="m">u</td><td class="m">out_for_delivery</td><td class="m">7388</td><td class="m">08:00</td><td class="m">08:00</td></tr>
+      <tr><td class="m">u</td><td class="m">delivered</td><td class="m">9015</td><td class="m">08:47</td><td class="m">08:47</td></tr>
+    </table></div>
+    <p>Postgres chỉ còn dòng cuối (<code>delivered</code>). Bronze giữ cả bốn. Số LSN là minh họa; điều quan trọng là LSN luôn tăng theo thứ tự commit.</p>
+  </div>
+
+  <div class="ana"><b>Ví dụ đời thường</b>
+    Bảng <code>orders</code> giống <b>số dư</b> tài khoản; dòng CDC giống <b>sao kê</b> (+5 triệu, −2 triệu…). Từ sao kê luôn tính lại được số dư, còn từ số dư không biết lại được sao kê. CDC biến số dư của team khác thành sao kê cho mình.
+  </div>
+
+  <div class="key"><b>Kết quả feature 2</b>
+    Hệ thống nhận được cả hai nguồn: vị trí xe và mọi lần đổi của đơn, không đụng vào ứng dụng của team khác. Nhưng đây vẫn là hai dòng riêng; ghép chúng để tính ETA là việc của feature 6. Còn một rủi ro: Debezium khởi động lại có thể gửi lại vài thay đổi. Feature 4 xử lý chuyện đó bằng LSN.<br>
+    <b>Kiểm chứng:</b> <code>test_connector_restart_loses_and_duplicates_nothing</code>.
+  </div>
+  <p class="adr">Quyết định: ADR 0004 (CDC bằng Debezium, không đọc định kỳ theo <code>updated_at</code>).</p>
+</section>
+
+<!-- ======================= FEATURE 3 ======================= -->
+<section class="part" id="f3">
+  <h2><span class="n">Feature 3 <span class="st ok">Đã chạy</span></span>Data contract và DLQ: một message hỏng không được dừng 200 xe</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Ping GX tới với <code>lat = 21.03, lon = 105.85</code>: Hà Nội, trong khi xe chạy ở TP.HCM. Trước feature 3, một message hỏng làm job bronze dừng, và cả 200 xe ngừng vào theo. Còn một rủi ro khác: team thiết bị đổi tên trường <code>lat</code> là job đang chạy đọc không được nữa.</p>
+    <p>Có ba cách xử lý message hỏng: để nó đi tiếp thì bản đồ sai, dừng cả luồng thì 199 xe khác chịu theo, lặng lẽ bỏ đi thì không ai biết thiết bị nào hỏng. Cả ba đều tệ.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ</h3>
+    <div class="flow">
+      <div class="row">
+        <span class="nd">Kafka<small>bytes</small></span>
+        <span class="nd new">decode_gps<small>UDF Python + Registry</small></span>
+        <span class="nd out">hợp lệ → bronze.gps_pings</span>
+      </div>
+      <div class="row fork"><i></i>
+        <span class="nd bad">lỗi → bronze.dlq_events<small>+ topic dlq.gps.pings.v1</small></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Lớp 1: schema Avro, đăng ký ở Schema Registry</h3>
+    <figure class="code"><figcaption><b>AVRO</b> <code>schemas/gps.pings.v1-value/v1.avsc</code> (rút gọn)</figcaption>
+<pre><code>{ "type": "record", "name": "GpsPing", "namespace": "ct.gps",
+  "fields": [
+    {"name": "vehicle_id",  "type": "string"},
+    {"name": "event_ts",    "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "lat",         "type": "double"},
+    {"name": "lon",         "type": "double"},
+    {"name": "speed_kmh",   "type": "double"},
+    {"name": "heading_deg", "type": "double"}
+  ] }</code></pre></figure>
+    <p>Registry chạy chế độ <code>FULL_TRANSITIVE</code>: schema mới phải đọc được dữ liệu cũ và ngược lại, với mọi phiên bản trước. Bản v2 thêm <code>battery_pct</code> có <code>"default": null</code> nên được nhận. Đổi tên <code>lat</code> thì bị từ chối ngay lúc đăng ký, và CI cũng kiểm tra trước khi merge. Thay đổi phá vỡ phải ra topic mới (<code>*.v2</code>).</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Lớp 2: luật nghiệp vụ</h3>
+    <p>Schema chỉ biết <code>lat</code> là số thực; nó không biết 21.03 là ở ngoài thành phố. Nên mỗi ping đã giải mã còn qua một hàm kiểm tra. Giới hạn thành phố (<code>contracts/bounds.py</code>) dùng chung với simulator, nên simulator không bao giờ sinh dữ liệu mà luật coi là sai, trừ khi cố ý.</p>
+    <figure class="code"><figcaption><b>PYTHON</b> <code>contracts/validate.py</code> (rút gọn)</figcaption>
+<pre><code>HCMC_BBOX = BBox(lat_min=10.65, lat_max=10.90, lon_min=106.55, lon_max=106.85)  <span class="c"># contracts/bounds.py</span>
+
+<span class="k">def</span> gps_violation(ping, ingest_ts):
+    <span class="c">"""(reason, detail) của luật đầu tiên bị vi phạm, hoặc None nếu hợp lệ."""</span>
+    <span class="k">if not</span> ping.get("vehicle_id"):
+        <span class="k">return</span> "missing_vehicle_id", …
+    lat, lon = ping.get("lat"), ping.get("lon")
+    <span class="k">if</span> lat <span class="k">is None or</span> lon <span class="k">is None or not</span> HCMC_BBOX.contains(lat, lon):
+        <span class="k">return</span> "out_of_bbox", f"lat={lat!r} lon={lon!r}"
+    <span class="k">if not</span> 0.0 &lt;= ping["speed_kmh"] &lt;= MAX_SPEED_KMH:            <span class="c"># 80 km/h</span>
+        <span class="k">return</span> "speed_out_of_range", …
+    <span class="k">if</span> ping["event_ts"] &gt; ingest_ts + timedelta(minutes=5):
+        <span class="k">return</span> "event_ts_in_future", …
+    <span class="k">return None</span></code></pre></figure>
+    <p>Byte không giải mã được thì nhận lý do <code>not_decodable</code> hoặc <code>unknown_schema_id</code>, ở bước giải mã trước hàm này.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Dữ liệu ra: ai đi đâu</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>ping</th><th>lat</th><th>kết quả</th><th>đi vào</th></tr>
+      <tr><td class="m">G1, G2, G4</td><td class="m">10.77…</td><td class="ok-t">hợp lệ</td><td class="m">bronze.gps_pings</td></tr>
+      <tr><td class="m">G3, G3′</td><td class="m">10.78…</td><td class="ok-t">hợp lệ</td><td class="m">bronze.gps_pings (cả hai bản)</td></tr>
+      <tr class="bad"><td class="m">GX</td><td class="m">21.03</td><td class="bad-t">out_of_bbox</td><td class="m">bronze.dlq_events + dlq.gps.pings.v1</td></tr>
+    </table></div>
+    <p class="tcap" style="margin-top:6px">Dòng của GX trong <code>bronze.dlq_events</code></p>
+    <div class="tw"><table class="wide">
+      <tr><th>source_topic</th><th>reason</th><th>detail</th><th>raw_value</th></tr>
+      <tr class="bad"><td class="m">gps.pings.v1</td><td class="m">out_of_bbox</td><td class="m">lat=21.03 lon=105.85</td><td class="m">bytes gốc</td></tr>
+    </table></div>
+    <div class="warn"><b>Dễ nhầm</b>
+      G3 trễ và G3′ trùng vẫn là <b>hợp lệ</b>. Feature 3 chỉ hỏi "message này có đúng hình dạng và đúng luật không". Trùng và trễ là chuyện khác, của feature 4. Còn nếu Schema Registry không trả lời thì đó cũng không phải lỗi của message: job dừng và thử lại, không đẩy message vào DLQ (<code>test_registry_outage_is_raised_not_dead_lettered</code>).
+    </div>
+  </div>
+
+  <div class="key"><b>Kết quả feature 3</b>
+    Job tiếp tục chạy khi gặp message hỏng. DLQ giữ byte gốc và lý do, nên giải thích được và gửi lại được (<code>make dlq-status</code> đếm theo topic và lý do). Producer không thể làm hỏng job đang chạy bằng một schema không tương thích.<br>
+    <b>Kiểm chứng:</b> <code>test_garbage_goes_to_dlq_once_and_job_keeps_running</code>, <code>test_v1_and_v2_pings_reach_bronze</code>, <code>test_subjects_registered_full_transitive</code>.
+  </div>
+  <p class="adr">Quyết định: ADR 0008 (Avro + Schema Registry) · 0010 (đọc bytes thô, kiểm tra bằng UDF Python, DLQ).</p>
+</section>
+
+<!-- ======================= FEATURE 4 ======================= -->
+<section class="part" id="f4">
+  <h2><span class="n">Feature 4 <span class="st ok">Đã chạy</span></span>Silver: trùng, trễ và sai thứ tự</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Bronze giữ mọi thứ đúng như nhận được, cả bản trùng. Đó là cố ý: nếu cách làm sạch sai, còn bản gốc để làm lại. Nhưng không ai được đọc thẳng bronze để tính toán. Đây là năm dòng của <code>VAN-0001</code>, theo thứ tự tới:</p>
+    <div class="tw"><table class="wide">
+      <tr><th>ping</th><th>event_ts</th><th>ingest_ts</th><th>kafka_offset</th><th>vấn đề</th></tr>
+      <tr><td class="m">G1</td><td class="m">08:05:00</td><td class="m">08:05:01</td><td class="m">1042</td><td></td></tr>
+      <tr><td class="m">G2</td><td class="m">08:06:00</td><td class="m">08:06:01</td><td class="m">1043</td><td></td></tr>
+      <tr><td class="m">G4</td><td class="m">08:10:00</td><td class="m">08:10:01</td><td class="m">1044</td><td></td></tr>
+      <tr class="hl"><td class="m">G3</td><td class="m">08:07:00</td><td class="m">08:11:02</td><td class="m">1045</td><td>tới sau G4 dù xảy ra trước</td></tr>
+      <tr class="hl"><td class="m">G3′</td><td class="m">08:07:00</td><td class="m">08:11:03</td><td class="m">1046</td><td>bản trùng của G3</td></tr>
+    </table></div>
+    <div class="prob"><b>Nếu dùng thẳng bronze</b>
+      Đếm cả G3′ thì quãng đường gấp đôi đoạn đó. Lấy "dòng tới sau cùng" làm vị trí hiện tại thì xe nhảy lùi về chỗ của 08:07.
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ</h3>
+    <div class="flow">
+      <div class="row">
+        <span class="nd">bronze.gps_pings</span>
+        <span class="nd new">Flink silver_gps<small>bản tới đầu thắng</small></span>
+        <span class="nd out">silver.gps_pings<small>upsert (vehicle_id, event_ts)</small></span>
+      </div>
+      <div class="row">
+        <span class="nd">bronze.orders_cdc</span>
+        <span class="nd new">Flink silver_orders<small>LSN lớn nhất thắng</small></span>
+        <span class="nd out">silver.orders<small>+ order_status_history</small></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Xử lý GPS: mỗi lần báo vị trí giữ đúng một dòng</h3>
+    <p>Khóa của một lần báo vị trí là <code>(vehicle_id, event_ts)</code>: cùng xe, cùng thời điểm đo thì là cùng một sự kiện. Khóa phải lấy từ nghiệp vụ, không lấy offset Kafka, vì gửi lại thì offset khác.</p>
+    <figure class="code"><figcaption><b>SQL</b> <code>flink/jobs/silver_gps.sql</code> (rút gọn)</figcaption>
+<pre><code><span class="k">SET</span> 'table.exec.state.ttl' = '24 h';            <span class="c">-- nhớ mỗi khóa 24 giờ</span>
+
+<span class="k">INSERT INTO</span> lakehouse.silver.gps_pings <span class="c">/*+ OPTIONS('upsert-enabled' = 'true') */</span>
+<span class="k">SELECT</span> vehicle_id, event_ts, lat, lon, speed_kmh, heading_deg, ingest_ts,
+       TIMESTAMPDIFF(<span class="k">SECOND</span>, event_ts, ingest_ts)        <span class="k">AS</span> lateness_s,
+       TIMESTAMPDIFF(<span class="k">SECOND</span>, event_ts, ingest_ts) &gt; 30   <span class="k">AS</span> is_late
+<span class="k">FROM</span> (
+  <span class="k">SELECT</span> *, <span class="h">ROW_NUMBER() OVER (PARTITION BY vehicle_id, event_ts
+                            ORDER BY ingest_ts, kafka_partition, kafka_offset)</span> <span class="k">AS</span> rn
+  <span class="k">FROM</span> bronze_gps
+)
+<span class="k">WHERE</span> rn = 1;                                    <span class="c">-- bản tới đầu tiên thắng</span></code></pre></figure>
+    <p>Hai lớp giữ silver không trùng. <b>Lớp 1</b>: Flink nhớ mỗi khóa trong state 24 giờ, bản sao tới sau không sinh dòng nào. <b>Lớp 2</b>: bảng ghi kiểu upsert theo khóa, nên bản sao tới sau 24 giờ (state đã xóa) chỉ ghi đè đúng dòng đó, không thêm dòng.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Dữ liệu ra: <code>silver.gps_pings</code></h3>
+    <div class="tw"><table class="wide">
+      <tr><th>vehicle_id</th><th>event_ts</th><th>ingest_ts</th><th>lateness_s</th><th>is_late</th></tr>
+      <tr><td class="m">VAN-0001</td><td class="m">08:05:00</td><td class="m">08:05:01</td><td class="m">1</td><td class="m">false</td></tr>
+      <tr><td class="m">VAN-0001</td><td class="m">08:06:00</td><td class="m">08:06:01</td><td class="m">1</td><td class="m">false</td></tr>
+      <tr class="hl"><td class="m">VAN-0001</td><td class="m">08:07:00</td><td class="m">08:11:02</td><td class="m">242</td><td class="m bad-t">true</td></tr>
+      <tr><td class="m">VAN-0001</td><td class="m">08:10:00</td><td class="m">08:10:01</td><td class="m">1</td><td class="m">false</td></tr>
+    </table></div>
+    <p>Năm dòng bronze thành bốn dòng silver. G3 không bị bỏ: nó vẫn vào, được đánh dấu trễ 242 giây (08:11:02 − 08:07:00). Ngưỡng "trễ" là 30 giây, bằng watermark của project. Vì độ trễ tính từ chính dữ liệu, không từ đồng hồ máy, dựng lại silver bao nhiêu lần cũng đánh dấu cùng những dòng đó.</p>
+  </div>
+
+  <div class="q">
+    <h3>Điểm dễ nhầm: ping nào là "mới nhất"?</h3>
+    <div class="duo">
+      <div class="card lose"><span class="lbl">Tới sau cùng</span><span class="big">G3 · 08:07</span><p>tới lúc 08:11:02. Dùng nó làm vị trí hiện tại thì xe lùi 3 phút.</p></div>
+      <div class="card win"><span class="lbl">Xảy ra sau cùng</span><span class="big">G4 · 08:10</span><p>tới lúc 08:10:01. Đây mới là vị trí hiện tại của xe.</p></div>
+    </div>
+    <p>Silver giữ <b>lịch sử</b> theo thời gian xảy ra, nên G3 được chèn vào đúng chỗ. Chọn "vị trí hiện tại" là việc của feature 6, với luật: ping cũ hơn ping mới nhất thì không được làm xe lùi.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Xử lý đơn hàng: thứ tự là thứ tự commit, không phải thứ tự tới</h3>
+    <p>Giả sử Debezium khởi động lại sau 08:47 và gửi lại thay đổi <code>out_for_delivery</code>. Bronze nhận theo thứ tự này:</p>
+    <div class="tw"><table class="wide">
+      <tr><th>thứ tự tới</th><th>after.status</th><th>source_lsn</th></tr>
+      <tr><td class="m">1</td><td class="m">out_for_delivery</td><td class="m">7388</td></tr>
+      <tr><td class="m">2</td><td class="m">delivered</td><td class="m">9015</td></tr>
+      <tr class="hl"><td class="m">3 (gửi lại)</td><td class="m">out_for_delivery</td><td class="m">7388</td></tr>
+    </table></div>
+    <p>Lấy "bản tới sau cùng" thì đơn đã giao lại thành "đang giao". Silver lấy bản có LSN lớn nhất:</p>
+    <figure class="code"><figcaption><b>SQL</b> <code>flink/jobs/silver_orders.sql</code> (rút gọn)</figcaption>
+<pre><code><span class="k">INSERT INTO</span> lakehouse.silver.orders <span class="c">/*+ OPTIONS('upsert-enabled' = 'true') */</span>
+<span class="k">SELECT</span> order_id, …, status, …, source_lsn <span class="k">AS</span> last_lsn, commit_ts <span class="k">AS</span> last_commit_ts
+<span class="k">FROM</span> (
+  <span class="k">SELECT</span> *, <span class="h">ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY source_lsn DESC)</span> <span class="k">AS</span> rn
+  <span class="k">FROM</span> order_versions
+)
+<span class="k">WHERE</span> rn = 1;</code></pre></figure>
+    <div class="tw"><table class="wide">
+      <tr><th>order_id</th><th>status</th><th>delivered_at</th><th>last_lsn</th></tr>
+      <tr class="new"><td class="m">ORD-20261120-00001</td><td class="m">delivered</td><td class="m">08:47</td><td class="m">9015</td></tr>
+    </table></div>
+    <p><code>silver.order_status_history</code> giữ thêm một dòng cho mỗi trạng thái đã đạt (<code>created</code>, <code>assigned</code>, <code>out_for_delivery</code>, <code>delivered</code>), từ lần commit đầu tiên ghi nhận trạng thái đó.</p>
+  </div>
+
+  <div class="ana"><b>Hai luồng, hai luật thứ tự</b>
+    GPS: khóa <code>(vehicle_id, event_ts)</code>, bản tới đầu thắng, xếp theo lúc xảy ra. Đơn hàng: khóa <code>order_id</code>, bản commit sau cùng thắng. Bộ nhớ có hạn: state GPS 24 giờ, state đơn 7 ngày; không có hạn thì 30 ngày là 100 triệu khóa, hết RAM.
+  </div>
+
+  <div class="key"><b>Kết quả feature 4</b>
+    Silver có mỗi lần báo vị trí đúng một dòng, dòng trễ được giữ và đánh dấu, mỗi đơn biết trạng thái mới nhất theo thứ tự commit. Mọi bảng phía sau đọc silver, không ai tự làm sạch lại.<br>
+    <b>Kiểm chứng:</b> <code>test_clean_and_chaos_runs_give_identical_silver</code>: cùng một ngày gửi sạch và gửi với <code>--chaos</code> (trùng, trễ tới 2 giờ, mất sóng). Test so 6 cột của sự kiện (<code>vehicle_id</code>, <code>event_ts</code>, <code>lat</code>, <code>lon</code>, <code>speed_kmh</code>, <code>heading_deg</code>). Nó không so <code>ingest_ts</code>, <code>lateness_s</code>, <code>is_late</code>, vì ba cột này phải khác: bản chaos thật sự tới muộn. Thêm <code>test_order_latest_version_wins_despite_duplicates_and_disorder</code>, <code>test_two_hour_late_ping_is_kept_and_marked_late</code>, <code>test_taskmanager_kill_mid_load_keeps_silver_exact</code>.
+  </div>
+  <p class="adr">Quyết định: ADR 0011 (silver: upsert, bản tới đầu thắng; đã so 5 cách làm).</p>
+</section>
+
+<!-- ======================= FEATURE 5 ======================= -->
+<section class="part" id="f5">
+  <h2><span class="n">Feature 5 <span class="st ok">Đã chạy</span></span>Scale: mở rộng bằng thiết kế, không bằng thêm máy</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Mục tiêu thiết kế là khoảng 100 triệu ping (30 ngày). Logic ở feature 1–4 đúng, nhưng vài chỗ có "trần" mà thêm máy cũng không nâng được. Feature 5 đổi <b>cách chạy</b>, không đổi định nghĩa ping hợp lệ hay luật bỏ trùng.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Trần nào, sửa thế nào</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>chỗ nghẽn</th><th>trước</th><th>sau</th><th>vì sao</th></tr>
+      <tr><td>Kafka partition</td><td>3</td><td>6, key = <code>vehicle_id</code></td><td>Số reader song song tối đa bằng số partition.</td></tr>
+      <tr><td>Giải mã Avro</td><td>mỗi message một lần gọi Python</td><td>UDF vector hóa, một lần gọi cho cả lô</td><td>20k → 28k message/giây.</td></tr>
+      <tr><td>State Flink</td><td>trong RAM (heap)</td><td>RocksDB trên đĩa, checkpoint tăng dần</td><td>State không bị giới hạn bởi RAM.</td></tr>
+      <tr><td>File Iceberg</td><td>mỗi writer một file, khoảng 5 MB</td><td>phân phối hash, partition theo ngày, sắp theo <code>(vehicle_id, event_ts)</code></td><td>File lớn hơn; query một xe bỏ qua được file theo min/max.</td></tr>
+      <tr><td>File nhỏ, file xóa, snapshot</td><td>chồng chất</td><td>dịch vụ bảo trì: gộp file silver 30 phút/lần, bronze 1 giờ/lần, xóa snapshot quá 7 ngày, file mồ côi</td><td>Mỗi upsert sinh file xóa; không gộp thì đọc chậm dần.</td></tr>
+      <tr><td>Retention Kafka</td><td>chỉ theo thời gian</td><td>7 ngày <b>hoặc</b> 1 GiB mỗi partition</td><td>Đợt nạp lớn không được làm đầy đĩa.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Ví dụ: key theo xe giữ thứ tự của một xe</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>key</th><th>message</th><th>partition (minh họa)</th></tr>
+      <tr><td class="m">VAN-0001</td><td class="m">G1</td><td class="m">3</td></tr>
+      <tr><td class="m">VAN-0002</td><td class="m">…</td><td class="m">0</td></tr>
+      <tr><td class="m">VAN-0001</td><td class="m">G4</td><td class="m">3</td></tr>
+      <tr><td class="m">VAN-0001</td><td class="m">G3</td><td class="m">3</td></tr>
+    </table></div>
+    <p>Mọi ping của <code>VAN-0001</code> vào cùng một partition, nên Kafka giữ đúng <b>thứ tự gửi</b> của xe đó. Nhưng thứ tự gửi vẫn không phải thứ tự xảy ra: G3 vẫn tới sau G4. Vì vậy luật của feature 4 và 6 vẫn cần.</p>
+  </div>
+
+  <div class="warn"><b>Nói thật về con số</b>
+    Thông lượng ở mức 100 triệu sự kiện được <b>suy ra</b> từ các giới hạn trên, chưa đo. Benchmark đầu-cuối là việc làm thêm nếu còn thời gian (stretch).
+  </div>
+
+  <div class="key"><b>Kết quả feature 5</b>
+    Mở rộng giờ chỉ là cấu hình: thêm partition, tăng song song. Logic không đổi, nên mọi test của feature 1–4 vẫn chạy y nguyên.<br>
+    <b>Kiểm chứng:</b> <code>test_a_van_stays_on_one_partition</code>, <code>test_batch_columns_equal_the_row_by_row_results</code>, <code>test_state_lives_in_rocksdb_with_incremental_checkpoints</code>, <code>test_compaction_during_live_writes_keeps_silver_exact</code>, <code>test_compaction_reads_fewer_files_for_one_van_and_keeps_every_row</code>.
+  </div>
+  <p class="adr">Quyết định: ADR 0012 (scale và bảo trì bảng) · ADR 0009 (các cỡ dữ liệu dev, standard, stress là cỡ thiết kế).</p>
+</section>
+
+<!-- ======================= FEATURE 6 ======================= -->
+<section class="part" id="f6">
+  <h2><span class="n">Feature 6 <span class="st ok">Đã chạy</span></span>Control tower: ETA và cảnh báo trước khi trễ</h2>
+  <p>Đây là lý do project tồn tại, nên phần này dài nhất: kiến trúc, state, từng sự kiện đi vào, và từng dòng đi ra.</p>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Dữ liệu sạch đã có, nhưng chưa có gì ghép <b>vị trí hiện tại</b> của xe với <b>các đơn xe còn chở</b>. Điều phối viên cần biết đơn 1 sẽ trễ khi vẫn còn ít nhất 15 phút để xử lý, và cảnh báo phải tới trong 10 giây (p95) kể từ lúc xe báo vị trí.</p>
+    <p>Đọc silver thì không kịp: Flink chỉ commit Iceberg theo checkpoint 30 giây, job sau quét bảng 10 giây một lần, nên silver luôn chậm vài chục giây. Vì vậy control tower <b>đọc thẳng Kafka</b>, và tự áp luật "không lùi" của feature 4 trong state của mình.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ</h3>
+    <div class="flow">
+      <div class="row"><i>Vào</i>
+        <span class="nd">Kafka gps.pings.v1</span>
+        <span class="nd">Kafka cdc.public.orders</span>
+      </div>
+      <div class="row"><i>Xử lý</i>
+        <span class="nd new">key_by(van_id)</span>
+        <span class="nd new">Tower<small>một VanState mỗi xe, trong RocksDB</small></span>
+      </div>
+      <div class="row"><i>Ra</i>
+        <span class="nd out">serving.vehicle_latest</span>
+        <span class="nd out">serving.order_eta</span>
+        <span class="nd out">serving.alerts</span>
+        <span class="nd out">topic alerts.v1<small>exactly-once</small></span>
+        <span class="nd out">bronze.alert_events<small>+ eta_marks</small></span>
+      </div>
+      <p>Không có window. Mỗi xe có một "cuốn sổ" riêng (keyed state). Mỗi khi có ping hoặc đơn đổi, Flink mở đúng sổ của xe đó, cập nhật, rồi tính lại ETA. Tất cả luật nằm trong một hàm Python thuần <code>step(state, event, now)</code> (<code>flink/udf/tower.py</code>), nên test có thể phát lại cả một ngày mà không cần Flink.</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Sổ của VAN-0001: mỗi sự kiện đổi gì</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>lúc tới</th><th>sự kiện</th><th>latest</th><th>tốc độ gần đây</th><th>đầu ra</th></tr>
+      <tr><td class="m">08:00</td><td>đơn 1, 2 <code>out_for_delivery</code></td><td>ping ở kho</td><td class="m">—</td><td>2 dòng <code>order_eta</code>, ETA tính từ ping mới nhất</td></tr>
+      <tr><td class="m">08:05:01</td><td>G1, 14 km/h</td><td class="m">G1</td><td class="m">có</td><td>ETA đơn 1, 2: vẫn kịp</td></tr>
+      <tr><td class="m">08:06:01</td><td>G2, 0 km/h</td><td class="m">G2</td><td>không thêm (dưới 3 km/h)</td><td>ETA tính lại</td></tr>
+      <tr class="hl"><td class="m">08:10:01</td><td>G4, 12 km/h, còn 7,0 km</td><td class="m">G4</td><td class="m">12 km/h</td><td><b>ETA đơn 1 = 08:45 → cảnh báo SLA_RISK</b></td></tr>
+      <tr><td class="m">08:11:02</td><td>G3 (08:07), 6 km/h</td><td class="m">G4 (giữ)</td><td>có tính vào</td><td>không gì cả: G3 cũ hơn G4</td></tr>
+      <tr><td class="m">08:11:03</td><td>G3′ (bản trùng)</td><td class="m">G4 (giữ)</td><td>đã có, bỏ</td><td>không gì cả</td></tr>
+      <tr><td class="m">08:47</td><td>đơn 1 <code>delivered</code></td><td class="m">…</td><td class="m">…</td><td>cảnh báo resolved; xóa dòng <code>order_eta</code></td></tr>
+    </table></div>
+    <p>"Tốc độ gần đây" là trung bình tốc độ của các ping <b>đang chạy</b> (≥ 3 km/h) trong 10 phút gần nhất. G2 bị loại vì dừng đèn đỏ: nếu tính tốc độ 0 vào thì ETA thành "không bao giờ tới". Giả sử trung bình đó lúc 08:10 là 12 km/h.</p>
+    <figure class="code"><figcaption><b>PYTHON</b> <code>flink/udf/tower.py</code>, hàm <code>_on_ping</code> (rút gọn)</figcaption>
+<pre><code><span class="k">def</span> _on_ping(state, ping, now):
+    latest = state.latest
+    <span class="k">if</span> latest <span class="k">is not None and</span> <span class="h">ping.event_ts &lt;= latest.event_ts</span>:
+        <span class="c"># Cũ hơn hoặc trùng: không bao giờ làm xe lùi. Ping sai thứ tự</span>
+        <span class="c"># vẫn được tính vào tốc độ gần đây.</span>
+        _add_speed(state, ping, latest.event_ts)
+        <span class="k">return</span> []
+    state.latest = ping
+    _add_speed(state, ping, ping.event_ts)
+    out = [VehicleLatest(ping.van_id, ping.event_ts, ping.lat, ping.lon, ping.speed_kmh)]
+    …                                          <span class="c"># luật dừng bất thường</span>
+    <span class="k">return</span> out + _etas(state, ping.van_id, now)   <span class="c"># tính lại ETA mọi đơn đang giao</span></code></pre></figure>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Tính ETA lúc 08:10 (ETA v1)</h3>
+    <p>Đi theo thứ tự điểm giao. Chặng <b>đang chạy</b> dùng tốc độ gần đây của xe (giao thông lúc này). Các chặng <b>sau</b> dùng tốc độ điển hình 25 km/h, vì kẹt ở chặng này không nói được gì về đường phía sau. Cộng 4 phút dừng cho mỗi điểm giao trước điểm của đơn. Khoảng cách là đường chim bay (công thức haversine).</p>
+    <div class="calc">
+      <div><span>Đơn 1: chặng hiện tại, 7,0 km ÷ 12 km/h</span><span>35 phút</span></div>
+      <div class="tot"><span>ETA đơn 1 = 08:10 + 35 phút</span><span>08:45</span></div>
+    </div>
+    <div class="calc">
+      <div><span>Đơn 2: chặng hiện tại, 7,0 km ÷ 12 km/h</span><span>35 phút</span></div>
+      <div><span>chặng sau, 5,0 km ÷ 25 km/h</span><span>12 phút</span></div>
+      <div><span>dừng giao ở điểm 1</span><span>4 phút</span></div>
+      <div class="tot"><span>ETA đơn 2 = 08:10 + 51 phút</span><span>09:01</span></div>
+    </div>
+    <figure class="code"><figcaption><b>PYTHON</b> <code>flink/udf/eta.py</code>, hàm <code>route_eta</code> (rút gọn)</figcaption>
+<pre><code>TYPICAL_SPEED_KMH = 25.0
+DWELL = timedelta(minutes=4)
+
+<span class="k">for</span> i, stop <span class="k">in</span> enumerate(stops):            <span class="c"># từ vị trí xe tới điểm của đơn</span>
+    leg = haversine_km(*here, *stop)
+    speed = current <span class="k">if</span> i == 0 <span class="k">and</span> current <span class="k">else</span> typical_speed_kmh
+    hours += leg / speed
+    here = stop
+<span class="k">return</span> now + timedelta(hours=hours) + dwell * max(len(stops) - 1, 0), km</code></pre></figure>
+    <div class="ana"><b>Vì sao không dùng tốc độ gần đây cho mọi chặng?</b>
+      Bản đầu làm vậy và chỉ đạt 33 % precision: một lần kẹt xe làm mọi ETA phía sau đều trễ theo. Tách "chặng đang chạy" và "chặng sau" nâng precision lên 82–86 %, recall 97–100 % trên các đơn trễ còn có thể báo trước 15 phút. ETA dùng ML nằm ngoài phạm vi v1.
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Dữ liệu ra lúc 08:10</h3>
+    <div class="tw"><table class="wide">
+      <tr><th colspan="2"><code>serving.order_eta</code></th><th>promised_end</th><th>eta</th><th>distance_km</th><th>event_ts</th></tr>
+      <tr class="hl"><td class="m">ORD-20261120-00001</td><td class="m">VAN-0001</td><td class="m">08:33</td><td class="m bad-t">08:45</td><td class="m">7.0</td><td class="m">08:10:00</td></tr>
+      <tr><td class="m">ORD-20261120-00002</td><td class="m">VAN-0001</td><td class="m">09:30</td><td class="m ok-t">09:01</td><td class="m">12.0</td><td class="m">08:10:00</td></tr>
+    </table></div>
+    <p>Đơn 1: ETA 08:45 ≥ hạn 08:33 + 1 phút, nên luật SLA_RISK bật. Lúc đó mới 08:10, còn 23 phút trước hạn: điều phối viên kịp gọi khách hoặc chuyển đơn 2 sang xe khác.</p>
+    <div class="tw"><table class="wide">
+      <tr><th><code>serving.alerts</code>: alert_id</th><th>type</th><th>order_id</th><th>raised_at</th><th>resolved_at</th><th>detail</th></tr>
+      <tr class="hl"><td class="m">SLA_RISK:ORD-20261120-00001:1795137000</td><td class="m">SLA_RISK</td><td class="m">…00001</td><td class="m">08:10:00</td><td class="m">NULL</td><td class="m">ETA 01:45Z is 12 min after the promised end</td></tr>
+    </table></div>
+    <p>Cùng cảnh báo đó còn đi vào topic <code>alerts.v1</code> (Avro, exactly-once) và <code>bronze.alert_events</code> để gold đo chất lượng cảnh báo.</p>
+  </div>
+
+  <div class="q">
+    <h3>Ba luật giữ cảnh báo đáng tin</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>luật</th><th>nếu không có</th><th>cách làm</th></tr>
+      <tr><td><b>Một lần mỗi đơn</b></td><td>Mỗi ping 5 giây lại báo một lần.</td><td>Báo một lần tới khi resolved; chỉ báo lại sau khi đã resolved ít nhất 10 phút.</td></tr>
+      <tr><td><b>Idempotent khi chạy lại</b></td><td>Flink chết lúc 08:10:30, quay về checkpoint, tính lại ra cảnh báo thứ hai.</td><td><code>alert_id</code> tất định (<code>type:đơn:epoch của ping</code>); ghi upsert theo khóa, nên chạy lại vẫn là một dòng.</td></tr>
+      <tr><td><b>Alert horizon</b></td><td>Bật lại sau 30 phút ngừng, mọi ping cũ phát cảnh báo cho chuyện đã qua.</td><td>Sự kiện cũ hơn 10 phút (so với giờ xử lý) vẫn cập nhật state nhưng không phát cảnh báo.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="q">
+    <h3>Ví dụ phụ: dừng bất thường</h3>
+    <p><code>VAN-0042</code> đứng yên trong hẻm từ 08:08, cách kho và mọi điểm giao hơn 150 m. Luật: tốc độ dưới 3 km/h liên tục ít nhất 10 phút (không mất sóng quá 2 phút, không xê dịch quá 150 m). Lúc 08:18, khi vừa đủ 10 phút và xe <b>vẫn đang đứng</b>, cảnh báo <code>ABNORMAL_STOP:VAN-0042:1795136880</code> được phát. Xe chạy lại thì cảnh báo resolved.</p>
+    <p class="note">Vì sao không dùng session window của Flink SQL: window phiên chỉ trả kết quả khi phiên đóng, tức khi xe đã chạy lại, quá muộn. State theo xe cho phép báo ngay khi đủ 10 phút.</p>
+  </div>
+
+  <div class="q">
+    <h3>Ghi lại cho gold: ETA marks</h3>
+    <p>Để đo ETA đúng tới đâu, tower ghi lại ETA của mỗi đơn khi còn 30 phút (T30) và 15 phút (T15) tới hạn, vào <code>bronze.eta_marks</code>. Đơn 1 hạn 08:33, nên T15 là ETA đầu tiên từ 08:18 trở đi. Giả sử lúc đó ETA vẫn là 08:45. Feature 7 so con số này với giờ giao thật.</p>
+  </div>
+
+  <div class="key"><b>Kết quả feature 6</b>
+    GPS và thay đổi đơn hàng thành ETA sống cho mỗi đơn, cảnh báo trễ hạn và dừng bất thường, ghi vào chỗ màn hình đọc được trong mili giây.<br>
+    <b>Kiểm chứng:</b> <code>test_alert_latency_p95_under_10s</code> (GPS → cảnh báo p95 dưới 10 giây); <code>test_chaos_gives_the_same_alerts</code> (sạch và chaos cho cùng cảnh báo); <code>test_sla_risk_recall_and_precision_meet_the_targets</code>; <code>test_an_event_older_than_the_horizon_raises_nothing_but_updates_state</code>; không có bão cảnh báo sau 30 phút ngừng.
+  </div>
+  <p class="adr">Quyết định: ADR 0013 (keyed state theo xe, đọc Kafka thay vì silver) · ADR 0007 (Postgres serving).</p>
+</section>
+
+<!-- ======================= FEATURE 7 ======================= -->
+<section class="part" id="f7">
+  <h2><span class="n">Feature 7 <span class="st ok">Đã chạy</span></span>Gold với dbt: KPI không đổi vì dữ liệu bẩn</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Điều phối viên đã có ETA và cảnh báo. Quản lý vận hành thì hỏi câu khác: <em>hôm nay kho DEP-01 giao đúng giờ bao nhiêu %? ETA sai trung bình mấy phút? Cảnh báo có đáng tin không?</em> Đây là bài toán phân tích, không cần tính lại mỗi 5 giây. Và lời hứa quan trọng nhất phải được chứng minh ở đây: dữ liệu trễ hay trùng phải cho cùng KPI như dữ liệu sạch.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ</h3>
+    <div class="flow">
+      <div class="row"><i>Nguồn</i>
+        <span class="nd">silver.orders</span>
+        <span class="nd">bronze.vans_cdc</span>
+        <span class="nd">bronze.alert_events</span>
+        <span class="nd">bronze.eta_marks</span>
+      </div>
+      <div class="row"><i>dbt</i>
+        <span class="nd new">staging<small>stg_orders_closed, stg_van_versions…</small></span>
+        <span class="nd new">fct_delivery<small>+ dim_van (SCD2), dim_depot, dim_date</small></span>
+        <span class="nd out">agg_depot_daily<small>+ closed_days</small></span>
+      </div>
+      <p>Lịch chạy (<code>dbt/scheduler.py</code>): mỗi 5 phút một lần <b>intraday</b> (số tạm), và sau 01:00 giờ VN một lần <b>chốt sổ</b> ngày hôm qua (số chính thức).</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Dữ liệu vào: hai đơn đã đóng, từ silver</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>order_id</th><th>out_for_delivery_at</th><th>promised_end</th><th>delivered_at</th><th>status</th></tr>
+      <tr><td class="m">ORD-20261120-00001</td><td class="m">08:00</td><td class="m">08:33</td><td class="m">08:47</td><td class="m">delivered</td></tr>
+      <tr><td class="m">ORD-20261120-00002</td><td class="m">08:00</td><td class="m">09:30</td><td class="m">09:04</td><td class="m">delivered</td></tr>
+    </table></div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Xử lý: mỗi đơn đã đóng thành một dòng fact</h3>
+    <figure class="code"><figcaption><b>SQL</b> <code>dbt/models/marts/fct_delivery.sql</code> (rút gọn)</figcaption>
+<pre><code><span class="k">select</span>
+    o.order_id,
+    o.local_date,                                     <span class="c">-- ngày theo giờ VN (BR-4)</span>
+    coalesce(v.depot_id, o.depot_id) <span class="k">as</span> depot_id,     <span class="c">-- kho của xe lúc giao</span>
+    v.van_key,
+    o.outcome = 'delivered' <span class="k">and</span> o.closed_at &lt;= o.promised_end <span class="k">as</span> is_on_time,
+    greatest({{ minutes_between('o.promised_end', 'o.closed_at') }}, 0e0) <span class="k">as</span> minutes_late,
+    {{ minutes_between('o.closed_at', 'm.eta_t15') }}  <span class="k">as</span> eta_error_t15_min,  <span class="c">-- dự đoán − thực tế</span>
+    a.first_alert_at,
+    {{ minutes_between('a.first_alert_at', 'o.promised_end') }} <span class="k">as</span> alert_lead_min,
+    o.dest_area,                                      <span class="c">-- ô ~150 m, không phải tọa độ nhà khách</span>
+    …
+<span class="k">from</span> orders <span class="k">as</span> o
+<span class="k">left join</span> {{ ref('dim_van') }} <span class="k">as</span> v
+    <span class="k">on</span> o.van_id = v.van_id
+    <span class="h"><span class="k">and</span> o.closed_at &gt;= v.valid_from
+    <span class="k">and</span> (v.valid_to <span class="k">is null or</span> o.closed_at &lt; v.valid_to)</span>
+<span class="k">left join</span> marks <span class="k">as</span> m <span class="k">on</span> …   <span class="c">-- T30, T15 từ bronze.eta_marks</span>
+<span class="k">left join</span> alerts <span class="k">as</span> a <span class="k">on</span> … <span class="c">-- SLA_RISK đầu tiên từ bronze.alert_events</span></code></pre></figure>
+    <p><code>{{ ref(...) }}</code> là cách dbt trỏ tới model khác; nhờ vậy dbt biết thứ tự chạy. <code>minutes_between(a, b)</code> là macro trả về b − a tính bằng phút.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Dữ liệu ra: <code>fct_delivery</code></h3>
+    <div class="tw"><table class="wide">
+      <tr><th>order_id</th><th>local_date</th><th>van_key</th><th>is_on_time</th><th>minutes_late</th><th>eta_error_t15_min</th><th>alert_lead_min</th><th>is_final</th></tr>
+      <tr class="hl"><td class="m">…00001</td><td class="m">2026-11-20</td><td class="m">VAN-0001#1</td><td class="m bad-t">false</td><td class="m">14</td><td class="m">−2</td><td class="m">23</td><td class="m">false</td></tr>
+      <tr><td class="m">…00002</td><td class="m">2026-11-20</td><td class="m">VAN-0001#1</td><td class="m ok-t">true</td><td class="m">0</td><td class="m">NULL</td><td class="m">NULL</td><td class="m">false</td></tr>
+    </table></div>
+    <p>Đơn 1: ETA lúc T15 là 08:45, giao thật 08:47, nên sai −2 phút (đoán sớm 2 phút). Cảnh báo đầu tiên lúc 08:10, sớm 23 phút trước hạn, đạt yêu cầu ≥ 15 phút. Đơn 2 giao lúc 09:04, trước mốc T15 (09:15), nên không có T15.</p>
+    <p class="tcap" style="margin-top:6px"><code>agg_depot_daily</code>: kho × ngày (chỉ hai đơn này, để dễ kiểm tay)</p>
+    <div class="tw"><table class="wide">
+      <tr><th>depot_id</th><th>local_date</th><th>orders_closed</th><th>on_time_rate</th><th>avg_minutes_late</th><th>stops_per_hour</th><th>eta_mae_t15_min</th><th>alert_precision</th><th>alert_recall</th></tr>
+      <tr class="new"><td class="m">DEP-01</td><td class="m">2026-11-20</td><td class="m">2</td><td class="m">0.50</td><td class="m">14.0</td><td class="m">1.88</td><td class="m">2.0</td><td class="m">1.00</td><td class="m">1.00</td></tr>
+    </table></div>
+    <ul class="pts">
+      <li><code>on_time_rate</code> = đúng giờ ÷ đã đóng = 1 ÷ 2. Đơn thất bại tính là không đúng giờ (BR-2).</li>
+      <li><code>stops_per_hour</code> = 2 đơn ÷ (08:00 → 09:04 = 1,07 giờ) = 1,88, rồi lấy trung bình theo các xe của kho.</li>
+      <li><code>alert_precision</code> = đơn bị báo và thật sự trễ ÷ đơn bị báo = 1 ÷ 1. <code>alert_recall</code> = đơn trễ được báo trước ≥ 15 phút ÷ đơn trễ còn kịp báo = 1 ÷ 1.</li>
+    </ul>
+  </div>
+
+  <div class="q">
+    <h3>Vì sao <code>dim_van</code> là SCD Type 2</h3>
+    <p>Ngày 01/12, <code>VAN-0001</code> chuyển từ DEP-01 sang DEP-04. Nếu bảng xe chỉ giữ hiện trạng, mọi đơn tháng 11 của xe này bỗng tính cho DEP-04, và KPI tháng 11 của DEP-01 bị viết lại. SCD Type 2 giữ mỗi phiên bản một dòng, có khoảng hiệu lực:</p>
+    <div class="tw"><table class="wide">
+      <tr><th>van_key</th><th>van_id</th><th>depot_id</th><th>valid_from</th><th>valid_to</th></tr>
+      <tr class="hl"><td class="m">VAN-0001#1</td><td class="m">VAN-0001</td><td class="m">DEP-01</td><td class="m">1970-01-01</td><td class="m">2026-12-01 …</td></tr>
+      <tr><td class="m">VAN-0001#2</td><td class="m">VAN-0001</td><td class="m">DEP-04</td><td class="m">2026-12-01 …</td><td class="m">NULL</td></tr>
+    </table></div>
+    <p>Đơn giao 20/11 lúc 08:47 rơi vào khoảng của <code>#1</code>, nên vẫn thuộc DEP-01 mãi mãi. Phiên bản được dựng từ <code>bronze.vans_cdc</code>: đổi kho, biển số hoặc tải trọng thì mở phiên bản mới.</p>
+  </div>
+
+  <div class="q">
+    <h3>Số tạm và số chốt</h3>
+    <ol class="story">
+      <li><span class="t">08:50</span><div class="b"><span class="who">Intraday</span><p>Chạy mỗi 5 phút: merge những đơn có thay đổi commit trong 2 giờ gần nhất, chỉ ở các ngày chưa chốt. Đơn 1 vào fact, <code>is_final = false</code>.</p></div></li>
+      <li><span class="t">01:00 (21/11)</span><div class="b"><span class="who">Chốt sổ ngày 20/11</span><p>Dựng lại toàn bộ ngày 20/11 theo giờ VN, đánh dấu <code>is_final = true</code>, ghi một dòng vào <code>closed_days</code>. Từ đây là số chính thức.</p></div></li>
+      <li class="ev"><span class="t">02:30 (21/11)</span><div class="b"><span class="who">Một thay đổi của ngày 20/11 tới muộn</span><p>Vẫn được lưu, và đếm vào <code>closed_days.late_after_close</code>. Số chốt không tự đổi. Muốn sửa thì chạy <code>make reclose DAY=2026-11-20</code>: ghi đè cả ngày, chạy lại bao nhiêu lần cũng ra cùng số, và tăng <code>restatements</code>.</p></div></li>
+    </ol>
+    <div class="warn"><b>Bẫy múi giờ</b>
+      Ngày KPI là ngày theo giờ Việt Nam. Một đơn giao 06:30 sáng 20/11 giờ VN là 23:30 ngày 19/11 theo UTC; cắt ngày theo UTC thì đơn đó rơi nhầm sang hôm trước. Macro <code>local_date()</code> chuyển sang <code>Asia/Ho_Chi_Minh</code> trước khi lấy ngày.
+    </div>
+  </div>
+
+  <div class="key"><b>Kết quả feature 7</b>
+    Sự kiện rời rạc thành star schema: fact mỗi đơn một dòng, dimension có lịch sử, bảng tổng hợp theo kho và ngày. Số trong ngày là số tạm và được ghi rõ; số sau 01:00 là số chốt. Gold không chứa tọa độ nhà khách.<br>
+    <b>Kiểm chứng:</b> <code>test_dirty_cdc_gives_the_same_gold_kpis_as_clean</code> (sạch = chaos, cả intraday lẫn sau khi chốt); <code>test_a_van_that_moves_depot_keeps_its_history</code>; <code>test_a_late_change_after_the_close_is_counted_then_restated</code>; <code>test_a_broken_model_fails_the_data_tests</code>. dbt test chạy trong CI: <code>agg_matches_fact</code> (KPI tính lại bằng tay), <code>agg_one_row_per_depot_day</code>, <code>closed_days_are_final</code>, <code>gold_has_no_exact_destination</code>. Test hỏng thì build hỏng, không công bố.
+  </div>
+  <p class="adr">Quyết định: ADR 0014 (gold bằng dbt, intraday và chốt sổ) · ADR 0006 (stream cho nhanh, batch cho đúng).</p>
+</section>
+
+<!-- ======================= FEATURE 8 ======================= -->
+<section class="part" id="f8">
+  <h2><span class="n">Feature 8 <span class="st ok">Thiết kế + health check</span></span>Dashboard và sức khỏe pipeline</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>ETA và KPI đã có, nhưng mỗi người dùng cần một màn hình khác nhau. Người vận hành còn cần biết khi pipeline <b>chết lặng lẽ</b>: màn hình vẫn hiện số, nhưng là số cũ, và không ai hay. Feature này thiết kế dashboard từng panel, kèm SQL chạy được ngay trên stack (<code>docs/design/dashboards.sql</code>). Dựng Grafana thật là việc làm thêm (stretch).</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Ai đọc từ đâu</h3>
+    <div class="flow">
+      <div class="row"><i>Điều phối</i><span class="nd">Postgres serving</span><span class="nd out">bản đồ xe, đơn sắp trễ, cảnh báo mở</span></div>
+      <div class="row"><i>Quản lý</i><span class="nd">Trino → gold</span><span class="nd out">KPI theo kho, ngày; tạm hay chốt</span></div>
+      <div class="row"><i>Vận hành</i><span class="nd">Kafka, Flink, Postgres, bronze</span><span class="nd new">make health</span><span class="nd out">báo động</span></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Panel "đơn sắp trễ" của điều phối viên, lúc 08:10</h3>
+    <figure class="code"><figcaption><b>SQL</b> panel <code>dispatch.at_risk_orders</code> (Postgres)</figcaption>
+<pre><code><span class="k">SELECT</span> order_id, van_id, eta, promised_end,
+       round(extract(epoch <span class="k">FROM</span> eta - promised_end) / 60) <span class="k">AS</span> minutes_late,
+       distance_km
+<span class="k">FROM</span> serving.order_eta
+<span class="k">WHERE</span> eta &gt; promised_end
+<span class="k">ORDER BY</span> minutes_late <span class="k">DESC</span>
+<span class="k">LIMIT</span> 50;</code></pre></figure>
+    <div class="tw"><table class="wide">
+      <tr><th>order_id</th><th>van_id</th><th>eta</th><th>promised_end</th><th>minutes_late</th><th>distance_km</th></tr>
+      <tr class="hl"><td class="m">ORD-20261120-00001</td><td class="m">VAN-0001</td><td class="m">08:45</td><td class="m">08:33</td><td class="m">12</td><td class="m">7.0</td></tr>
+    </table></div>
+    <p>Đơn 2 (ETA 09:01, hạn 09:30) không hiện. Điều phối viên chỉ thấy đúng một việc cần làm.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">4</span>Panel KPI của quản lý</h3>
+    <figure class="code"><figcaption><b>SQL</b> panel <code>kpi.depot_day</code> (Trino, rút gọn)</figcaption>
+<pre><code><span class="k">SELECT</span> local_date, depot_id, orders_closed, on_time_rate, eta_mae_t15_min, stops_per_hour,
+       <span class="k">CASE WHEN</span> is_final <span class="k">THEN</span> 'final' <span class="k">ELSE</span> 'provisional' <span class="k">END AS</span> status
+<span class="k">FROM</span> lakehouse.gold.agg_depot_daily
+<span class="k">WHERE</span> local_date &gt;= current_date - <span class="k">INTERVAL</span> '14' <span class="k">DAY</span>
+<span class="k">ORDER BY</span> local_date <span class="k">DESC</span>, depot_id;</code></pre></figure>
+    <p>Cột <code>status</code> luôn hiện, để không ai đem số tạm đi báo cáo như số chốt.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span><code>make health</code> kiểm tra gì</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>kiểm tra</th><th>báo động khi</th><th>bắt được lỗi gì</th></tr>
+      <tr><td>Consumer lag</td><td>lag tăng giữa hai lần đo cách nhau 30 giây <b>và</b> vượt 2.000 message</td><td>Flink đọc chậm hơn tốc độ ghi</td></tr>
+      <tr><td>Checkpoint</td><td>checkpoint hỏng gần nhất mới hơn checkpoint thành công gần nhất</td><td>job không commit được, dữ liệu đứng yên</td></tr>
+      <tr><td>CDC slot</td><td>Postgres giữ quá 500 MB WAL chưa đọc</td><td>Debezium dừng; đĩa database team khác sẽ đầy</td></tr>
+      <tr><td>Bronze đứng</td><td>Kafka có dữ liệu mới trong 2 phút nhưng bronze thì không</td><td>pipeline chết lặng lẽ</td></tr>
+    </table></div>
+  </div>
+
+  <div class="key"><b>Kết quả feature 8</b>
+    Mỗi panel có câu hỏi, nguồn và SQL đã chạy thử. Người vận hành có một lệnh để biết pipeline còn sống không.<br>
+    <b>Kiểm chứng:</b> <code>tests/integration/test_health.py</code> chạy từng khối SQL panel trên stack đang chạy.
+  </div>
+  <p class="adr">Quyết định: ADR 0007 (Grafana trên Postgres serving). Thiết kế chi tiết: <code>docs/design/dashboards.md</code>.</p>
+</section>
+
+<!-- ======================= FEATURE 9 ======================= -->
+<section class="part" id="f9">
+  <h2><span class="n">Feature 9 <span class="st part">Một phần</span></span>Lakehouse lên AWS, chỉ bằng cấu hình</h2>
+
+  <div class="q">
+    <h3><span class="k">1</span>Bài toán</h3>
+    <p>Lời hứa từ đầu: lakehouse chuyển sang S3, Glue và Athena mà không sửa code (ADR 0005). Nhưng vài chỗ đang dựa vào Trino: DDL tạo bảng, khóa upsert, adapter dbt. Chừng nào chưa chạy trên AWS thì lời hứa vẫn chưa được chứng minh.</p>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">2</span>Sơ đồ: cùng code, khác cấu hình</h3>
+    <div class="flow">
+      <div class="row"><i>Local</i><span class="nd">Flink, dbt</span><span class="nd">REST catalog</span><span class="nd">MinIO</span><span class="nd out">Trino</span></div>
+      <div class="row"><i>AWS</i><span class="nd">Flink, dbt</span><span class="nd new">Glue Data Catalog</span><span class="nd new">S3</span><span class="nd out">Athena</span></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">3</span>Chỗ khác nhau nằm hết trong hai file env</h3>
+    <figure class="code"><figcaption><b>ENV</b> <code>infra/local/lakehouse.env</code> (rút gọn)</figcaption>
+<pre><code>ICEBERG_CATALOG_OPTIONS="'catalog-type' = 'rest', 'uri' = 'http://iceberg-rest:8181',
+  'warehouse' = 's3://warehouse/', 's3.endpoint' = 'http://minio:9000', …"
+PYICEBERG_CATALOG__LAKEHOUSE__TYPE=rest
+DBT_TARGET=local</code></pre></figure>
+    <figure class="code"><figcaption><b>ENV</b> <code>infra/aws/lakehouse.env.example</code> (rút gọn)</figcaption>
+<pre><code>ICEBERG_CATALOG_OPTIONS="'catalog-impl' = 'org.apache.iceberg.aws.glue.GlueCatalog',
+  'warehouse' = 's3://&lt;bucket&gt;/warehouse/', 'client.region' = 'ap-southeast-1', …"
+PYICEBERG_CATALOG__LAKEHOUSE__TYPE=glue
+DBT_TARGET=aws</code></pre></figure>
+    <ul class="pts">
+      <li><b>Một định nghĩa bảng</b> (<code>infra/lakehouse/tables.py</code>, pyiceberg) tạo mọi bảng bronze, silver, ops ở catalog nào cũng được. Không còn DDL riêng cho Trino và riêng cho Athena.</li>
+      <li><b>dbt</b> có target Athena. Cả hai engine dùng chung một cách ghi: merge, cộng pre-hook xóa các ngày sắp ghi lại, vì dbt-athena không có <code>delete+insert</code> cho Iceberg.</li>
+      <li><b>Terraform</b> (<code>infra/aws/lakehouse/</code>): bucket S3, database Glue, workgroup Athena tự dừng query quét quá 1 GB, hai IAM role quyền tối thiểu, budget báo ở $5 và $20.</li>
+      <li>Một unit test sẽ hỏng nếu code rẽ nhánh theo môi trường (kiểu <code>if env == "aws"</code>).</li>
+    </ul>
+  </div>
+
+  <div class="q">
+    <h3><span class="k">5</span>Đã chứng minh tới đâu</h3>
+    <div class="tw"><table class="wide">
+      <tr><th>hạng mục</th><th>trạng thái</th></tr>
+      <tr><td>Terraform dựng 16 resource, rồi xóa sạch</td><td class="ok-t">smoke test xong, chi phí dưới $0,01</td></tr>
+      <tr><td>Tạo đủ 11 bảng Iceberg trên Glue bằng role demo</td><td class="ok-t">smoke test xong</td></tr>
+      <tr><td>Glue compaction và retention</td><td class="ok-t">đã bật trong smoke test</td></tr>
+      <tr><td>INSERT, MERGE, DELETE một ngày qua Athena</td><td class="ok-t">smoke test xong</td></tr>
+      <tr><td>Chạy các job Flink với lakehouse AWS</td><td class="bad-t">chưa, chuyển sang feature 10</td></tr>
+      <tr><td>Chạy dbt đầu-cuối trên Athena</td><td class="bad-t">chưa, chuyển sang feature 10</td></tr>
+    </table></div>
+    <div class="warn"><b>Đổi cấu hình không phải là di chuyển dữ liệu</b>
+      Trỏ sang Glue và S3 thì bảng mới được tạo trống. Dữ liệu lịch sử đang nằm trên MinIO không tự sang S3. Project dựng bản AWS khi demo rồi xóa, nên không cần chuyển; một lakehouse thật thì phải lên kế hoạch riêng.
+    </div>
+  </div>
+
+  <div class="key"><b>Kết quả feature 9</b>
+    Phần nền trên AWS đã được kiểm chứng bằng smoke test. Phần "chạy cả pipeline trên AWS chỉ bằng cấu hình" mới chứng minh được một nửa; nửa còn lại là feature 10, nơi cả stack chạy trên AWS.
+  </div>
+  <p class="adr">Quyết định: ADR 0015 (môi trường lakehouse) · ADR 0005 (local trước, AWS khi demo).</p>
+</section>
+
+<!-- ======================= SUMMARY ======================= -->
+<section class="part" id="sum">
+  <h2><span class="n">Tổng kết</span>9 feature ghép thành một hệ thống</h2>
+  <div class="tw"><table class="wide">
+    <tr><th>feature</th><th>dữ liệu vào</th><th>xử lý chính</th><th>dữ liệu ra</th><th>chứng minh</th></tr>
+    <tr><td>1 Walking skeleton</td><td>ping GPS</td><td>Kafka → Flink → Iceberg</td><td><code>bronze.gps_pings</code></td><td>N vào, N ra</td></tr>
+    <tr><td>2 CDC</td><td>Postgres orders</td><td>WAL → Debezium → Kafka</td><td><code>bronze.*_cdc</code></td><td>restart không mất, không trùng</td></tr>
+    <tr><td>3 Data contract</td><td>bytes Kafka</td><td>Avro FULL_TRANSITIVE, luật nghiệp vụ, DLQ</td><td>bronze hợp lệ + DLQ</td><td>rác vào DLQ, job vẫn chạy</td></tr>
+    <tr><td>4 Silver</td><td>bronze</td><td>bản tới đầu thắng, upsert, cờ trễ, LSN</td><td><code>silver.*</code></td><td>sạch = chaos</td></tr>
+    <tr><td>5 Scale</td><td>pipeline có sẵn</td><td>6 partition, UDF vector, RocksDB, bảo trì</td><td>cùng bảng, chạy rộng hơn</td><td>test logic giữ nguyên</td></tr>
+    <tr><td>6 Control tower</td><td>Kafka GPS + đơn</td><td>keyed state, ETA, cảnh báo</td><td>serving, <code>alerts.v1</code></td><td>p95 &lt; 10 giây</td></tr>
+    <tr><td>7 Gold</td><td>silver, alert, ETA marks</td><td>dbt star schema, SCD2, intraday + chốt sổ</td><td><code>gold.*</code></td><td>sạch = chaos, dbt test</td></tr>
+    <tr><td>8 Dashboard</td><td>serving, gold, chỉ số hệ thống</td><td>SQL panel, health check</td><td>thiết kế + <code>make health</code></td><td>mọi panel chạy được</td></tr>
+    <tr><td>9 AWS</td><td>cùng code, file env khác</td><td>Glue, S3, Athena, Terraform</td><td>lakehouse AWS</td><td>smoke test (một phần)</td></tr>
+  </table></div>
+
+  <div class="q">
+    <h3>Ba điều cần nhớ</h3>
+    <div class="key"><b>1. GPS đi hai nhánh</b>
+      Nhánh nhanh đọc thẳng Kafka và giữ state theo xe, để có ETA và cảnh báo trong vài giây. Nhánh lịch sử đi bronze → silver → gold, để phân tích và dựng lại được. Đừng nhầm state của control tower với bảng silver: một bên là "sổ tay" nội bộ của job, một bên là bảng ai cũng query được.
+    </div>
+    <div class="key"><b>2. Mỗi loại dữ liệu có luật "mới nhất" riêng</b>
+      Vị trí xe: theo <code>event_ts</code>, ping cũ không làm xe lùi. Đơn hàng: theo LSN commit, không theo thứ tự tới. KPI: theo ngày giờ VN, có lúc chốt. Không luật nào dựa vào "cái tới sau cùng".
+    </div>
+    <div class="key"><b>3. Hai kiểu "đúng"</b>
+      <b>Đúng kỹ thuật</b>: không mất, không nhân đôi khi máy chết hay chạy lại (checkpoint, upsert theo khóa, <code>alert_id</code> tất định). <b>Đúng nghiệp vụ</b>: ETA, cảnh báo và KPI phản ánh đúng đơn, đúng hạn, đúng ngày. Hai thứ được test riêng: test sự cố (giết máy giữa chừng) và test tương đương (sạch = chaos).
+    </div>
+  </div>
+
+  <p class="note">Mỗi feature có spec, plan và test riêng trong <code>specs/NNN-*/</code>. Spec được duyệt trước khi viết code, test viết trước code, và mọi quyết định khó đảo ngược có ADR trong <code>docs/decisions/</code>.</p>
+</section>
+
+  </main>
 </div>
-
 <script>
 const root = document.documentElement, btn = document.getElementById('theme');
 function curTheme() { return root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
@@ -945,7 +1073,7 @@ const navLinks = [...document.querySelectorAll('.nav a')];
 const spy = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) navLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); });
 }, { rootMargin: '-15% 0px -75% 0px' });
-document.querySelectorAll('#top, section.part').forEach(el => spy.observe(el));
+document.querySelectorAll('section.part').forEach(el => spy.observe(el));
 </script>
 </body>
 </html>
